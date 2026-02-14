@@ -1,38 +1,53 @@
 {
   "kind": "build_request",
-  "title": "Add a quick share action alongside download options in the Share dialog",
+  "title": "Launch-ready Share Link: make QR generation reliable and ensure share URL is correct",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-21",
-      "text": "Add a \"Quick Share\" action to the existing Share dialog (frontend/src/components/share/ShareDialog.tsx) that uses the browser's native share sheet (Web Share API) to share the app URL (window.location.origin), and place it alongside the existing download actions so users can share in one tap.",
+      "id": "REQ-22",
+      "text": "Remove the dependency on the external QR Server API for generating the Share dialog and Flyer QR codes, and generate QR codes fully client-side so sharing works reliably even when third-party services are unavailable.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "Want help adding a quick share link alongside the download option?",
-          "Yes please"
+          "I'm ready to launch the share link."
         ]
       },
       "acceptanceCriteria": [
-        "The Share dialog shows a clearly-labeled action (e.g., \"Quick Share\") alongside the existing download actions (e.g., Download QR / Download Flyer).",
-        "When the browser supports navigator.share, tapping \"Quick Share\" opens the native share sheet and shares the current share URL (same URL shown in the dialog).",
-        "If navigator.share is not available or sharing fails, the UI falls back gracefully (e.g., copies the link to clipboard) and shows an English toast message indicating what happened.",
-        "All new user-facing text added for this feature is in English and matches the app’s existing safety-focused tone.",
-        "No backend changes are required."
+        "Opening the Share dialog successfully renders a QR code without making any network request to https://api.qrserver.com (or any external QR generation service).",
+        "Opening the Flyer page successfully renders a QR code without making any network request to https://api.qrserver.com (or any external QR generation service).",
+        "If QR generation fails for any reason, the UI shows the existing English error toast (e.g., “Failed to generate QR code”) and the rest of the Share dialog/Flyer page remains usable (copy link, quick share where supported)."
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "text": "Ensure the share link used across the app resolves to the correct public app entry URL for end users (the canonical app base URL) and is displayed consistently in the Share dialog and Flyer page.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "I'm ready to launch the share link."
+        ]
+      },
+      "acceptanceCriteria": [
+        "The value shown in the “App Link” field in the Share dialog matches the value shown in the “App Link” field on the Flyer page.",
+        "The share URL is a valid, absolute URL that navigates a user to the app’s entry page when opened in a new browser session.",
+        "All user-facing text related to sharing remains in English."
       ]
     }
   ],
   "constraints": [
-    "Frontend immutable paths must not be edited: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui (compose existing UI components instead).",
-    "Keep all user-facing text in English."
+    "Do not edit any files under frontend/src/components/ui (compose existing UI components instead).",
+    "Do not change files listed as immutable: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx."
   ],
   "nonGoals": [
-    "Do not add third-party sharing integrations (social media APIs, messaging APIs, etc.).",
-    "Do not change existing QR generation or QR/flyer download behavior beyond adding the new quick share action.",
-    "Do not add new authentication methods beyond existing Internet Identity."
+    "Do not change Internet Identity authentication behavior.",
+    "Do not add new sharing features beyond making the existing share link/QR generation launch-ready.",
+    "Do not introduce any new backend functionality or schema changes for sharing."
   ],
   "imageRequirements": {
     "required": [],

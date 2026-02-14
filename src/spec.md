@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Add a one-tap “Quick Share” option in the existing Share dialog to share the app’s URL using the browser’s native share sheet.
+**Goal:** Make the app’s share link launch-ready by generating QR codes reliably client-side and ensuring the shared URL is correct and consistent.
 
 **Planned changes:**
-- Add a clearly labeled “Quick Share” action to `frontend/src/components/share/ShareDialog.tsx`, placed alongside the existing download actions.
-- Implement Web Share API behavior to share the current share URL (the same URL displayed in the dialog).
-- Add a graceful fallback when `navigator.share` is unavailable or sharing fails (e.g., copy link to clipboard) and show an English toast message describing the result.
+- Replace external QR Server API usage with fully client-side QR code generation for the Share dialog and Flyer page.
+- Ensure QR generation failures show the existing English error toast (e.g., “Failed to generate QR code”) without blocking other share actions.
+- Standardize the share link so the “App Link” shown in the Share dialog and Flyer page matches and uses a valid, absolute canonical app entry URL.
 
-**User-visible outcome:** In the Share dialog, users can tap “Quick Share” to open the native share sheet and share the current link; if sharing isn’t supported or fails, the link is copied and a toast explains what happened.
+**User-visible outcome:** Opening Share or Flyer always shows a QR code without relying on third-party QR services, and users see a consistent, correct app link they can copy/share that opens to the app’s entry page.

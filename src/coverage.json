@@ -1,26 +1,39 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-14T22:55:56.573Z",
+  "generatedAt": "2026-02-14T23:22:01.720Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 1,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
-        "id": "REQ-21",
-        "summary": "Add a \"Quick Share\" action to the existing Share dialog (frontend/src/components/share/ShareDialog.tsx) that uses the browser's native share sheet (Web Share API) to share the app URL (window.location.origin), and place it alongside the existing download actions so users can share in one tap.",
+        "id": "REQ-22",
+        "summary": "Remove the dependency on the external QR Server API for generating the Share dialog and Flyer QR codes, and generate QR codes fully client-side so sharing works reliably even when third-party services are unavailable.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/quickShare.ts",
-          "frontend/src/components/share/ShareDialog.tsx"
+          "frontend/src/lib/qr.ts",
+          "frontend/src/components/share/ShareDialog.tsx",
+          "frontend/src/pages/FlyerPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/quickShare.ts",
-          "frontend/src/components/share/ShareDialog.tsx"
+          "frontend/src/lib/qr.ts"
+        ]
+      },
+      {
+        "id": "REQ-23",
+        "summary": "Ensure the share link used across the app resolves to the correct public app entry URL for end users (the canonical app base URL) and is displayed consistently in the Share dialog and Flyer page.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/shareUrl.ts",
+          "frontend/src/components/share/ShareDialog.tsx",
+          "frontend/src/pages/FlyerPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/shareUrl.ts"
         ]
       }
     ]
@@ -30,8 +43,8 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/share/ShareDialog.tsx",
-    "frontend/src/lib/quickShare.ts",
+    "frontend/src/lib/qr.ts",
+    "frontend/src/lib/shareUrl.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

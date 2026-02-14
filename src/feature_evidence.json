@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-quick-share-action-to-the-existing-share-dialog-frontend-src-components-share-sharedialog-tsx-that-uses-the-browser-s-native-share-sheet-web-share-api-to-share-the-app-url-window-location-origin-and-place-it-alongside-the-existing-download-actions-so-users-can-share-in-one-tap",
-      "featureTitle": "Add a \"Quick Share\" action to the existing Share dialog (frontend/src/components/share/ShareDialog.tsx) that uses the browser's native share sheet (Web Share API) to share the app URL (window.location.origin), and place it alongside the existing download actions so users can share in one tap.",
+      "featureId": "feature-remove-the-dependency-on-the-external-qr-server-api-for-generating-the-share-dialog-and-flyer-qr-codes-and-generate-qr-codes-fully-client-side-so-sharing-works-reliably-even-when-third-party-services-are-unavailable",
+      "featureTitle": "Remove the dependency on the external QR Server API for generating the Share dialog and Flyer QR codes, and generate QR codes fully client-side so sharing works reliably even when third-party services are unavailable.",
       "files": [
-        "frontend/src/components/share/ShareDialog.tsx",
-        "frontend/src/lib/quickShare.ts"
+        "frontend/src/lib/qr.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -18,7 +17,27 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-21"
+        "REQ-22"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-share-link-used-across-the-app-resolves-to-the-correct-public-app-entry-url-for-end-users-the-canonical-app-base-url-and-is-displayed-consistently-in-the-share-dialog-and-flyer-page",
+      "featureTitle": "Ensure the share link used across the app resolves to the correct public app entry URL for end users (the canonical app base URL) and is displayed consistently in the Share dialog and Flyer page.",
+      "files": [
+        "frontend/src/lib/shareUrl.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-23"
       ],
       "confidence": "high"
     }

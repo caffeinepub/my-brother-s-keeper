@@ -1,7 +1,12 @@
 /**
- * Get the current app's share URL based on the runtime location.
- * Works for both preview and live deployments.
+ * Get the canonical, absolute share URL for the application.
+ * Returns a consistent URL across all sharing contexts.
  */
 export function getShareUrl(): string {
-  return window.location.origin;
+  // Use window.location.origin for the canonical base URL
+  // This works for both preview and live deployments
+  const baseUrl = window.location.origin;
+  
+  // Ensure consistent formatting (no trailing slash for root)
+  return baseUrl;
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 11,
+  "projectStateVersion": 13,
   "summary": "Build “My Brother’s Keeper”: a safety-focused app for truck drivers to share routes, find trusted/safe places (hotels, restaurants, shops, gas stations, mechanics), submit/view community locations, and manage emergency info (next of kin/health) with an SOS location snapshot and SOS card screen. Includes subscriber identity + trucking license upload for admin review; fees not included in v1.",
   "architectural_notes": [
     "Emergency location in v1 is a one-time SOS location snapshot, not continuous live tracking.",
@@ -176,6 +176,22 @@
       "title": "Add a \"Quick Share\" action to the existing Share dialog (frontend/src/components/share/ShareDialog.tsx) that uses the browser's native share sheet (Web Share API) to share the app URL (window.location.origin), and place it alongside the existing download actions so users can share in one tap.",
       "reqIds": [
         "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-the-dependency-on-the-external-qr-server-api-for-generating-the-share-dialog-and-flyer-qr-codes-and-generate-qr-codes-fully-client-side-so-sharing-works-reliably-even-when-third-party-services-are-unavailable",
+      "title": "Remove the dependency on the external QR Server API for generating the Share dialog and Flyer QR codes, and generate QR codes fully client-side so sharing works reliably even when third-party services are unavailable.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-share-link-used-across-the-app-resolves-to-the-correct-public-app-entry-url-for-end-users-the-canonical-app-base-url-and-is-displayed-consistently-in-the-share-dialog-and-flyer-page",
+      "title": "Ensure the share link used across the app resolves to the correct public app entry URL for end users (the canonical app base URL) and is displayed consistently in the Share dialog and Flyer page.",
+      "reqIds": [
+        "REQ-23"
       ],
       "version": 1
     }

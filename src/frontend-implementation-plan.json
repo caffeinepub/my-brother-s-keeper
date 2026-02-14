@@ -1,0 +1,30 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Quick Share action in Share dialog via Web Share API with graceful fallback",
+  "requirements": [
+    {
+      "id": "REQ-21",
+      "summary": "Add a clearly-labeled “Quick Share” action to the Share dialog that invokes the browser’s native share sheet for the current app URL, with a clipboard fallback and English toast messaging.",
+      "acceptanceCriteria": [
+        "The Share dialog shows a clearly-labeled action (e.g., \"Quick Share\") alongside the existing download actions (e.g., Download QR / Download Flyer).",
+        "When the browser supports navigator.share, tapping \"Quick Share\" opens the native share sheet and shares the current share URL (same URL shown in the dialog).",
+        "If navigator.share is not available or sharing fails, the UI falls back gracefully (e.g., copies the link to clipboard) and shows an English toast message indicating what happened.",
+        "All new user-facing text added for this feature is in English and matches the app’s existing safety-focused tone.",
+        "No backend changes are required."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/quickShare.ts",
+          "operation": "create",
+          "description": "Add a small helper that attempts to share a given URL using the Web Share API when available, and otherwise falls back to copying to the clipboard; return a result that the UI can use to show an appropriate English toast message (success, not supported, cancelled, failed)."
+        },
+        {
+          "path": "frontend/src/components/share/ShareDialog.tsx",
+          "operation": "modify",
+          "description": "Add a new “Quick Share” button placed alongside the existing download actions, and wire it to the new share helper to share the same shareUrl shown in the dialog (window.location.origin via existing getShareUrl). On Web Share API support, open the native share sheet; on lack of support or any failure, fall back to copying the link and show English toast messages reflecting the outcome, keeping the app’s safety-focused tone. Ensure existing QR/flyer download behavior remains unchanged."
+        }
+      ]
+    }
+  ]
+}

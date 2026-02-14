@@ -1,0 +1,41 @@
+{
+  "kind": "build_request",
+  "title": "Add a quick share action alongside download options in the Share dialog",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-21",
+      "text": "Add a \"Quick Share\" action to the existing Share dialog (frontend/src/components/share/ShareDialog.tsx) that uses the browser's native share sheet (Web Share API) to share the app URL (window.location.origin), and place it alongside the existing download actions so users can share in one tap.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Want help adding a quick share link alongside the download option?",
+          "Yes please"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The Share dialog shows a clearly-labeled action (e.g., \"Quick Share\") alongside the existing download actions (e.g., Download QR / Download Flyer).",
+        "When the browser supports navigator.share, tapping \"Quick Share\" opens the native share sheet and shares the current share URL (same URL shown in the dialog).",
+        "If navigator.share is not available or sharing fails, the UI falls back gracefully (e.g., copies the link to clipboard) and shows an English toast message indicating what happened.",
+        "All new user-facing text added for this feature is in English and matches the app’s existing safety-focused tone.",
+        "No backend changes are required."
+      ]
+    }
+  ],
+  "constraints": [
+    "Frontend immutable paths must not be edited: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui (compose existing UI components instead).",
+    "Keep all user-facing text in English."
+  ],
+  "nonGoals": [
+    "Do not add third-party sharing integrations (social media APIs, messaging APIs, etc.).",
+    "Do not change existing QR generation or QR/flyer download behavior beyond adding the new quick share action.",
+    "Do not add new authentication methods beyond existing Internet Identity."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

@@ -11,10 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Copy, Download, Share2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { getShareUrl } from '@/lib/shareUrl';
-import { generateQRCode } from '@/lib/qr';
 import { downloadCanvasAsPNG } from '@/lib/qrDownload';
 import { quickShare } from '@/lib/quickShare';
 import { useNavigate } from '@tanstack/react-router';
+import { useQrCodeCanvas } from '@/hooks/useQrCodeCanvas';
 
 interface ShareDialogProps {
   open: boolean;
@@ -23,30 +23,32 @@ interface ShareDialogProps {
 
 export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
   const [shareUrl, setShareUrl] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
 
+  // Set share URL when dialog opens
   useEffect(() => {
     if (open) {
       const url = getShareUrl();
       setShareUrl(url);
-
-      // Generate QR code when dialog opens
-      if (canvasRef.current) {
-        setIsGenerating(true);
-        generateQRCode(url, canvasRef.current, 256)
-          .catch((error) => {
-            console.error('QR generation error:', error);
-            toast.error('Failed to generate QR code');
-          })
-          .finally(() => {
-            setIsGenerating(false);
-          });
-      }
     }
   }, [open]);
+
+  // Generate QR code using the hook
+  const { qrReady, qrError } = useQrCodeCanvas({
+    canvas: open ? canvasRef.current : null,
+    text: shareUrl,
+    size: 256,
+    margin: 4,
+  });
+
+  // Show error toast if QR generation fails
+  useEffect(() => {
+    if (qrError) {
+      toast.error('Failed to generate QR code. You can still copy the link below.');
+    }
+  }, [qrError]);
 
   const handleCopyLink = async () => {
     try {
@@ -54,11 +56,17 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
       toast.success('Link copied to clipboard');
     } catch (error) {
       console.error('Copy error:', error);
-      toast.error('Failed to copy link');
+      toast.error('Failed to copy link. Please select and copy the link manually.');
     }
   };
 
   const handleQuickShare = async () => {
+    // Guard against missing share URL
+    if (!shareUrl || shareUrl.trim().length === 0) {
+      toast.error('Share link is not ready yet. Please wait a moment.');
+      return;
+    }
+
     setIsSharing(true);
     try {
       const result = await quickShare(shareUrl, "My Brother's Keeper - Trucker Safety Network");
@@ -73,13 +81,20 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
         case 'cancelled':
           // User cancelled - no toast needed
           break;
-        case 'error':
-          toast.error(result.message);
+        case 'not-supported':
+          toast.error('Sharing is not available. Please use the "Copy Link" button below to copy the app link manually.');
           break;
+        case 'error':
+          toast.error(result.message || 'Failed to share. Please use the "Copy Link" button instead.');
+          break;
+        default:
+          // Handle any unexpected result status
+          console.error('Unexpected quick share result:', result);
+          toast.error('Failed to share. Please use the "Copy Link" button instead.');
       }
     } catch (error) {
       console.error('Quick share error:', error);
-      toast.error('Failed to share');
+      toast.error('Failed to share. Please use the "Copy Link" button instead.');
     } finally {
       setIsSharing(false);
     }
@@ -87,7 +102,12 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
 
   const handleDownloadQR = async () => {
     if (!canvasRef.current) {
-      toast.error('QR code not ready');
+      toast.error('QR code not ready. Please wait a moment and try again.');
+      return;
+    }
+
+    if (!qrReady) {
+      toast.error('QR code is still generating. Please wait a moment and try again.');
       return;
     }
 
@@ -96,7 +116,7 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
       toast.success('QR code downloaded');
     } catch (error) {
       console.error('Download error:', error);
-      toast.error('Failed to download QR code');
+      toast.error('Failed to download QR code. Please try again or use "Copy Link" instead.');
     }
   };
 
@@ -106,14 +126,16 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
   };
 
   const handleDownloadFlyer = () => {
-    if (isGenerating) {
-      toast.error('Please wait for QR code to finish generating');
+    if (!qrReady) {
+      toast.error('Please wait for QR code to finish generating, then try again.');
       return;
     }
     
     onOpenChange(false);
     navigate({ to: '/flyer', search: { autoExportFlyer: '1' } });
   };
+
+  const isGenerating = !qrReady && !qrError;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -133,7 +155,14 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
           <div className="relative flex items-center justify-center rounded-lg border-2 border-border bg-white p-4">
             {isGenerating && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-lg">
-                <div className="text-sm text-muted-foreground">Generating...</div>
+                <div className="text-sm text-muted-foreground">Generating QR code...</div>
+              </div>
+            )}
+            {qrError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-lg">
+                <div className="text-sm text-destructive px-4 text-center">
+                  QR code unavailable. Use "Copy Link" below.
+                </div>
               </div>
             )}
             <canvas
@@ -169,7 +198,7 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
               variant="default"
               className="w-full"
               onClick={handleQuickShare}
-              disabled={isSharing}
+              disabled={isSharing || !shareUrl}
             >
               <Share2 className="mr-2 h-4 w-4" />
               {isSharing ? 'Sharing...' : 'Quick Share'}
@@ -179,7 +208,7 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
               variant="secondary"
               className="w-full"
               onClick={handleDownloadFlyer}
-              disabled={isGenerating}
+              disabled={!qrReady}
             >
               <Download className="mr-2 h-4 w-4" />
               Download Flyer
@@ -190,7 +219,7 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
                 variant="outline"
                 className="flex-1"
                 onClick={handleDownloadQR}
-                disabled={isGenerating}
+                disabled={!qrReady}
               >
                 <Download className="mr-2 h-4 w-4" />
                 Download QR

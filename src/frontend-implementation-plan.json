@@ -1,57 +1,93 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Launch-ready sharing: client-side QR codes and canonical share URL",
+  "title": "Fix QR code share rendering to encode canonical app link and scan reliably",
   "requirements": [
     {
-      "id": "REQ-22",
-      "summary": "Replace external QR Server dependency with fully client-side QR generation for Share dialog and Flyer QR codes, with graceful failure handling.",
+      "id": "REQ-27",
+      "summary": "Render standards-compliant QR codes (encoding getShareUrl() canonical URL) with an adequate quiet zone in both Share dialog and Flyer page, fully client-side.",
       "acceptanceCriteria": [
-        "Opening the Share dialog successfully renders a QR code without making any network request to https://api.qrserver.com (or any external QR generation service).",
-        "Opening the Flyer page successfully renders a QR code without making any network request to https://api.qrserver.com (or any external QR generation service).",
-        "If QR generation fails for any reason, the UI shows the existing English error toast (e.g., “Failed to generate QR code”) and the rest of the Share dialog/Flyer page remains usable (copy link, quick share where supported)."
+        "Opening the Share dialog shows a QR code that can be scanned by a standard phone camera QR scanner and resolves to the same URL shown in the “App Link” input.",
+        "Opening the Flyer page shows a QR code that can be scanned by a standard phone camera QR scanner and resolves to the same URL shown in the “App Link” input.",
+        "The QR code includes an adequate quiet zone so scanners can reliably detect it (especially when printed or viewed on another screen).",
+        "QR generation remains fully client-side (no external QR API dependency)."
       ],
       "file_operations": [
         {
+          "path": "frontend/package.json",
+          "operation": "modify",
+          "description": "Add a well-maintained, standards-compliant QR generation library dependency (client-side only) to ensure reliable encoding and scannability (no external QR services)."
+        },
+        {
           "path": "frontend/src/lib/qr.ts",
           "operation": "modify",
-          "description": "Remove the QR Server API image-fetch approach and implement QR rendering fully client-side (canvas-based), preserving the existing generateQRCode(text, canvas, size) signature and throwing the same 'Failed to generate QR code' error on failure so existing toasts continue to work."
+          "description": "Replace the current lightweight/partial QR matrix renderer with standards-compliant QR generation that renders to a provided canvas and explicitly configures a sufficiently large quiet zone (e.g., margin of at least 4 modules), so phone camera scanners detect the encoded URL reliably."
         },
         {
           "path": "frontend/src/components/share/ShareDialog.tsx",
           "operation": "modify",
-          "description": "Ensure Share dialog QR generation uses the updated client-side generateQRCode implementation, does not rely on any external QR service, and keeps the dialog usable on failure (copy link / quick share remain enabled) while continuing to show the existing English error toast on QR failures."
+          "description": "Ensure the Share dialog QR canvas renders a standards-compliant QR for the canonical URL from getShareUrl() and that the rendered result matches the URL shown in the “App Link” input (including re-rendering when the URL state is set)."
         },
         {
           "path": "frontend/src/pages/FlyerPage.tsx",
           "operation": "modify",
-          "description": "Ensure Flyer page QR generation uses the updated client-side generateQRCode implementation, does not rely on any external QR service, and keeps the page usable on failure (copy link / flyer export gating remains sensible) while continuing to show the existing English error toast on QR failures."
+          "description": "Ensure the Flyer page QR canvas renders a standards-compliant QR for the canonical URL from getShareUrl() and that the rendered result matches the URL shown in the “App Link” input."
         }
       ]
     },
     {
-      "id": "REQ-23",
-      "summary": "Standardize a canonical, absolute share URL used consistently across Share dialog and Flyer page.",
+      "id": "REQ-28",
+      "summary": "Make QR generation run only after the canvas is mounted and sized, and handle repeated open/close and navigation reliably with clear error toasts on failure.",
       "acceptanceCriteria": [
-        "The value shown in the “App Link” field in the Share dialog matches the value shown in the “App Link” field on the Flyer page.",
-        "The share URL is a valid, absolute URL that navigates a user to the app’s entry page when opened in a new browser session.",
-        "All user-facing text related to sharing remains in English."
+        "When the Share dialog is opened repeatedly (open/close/open), the QR code consistently appears and remains scannable each time.",
+        "When navigating to /flyer, the QR code consistently appears and is scannable without requiring a refresh.",
+        "If QR generation fails for any reason, a clear English error toast is shown and the UI does not claim the QR is ready."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/shareUrl.ts",
-          "operation": "modify",
-          "description": "Update share URL generation to return the canonical, absolute public app entry URL (not a route-specific URL), preferring an explicit runtime config value when available and otherwise deriving a stable base URL from the current location; ensure the returned value is consistent (e.g., normalized trailing slash) across the app."
+          "path": "frontend/src/hooks/useQrCodeCanvas.ts",
+          "operation": "create",
+          "description": "Create a small hook to reliably generate a QR code after a canvas ref is mounted/available (and re-generate on dependency changes), tracking qrReady/qrError state and surfacing failures for toast handling."
         },
         {
           "path": "frontend/src/components/share/ShareDialog.tsx",
           "operation": "modify",
-          "description": "Ensure the 'App Link' field and all share/copy/quick-share actions use the canonical URL from getShareUrl() and remain English-only."
+          "description": "Refactor QR generation to use the new hook so generation is triggered after the canvas is mounted (e.g., on open + URL readiness), and add a qrReady state so the dialog avoids implying readiness when generation fails (show a clear English toast on failure)."
         },
         {
           "path": "frontend/src/pages/FlyerPage.tsx",
           "operation": "modify",
-          "description": "Ensure the 'App Link' field and flyer QR/link display use the canonical URL from getShareUrl() and match the Share dialog exactly (same string normalization and formatting), with English-only user-facing sharing text preserved."
+          "description": "Refactor QR generation to use the new hook so generation occurs after the QR canvas is mounted and stable on initial navigation, and integrate qrReady gating for flyer export/auto-export flows (show a clear English toast on failure and do not proceed as if ready)."
+        },
+        {
+          "path": "frontend/src/lib/qrDownload.ts",
+          "operation": "modify",
+          "description": "Harden canvas download behavior by validating the canvas has non-zero dimensions and is ready before attempting to create a PNG blob; throw clear errors that the calling UI can translate into user-facing English toasts."
+        }
+      ]
+    },
+    {
+      "id": "REQ-29",
+      "summary": "Ensure all share/QR user-facing errors (generation, readiness, download) are clear, actionable, and in English.",
+      "acceptanceCriteria": [
+        "All QR/share failure toasts and inline status text related to QR readiness are in English.",
+        "If QR is not ready, actions that depend on it (e.g., Download QR) provide a clear English message instructing the user to wait or retry."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/share/ShareDialog.tsx",
+          "operation": "modify",
+          "description": "Standardize all QR/share-related toasts and any readiness messaging to clear English with next steps (wait, retry by reopening, or use Copy Link), and ensure Download QR and other QR-dependent actions guard on qrReady with an actionable English message."
+        },
+        {
+          "path": "frontend/src/pages/FlyerPage.tsx",
+          "operation": "modify",
+          "description": "Standardize Flyer page QR/export-related toasts to clear English with next steps (wait for QR to finish generating, retry download, or use Copy Link), and ensure any auto-export failure messages are actionable and do not imply the QR is ready when it is not."
+        },
+        {
+          "path": "frontend/src/components/share/FlyerPreview.tsx",
+          "operation": "modify",
+          "description": "Ensure any inline QR overlay/status text remains in English and does not imply readiness when generation failed (keep the UI consistent with qrReady/qrError state passed from the page)."
         }
       ]
     }

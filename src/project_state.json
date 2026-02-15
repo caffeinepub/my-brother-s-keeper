@@ -1,15 +1,18 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 13,
+  "projectStateVersion": 17,
   "summary": "Build “My Brother’s Keeper”: a safety-focused app for truck drivers to share routes, find trusted/safe places (hotels, restaurants, shops, gas stations, mechanics), submit/view community locations, and manage emergency info (next of kin/health) with an SOS location snapshot and SOS card screen. Includes subscriber identity + trucking license upload for admin review; fees not included in v1.",
   "architectural_notes": [
     "Emergency location in v1 is a one-time SOS location snapshot, not continuous live tracking.",
     "Fees/subscriptions pricing is explicitly deferred to a later version."
   ],
   "known_issues": [
-    "Previous build attempts failed; may require simplified scope/prompt for builder to run reliably."
+    "Previous build attempts failed; may require simplified scope/prompt for builder to run reliably.",
+    "Share launch action fails: pressing Share does nothing and shows a failure message.",
+    "Share dialog QR code/link area appears blank and QR is not scannable (camera focuses but no link is detected).",
+    "Downloading from the Share dialog produces no visible result (no file downloaded)."
   ],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-implement-internet-identity-sign-in-and-a-basic-user-onboarding-flow-for-my-brother-s-keeper-creating-a-user-profile-record-on-first-login",
@@ -192,6 +195,54 @@
       "title": "Ensure the share link used across the app resolves to the correct public app entry URL for end users (the canonical app base URL) and is displayed consistently in the Share dialog and Flyer page.",
       "reqIds": [
         "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-share-dialog-s-quick-share-action-so-it-reliably-triggers-sharing-on-supported-devices-and-does-not-silently-fail-when-web-share-is-unsupported-or-blocked",
+      "title": "Fix the Share dialog’s “Quick Share” action so it reliably triggers sharing on supported devices and does not silently fail when Web Share is unsupported or blocked.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-quick-share-status-handling-so-all-possible-results-are-handled-explicitly-and-produce-clear-english-user-facing-feedback-consistent-with-the-app-tone",
+      "title": "Update the Quick Share status handling so all possible results are handled explicitly and produce clear English user-facing feedback consistent with the app tone.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-harden-clipboard-fallback-behavior-for-sharing-so-it-works-across-common-browser-security-constraints-and-provide-a-graceful-failure-message-when-clipboard-access-is-denied",
+      "title": "Harden clipboard fallback behavior for sharing so it works across common browser security constraints, and provide a graceful failure message when clipboard access is denied.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-the-generated-qr-code-standards-compliant-so-that-common-phone-camera-qr-scanners-detect-and-display-the-encoded-app-url-the-canonical-share-url-from-getshareurl-in-both-the-share-dialog-and-the-flyer-page",
+      "title": "Make the generated QR code standards-compliant so that common phone camera QR scanners detect and display the encoded app URL (the canonical share URL from getShareUrl()), in both the Share dialog and the Flyer page.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-qr-rendering-logic-so-qr-generation-is-triggered-reliably-after-the-canvas-element-is-mounted-available-avoiding-cases-where-the-dialog-page-opens-but-the-qr-is-not-generated-or-is-generated-on-a-zero-incorrect-canvas-state",
+      "title": "Update QR rendering logic so QR generation is triggered reliably after the canvas element is mounted/available, avoiding cases where the dialog/page opens but the QR is not generated or is generated on a zero/incorrect canvas state.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-all-share-related-user-facing-error-messages-for-qr-generation-and-qr-downloading-remain-in-english-and-clearly-communicate-what-the-user-should-do-next-wait-retry-or-use-copy-link",
+      "title": "Ensure all share-related user-facing error messages for QR generation and QR downloading remain in English and clearly communicate what the user should do next (wait, retry, or use Copy Link).",
+      "reqIds": [
+        "REQ-29"
       ],
       "version": 1
     }

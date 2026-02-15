@@ -5,10 +5,11 @@ interface FlyerPreviewProps {
   qrCanvasRef: React.RefObject<HTMLCanvasElement | null>;
   shareUrl: string;
   isGenerating: boolean;
+  qrError?: string | null;
 }
 
 const FlyerPreview = forwardRef<HTMLDivElement, FlyerPreviewProps>(
-  ({ qrCanvasRef, shareUrl, isGenerating }, ref) => {
+  ({ qrCanvasRef, shareUrl, isGenerating, qrError }, ref) => {
     return (
       <div
         ref={ref}
@@ -61,7 +62,14 @@ const FlyerPreview = forwardRef<HTMLDivElement, FlyerPreviewProps>(
             <div className="relative inline-block rounded-xl border-4 border-border bg-white p-6 shadow-lg">
               {isGenerating && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-xl">
-                  <div className="text-sm text-muted-foreground">Generating...</div>
+                  <div className="text-sm text-muted-foreground">Generating QR code...</div>
+                </div>
+              )}
+              {qrError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-xl">
+                  <div className="text-sm text-destructive px-4 text-center">
+                    QR code unavailable
+                  </div>
                 </div>
               )}
               <canvas

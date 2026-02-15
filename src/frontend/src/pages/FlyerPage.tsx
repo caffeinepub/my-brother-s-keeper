@@ -5,15 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Download, Copy, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { getShareUrl } from '@/lib/shareUrl';
-import { generateQRCode } from '@/lib/qr';
 import { exportFlyerAsPNG } from '@/lib/flyerExport';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import FlyerPreview from '@/components/share/FlyerPreview';
 import { clearUrlParam } from '@/lib/urlParams';
+import { useQrCodeCanvas } from '@/hooks/useQrCodeCanvas';
 
 export default function FlyerPage() {
   const [shareUrl, setShareUrl] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
   const flyerRef = useRef<HTMLDivElement>(null);
@@ -21,35 +20,38 @@ export default function FlyerPage() {
   const navigate = useNavigate();
   const search = useSearch({ from: '/flyer' });
 
+  // Set share URL on mount
   useEffect(() => {
     const url = getShareUrl();
     setShareUrl(url);
-
-    // Generate QR code when page loads
-    if (qrCanvasRef.current) {
-      setIsGenerating(true);
-      generateQRCode(url, qrCanvasRef.current, 300)
-        .catch((error) => {
-          console.error('QR generation error:', error);
-          toast.error('Failed to generate QR code');
-        })
-        .finally(() => {
-          setIsGenerating(false);
-        });
-    }
   }, []);
+
+  // Generate QR code using the hook
+  const { qrReady, qrError } = useQrCodeCanvas({
+    canvas: qrCanvasRef.current,
+    text: shareUrl,
+    size: 300,
+    margin: 4,
+  });
+
+  // Show error toast if QR generation fails
+  useEffect(() => {
+    if (qrError) {
+      toast.error('Failed to generate QR code. You can still copy the link below.');
+    }
+  }, [qrError]);
 
   // Auto-export effect
   useEffect(() => {
     const shouldAutoExport = search?.autoExportFlyer === '1';
     
-    if (shouldAutoExport && !autoExportAttemptedRef.current && !isGenerating) {
+    if (shouldAutoExport && !autoExportAttemptedRef.current && qrReady) {
       autoExportAttemptedRef.current = true;
       
       // Wait a brief moment to ensure refs are ready
       const timer = setTimeout(async () => {
         if (!flyerRef.current || !qrCanvasRef.current) {
-          toast.error('Flyer not ready for download');
+          toast.error('Flyer not ready for download. Please wait and try again.');
           clearUrlParam('autoExportFlyer');
           return;
         }
@@ -60,7 +62,7 @@ export default function FlyerPage() {
           toast.success('Flyer downloaded successfully');
         } catch (error) {
           console.error('Auto-export error:', error);
-          toast.error('Failed to download flyer. Please try again.');
+          toast.error('Failed to download flyer. Please try the "Download Flyer" button below.');
         } finally {
           setIsExporting(false);
           clearUrlParam('autoExportFlyer');
@@ -69,7 +71,7 @@ export default function FlyerPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [search, isGenerating]);
+  }, [search, qrReady]);
 
   const handleCopyLink = async () => {
     try {
@@ -77,18 +79,18 @@ export default function FlyerPage() {
       toast.success('Link copied to clipboard');
     } catch (error) {
       console.error('Copy error:', error);
-      toast.error('Failed to copy link');
+      toast.error('Failed to copy link. Please select and copy the link manually.');
     }
   };
 
   const handleDownloadFlyer = async () => {
     if (!flyerRef.current || !qrCanvasRef.current) {
-      toast.error('Flyer not ready');
+      toast.error('Flyer not ready. Please wait a moment and try again.');
       return;
     }
 
-    if (isGenerating) {
-      toast.error('Please wait for QR code to finish generating');
+    if (!qrReady) {
+      toast.error('QR code is still generating. Please wait a moment and try again.');
       return;
     }
 
@@ -98,11 +100,13 @@ export default function FlyerPage() {
       toast.success('Flyer downloaded successfully');
     } catch (error) {
       console.error('Export error:', error);
-      toast.error('Failed to download flyer. Please try again.');
+      toast.error('Failed to download flyer. Please try again or use "Copy Link" instead.');
     } finally {
       setIsExporting(false);
     }
   };
+
+  const isGenerating = !qrReady && !qrError;
 
   return (
     <div className="container max-w-4xl mx-auto py-8 space-y-8">
@@ -128,6 +132,7 @@ export default function FlyerPage() {
             qrCanvasRef={qrCanvasRef}
             shareUrl={shareUrl}
             isGenerating={isGenerating}
+            qrError={qrError}
           />
         </CardContent>
       </Card>
@@ -157,15 +162,23 @@ export default function FlyerPage() {
           className="w-full"
           size="lg"
           onClick={handleDownloadFlyer}
-          disabled={isGenerating || isExporting}
+          disabled={isGenerating || isExporting || !qrReady}
         >
-          <Download className="mr-2 h-4 w-4" />
-          {isExporting ? 'Downloading...' : 'Download Flyer as PNG'}
+          <Download className="mr-2 h-5 w-5" />
+          {isExporting ? 'Downloading...' : 'Download Flyer'}
         </Button>
 
-        <p className="text-xs text-muted-foreground text-center">
-          Download and share this flyer to help spread awareness about the trucker safety network.
-        </p>
+        {!qrReady && !qrError && (
+          <p className="text-sm text-muted-foreground text-center">
+            Generating QR code... Please wait.
+          </p>
+        )}
+
+        {qrError && (
+          <p className="text-sm text-destructive text-center">
+            QR code generation failed. You can still copy the link above to share.
+          </p>
+        )}
       </div>
     </div>
   );

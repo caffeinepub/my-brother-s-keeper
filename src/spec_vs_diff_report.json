@@ -1,42 +1,20 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-14T23:22:01.717Z",
-  "summary": "Diff adds a new client-side QR generation implementation (frontend/src/lib/qr.ts) and a canonical share URL helper (frontend/src/lib/shareUrl.ts). However, the diff summary does not show any updates to the Share dialog or Flyer page to actually use these new utilities, nor does it show removal of the existing external QR server usage or the required error-toast behavior on QR generation failure.",
-  "missing_requirements": [
-    {
-      "id": "REQ-22",
-      "requirement": "Remove the dependency on the external QR Server API for generating the Share dialog and Flyer QR codes, and generate QR codes fully client-side so sharing works reliably even when third-party services are unavailable.",
-      "reason": "While a client-side QR generator was added (frontend/src/lib/qr.ts), the diff summary does not show any changes in the Share dialog or Flyer page code to switch from https://api.qrserver.com (or any external QR service) to this client-side generator, nor evidence that the external request path was removed.",
-      "evidence": [
-        "frontend/src/lib/qr.ts",
-        "frontend-file-summaries.txt (no ShareDialog/Flyer implementation changes shown)"
-      ]
-    },
-    {
-      "id": "REQ-22",
-      "requirement": "If QR generation fails for any reason, the UI shows the existing English error toast (e.g., “Failed to generate QR code”) and the rest of the Share dialog/Flyer page remains usable.",
-      "reason": "The diff summary does not show UI-layer handling (try/catch, toast invocation, fallback rendering) in the Share dialog or Flyer page. Only the QR library is shown, and it is truncated before any error-handling behavior can be confirmed.",
-      "evidence": [
-        "frontend/src/lib/qr.ts (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-23",
-      "requirement": "Ensure the share link used across the app resolves to the correct public app entry URL (canonical app base URL) and is displayed consistently in the Share dialog and Flyer page.",
-      "reason": "A new getShareUrl() helper was added (frontend/src/lib/shareUrl.ts), but the diff summary does not show any components/pages updated to use it. Therefore, consistency between the Share dialog and Flyer page cannot be confirmed from the diff summary.",
-      "evidence": [
-        "frontend/src/lib/shareUrl.ts",
-        "frontend-file-summaries.txt (no ShareDialog/Flyer implementation changes shown)"
-      ]
-    }
-  ],
+  "generatedAt": "2026-02-15T00:01:57.774Z",
+  "summary": "Diff adds a new client-side QR code generator and a canvas-based QR generation hook, then wires both ShareDialog and FlyerPage/FlyerPreview to generate and render QR codes from getShareUrl(), with margin/quiet-zone settings and English error toasts plus readiness guards for downloading.",
+  "missing_requirements": [],
   "hallucinated_features": [],
-  "confidence": 0.62,
+  "confidence": 0.66,
   "changed_files": [
     "frontend-file-summaries.txt",
+    "frontend/src/components/share/FlyerPreview.tsx",
+    "frontend/src/components/share/ShareDialog.tsx",
+    "frontend/src/hooks/useQrCodeCanvas.ts",
     "frontend/src/lib/qr.ts",
-    "frontend/src/lib/shareUrl.ts",
+    "frontend/src/lib/qrCodeGenerator.ts",
+    "frontend/src/lib/qrDownload.ts",
+    "frontend/src/pages/FlyerPage.tsx",
     "project_state.json"
   ]
 }

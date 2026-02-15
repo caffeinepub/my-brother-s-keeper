@@ -1,74 +1,105 @@
 {
   "kind": "build_request",
-  "title": "Fix Share QR code so it encodes the app link and scans reliably",
+  "title": "Fix Flyer PNG export (remove tainted-canvas foreignObject approach)",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-27",
-      "text": "Make the generated QR code standards-compliant so that common phone camera QR scanners detect and display the encoded app URL (the canonical share URL from getShareUrl()), in both the Share dialog and the Flyer page.",
+      "id": "REQ-35",
+      "text": "Replace the current flyer PNG export implementation in frontend/src/lib/flyerExport.ts to avoid the SVG <foreignObject> approach (which causes \"Tainted canvases may not be exported\" on mobile) and implement a cross-browser DOM-to-image export that works on iOS and Android.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-5"
         ],
         "quotes": [
-          "The QR code does not show a link when camera is focused. There is nothing in the upper qr code box/ link. It is blank."
+          "Yes fix the flyer export"
         ]
       },
       "acceptanceCriteria": [
-        "Opening the Share dialog shows a QR code that can be scanned by a standard phone camera QR scanner and resolves to the same URL shown in the “App Link” input.",
-        "Opening the Flyer page shows a QR code that can be scanned by a standard phone camera QR scanner and resolves to the same URL shown in the “App Link” input.",
-        "The QR code includes an adequate quiet zone so scanners can reliably detect it (especially when printed or viewed on another screen).",
-        "QR generation remains fully client-side (no external QR API dependency)."
+        "Clicking “Download Flyer” on /flyer produces a downloaded PNG file on mobile browsers (Android Chrome and iOS Safari) without throwing a tainted-canvas/toBlob error.",
+        "The export implementation does not use SVG <foreignObject> to render the flyer DOM.",
+        "The exported PNG contains the full flyer content (title, intro text, QR code area, and the share URL text) at readable resolution."
       ]
     },
     {
-      "id": "REQ-28",
-      "text": "Update QR rendering logic so QR generation is triggered reliably after the canvas element is mounted/available, avoiding cases where the dialog/page opens but the QR is not generated or is generated on a zero/incorrect canvas state.",
+      "id": "REQ-36",
+      "text": "Ensure the flyer export includes the rendered QR code reliably (matching what the user sees in the flyer preview), and does not depend on any cross-origin images/fonts that can taint the export canvas.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-3",
+          "msg-5"
         ],
         "quotes": [
-          "The QR code does not show a link when camera is focused. There is nothing in the upper qr code box/ link. It is blank."
+          "\"Failed to execute 'toBlob' on 'HTMLCanvasElement': Tainted canvases may not be exported\"",
+          "Yes fix the flyer export"
         ]
       },
       "acceptanceCriteria": [
-        "When the Share dialog is opened repeatedly (open/close/open), the QR code consistently appears and remains scannable each time.",
-        "When navigating to /flyer, the QR code consistently appears and is scannable without requiring a refresh.",
-        "If QR generation fails for any reason, a clear English error toast is shown and the UI does not claim the QR is ready."
+        "The exported flyer PNG includes a visible QR code (not blank, not missing).",
+        "Export succeeds even when triggered via the Share dialog “Download Flyer” (auto-export flow) and when triggered directly from the Flyer page.",
+        "If any asset would cause tainting, the exporter either inlines it safely or excludes/replaces it so export still succeeds (no taint error)."
       ]
     },
     {
-      "id": "REQ-29",
-      "text": "Ensure all share-related user-facing error messages for QR generation and QR downloading remain in English and clearly communicate what the user should do next (wait, retry, or use Copy Link).",
+      "id": "REQ-37",
+      "text": "Keep all flyer-download user-facing error messages in clear English and update them where needed to reflect the new export flow (including actionable next steps like retrying or using Copy Link).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-3",
+          "msg-5"
         ],
         "quotes": [
-          "Use English for any user-facing text in the build request."
+          "Failed to download flyer: Failed to execute 'toBlob' on 'HTMLCanvasElement': Tainted canvases may not be exported",
+          "Yes fix the flyer export"
         ]
       },
       "acceptanceCriteria": [
-        "All QR/share failure toasts and inline status text related to QR readiness are in English.",
-        "If QR is not ready, actions that depend on it (e.g., Download QR) provide a clear English message instructing the user to wait or retry."
+        "When flyer download fails for any reason, the user sees an English toast/message that clearly indicates what happened and what to do next (e.g., wait and retry, or use “Copy Link”).",
+        "No raw/technical browser exception text (e.g., “foreignObject”, “tainted canvases”) is shown directly to end users unless it is wrapped with a friendly explanation."
+      ]
+    },
+    {
+      "id": "REQ-38",
+      "text": "Perform a production smoke-test pass specifically for flyer downloading: (1) Flyer page “Download Flyer”, (2) Share dialog “Download Flyer” auto-export navigation, verifying that downloads trigger and files are not empty/blank.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "Yes fix the flyer export"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Manual verification checklist is completed: Flyer downloads correctly from /flyer and from the Share dialog auto-export flow.",
+        "No regression to QR generation, share URL display, or copy-link behavior on the flyer page."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui (compose existing UI components instead).",
-    "Keep QR generation fully client-side; do not call any external QR generation service."
+    "Frontend paths listed in frontend.immutablePaths must not be edited.",
+    "Do not introduce any backend changes for flyer export; this fix must remain fully client-side.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Do not change the canonical share URL behavior beyond what is necessary for the QR to encode the correct URL.",
-    "Do not add new sharing features (only fix QR scan/link detection reliability).",
-    "Do not modify backend canister logic; this issue should be addressed in frontend QR generation/rendering."
+    "Adding new flyer content/sections beyond what is required to fix export reliability.",
+    "Changing the QR generation algorithm or share URL selection (except as required to ensure the exported flyer matches the on-screen flyer and downloads reliably).",
+    "Implementing new authentication or data storage features as part of this fix."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,15 +10,21 @@ import { useNavigate, useSearch } from '@tanstack/react-router';
 import FlyerPreview from '@/components/share/FlyerPreview';
 import { clearUrlParam } from '@/lib/urlParams';
 import { useQrCodeCanvas } from '@/hooks/useQrCodeCanvas';
+import { copyToClipboard } from '@/lib/clipboard';
 
 export default function FlyerPage() {
   const [shareUrl, setShareUrl] = useState('');
   const [isExporting, setIsExporting] = useState(false);
-  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [qrCanvasElement, setQrCanvasElement] = useState<HTMLCanvasElement | null>(null);
   const flyerRef = useRef<HTMLDivElement>(null);
   const autoExportAttemptedRef = useRef(false);
   const navigate = useNavigate();
   const search = useSearch({ from: '/flyer' });
+
+  // Callback ref to capture QR canvas element when it mounts
+  const qrCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
+    setQrCanvasElement(node);
+  }, []);
 
   // Set share URL on mount
   useEffect(() => {
@@ -26,9 +32,9 @@ export default function FlyerPage() {
     setShareUrl(url);
   }, []);
 
-  // Generate QR code using the hook
-  const { qrReady, qrError } = useQrCodeCanvas({
-    canvas: qrCanvasRef.current,
+  // Generate QR code using the hook with mount-aware canvas
+  const { qrReady, qrError, status } = useQrCodeCanvas({
+    canvas: qrCanvasElement,
     text: shareUrl,
     size: 300,
     margin: 4,
@@ -48,9 +54,12 @@ export default function FlyerPage() {
     if (shouldAutoExport && !autoExportAttemptedRef.current && qrReady) {
       autoExportAttemptedRef.current = true;
       
-      // Wait a brief moment to ensure refs are ready
+      console.log('[FlyerPage] Auto-export triggered');
+      
+      // Wait for layout stability and next frame
       const timer = setTimeout(async () => {
-        if (!flyerRef.current || !qrCanvasRef.current) {
+        if (!flyerRef.current || !qrCanvasElement) {
+          console.error('[FlyerPage] Auto-export failed: refs not ready');
           toast.error('Flyer not ready for download. Please wait and try again.');
           clearUrlParam('autoExportFlyer');
           return;
@@ -58,33 +67,35 @@ export default function FlyerPage() {
 
         setIsExporting(true);
         try {
-          await exportFlyerAsPNG(flyerRef.current, qrCanvasRef.current, 'my-brothers-keeper-flyer.png');
+          console.log('[FlyerPage] Starting auto-export...');
+          await exportFlyerAsPNG(flyerRef.current, qrCanvasElement, 'my-brothers-keeper-flyer.png');
           toast.success('Flyer downloaded successfully');
+          console.log('[FlyerPage] Auto-export completed');
         } catch (error) {
-          console.error('Auto-export error:', error);
-          toast.error('Failed to download flyer. Please try the "Download Flyer" button below.');
+          console.error('[FlyerPage] Auto-export error:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          toast.error(`Failed to download flyer: ${errorMessage}`);
         } finally {
           setIsExporting(false);
           clearUrlParam('autoExportFlyer');
         }
-      }, 100);
+      }, 200); // Increased delay for better stability
 
       return () => clearTimeout(timer);
     }
-  }, [search, qrReady]);
+  }, [search, qrReady, qrCanvasElement]);
 
   const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
+    const success = await copyToClipboard(shareUrl);
+    if (success) {
       toast.success('Link copied to clipboard');
-    } catch (error) {
-      console.error('Copy error:', error);
-      toast.error('Failed to copy link. Please select and copy the link manually.');
+    } else {
+      toast.error('Failed to copy link. Please manually select and copy the link from the App Link field below.');
     }
   };
 
   const handleDownloadFlyer = async () => {
-    if (!flyerRef.current || !qrCanvasRef.current) {
+    if (!flyerRef.current || !qrCanvasElement) {
       toast.error('Flyer not ready. Please wait a moment and try again.');
       return;
     }
@@ -94,19 +105,22 @@ export default function FlyerPage() {
       return;
     }
 
+    console.log('[FlyerPage] Manual download triggered');
     setIsExporting(true);
     try {
-      await exportFlyerAsPNG(flyerRef.current, qrCanvasRef.current, 'my-brothers-keeper-flyer.png');
+      await exportFlyerAsPNG(flyerRef.current, qrCanvasElement, 'my-brothers-keeper-flyer.png');
       toast.success('Flyer downloaded successfully');
+      console.log('[FlyerPage] Manual download completed');
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to download flyer. Please try again or use "Copy Link" instead.');
+      console.error('[FlyerPage] Manual download error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(errorMessage);
     } finally {
       setIsExporting(false);
     }
   };
 
-  const isGenerating = !qrReady && !qrError;
+  const isGenerating = status === 'generating';
 
   return (
     <div className="container max-w-4xl mx-auto py-8 space-y-8">
@@ -162,13 +176,13 @@ export default function FlyerPage() {
           className="w-full"
           size="lg"
           onClick={handleDownloadFlyer}
-          disabled={isGenerating || isExporting || !qrReady}
+          disabled={isExporting || !qrReady}
         >
           <Download className="mr-2 h-5 w-5" />
           {isExporting ? 'Downloading...' : 'Download Flyer'}
         </Button>
 
-        {!qrReady && !qrError && (
+        {isGenerating && (
           <p className="text-sm text-muted-foreground text-center">
             Generating QR code... Please wait.
           </p>

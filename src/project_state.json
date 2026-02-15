@@ -1,16 +1,19 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 17,
+  "projectStateVersion": 23,
   "summary": "Build “My Brother’s Keeper”: a safety-focused app for truck drivers to share routes, find trusted/safe places (hotels, restaurants, shops, gas stations, mechanics), submit/view community locations, and manage emergency info (next of kin/health) with an SOS location snapshot and SOS card screen. Includes subscriber identity + trucking license upload for admin review; fees not included in v1.",
   "architectural_notes": [
     "Emergency location in v1 is a one-time SOS location snapshot, not continuous live tracking.",
-    "Fees/subscriptions pricing is explicitly deferred to a later version."
+    "Fees/subscriptions pricing is explicitly deferred to a later version.",
+    "Flyer export should avoid SVG <foreignObject>-based DOM-to-image methods that can taint the canvas on mobile; use a cross-browser DOM→canvas/image export approach to ensure downloads work on iOS/Android."
   ],
   "known_issues": [
     "Previous build attempts failed; may require simplified scope/prompt for builder to run reliably.",
     "Share launch action fails: pressing Share does nothing and shows a failure message.",
     "Share dialog QR code/link area appears blank and QR is not scannable (camera focuses but no link is detected).",
-    "Downloading from the Share dialog produces no visible result (no file downloaded)."
+    "Downloading from the Share dialog produces no visible result (no file downloaded).",
+    "Root cause identified for blank/unscannable QR: custom QR generator initializes module grid with false instead of null, causing placement/drawing logic to skip all modules and leave canvas empty; needs fix so QR renders/scans reliably.",
+    "Flyer export/download fails with \"Failed to execute 'toBlob' on 'HTMLCanvasElement': Tainted canvases may not be exported\" due to current SVG <foreignObject>-based exporter; needs replacement with a non-tainting, cross-browser export method (especially for mobile)."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -243,6 +246,78 @@
       "title": "Ensure all share-related user-facing error messages for QR generation and QR downloading remain in English and clearly communicate what the user should do next (wait, retry, or use Copy Link).",
       "reqIds": [
         "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-custom-qr-code-generator-so-modules-are-initialized-with-null-unset-values-instead-of-false-allowing-finder-timing-data-placement-logic-to-write-modules-and-produce-a-non-empty-scannable-qr-code-on-the-canvas",
+      "title": "Fix the custom QR code generator so modules are initialized with null (unset) values instead of false, allowing finder/timing/data placement logic to write modules and produce a non-empty, scannable QR code on the canvas.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-qr-generation-trigger-reliably-after-the-canvas-element-is-mounted-available-in-both-the-share-dialog-and-the-flyer-page-avoiding-cases-where-the-ui-stays-on-generating-qr-code-indefinitely-due-to-a-null-canvas-ref",
+      "title": "Make QR generation trigger reliably after the canvas element is mounted/available in both the Share dialog and the Flyer page, avoiding cases where the UI stays on “Generating QR code…” indefinitely due to a null canvas ref.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-download-qr-and-download-flyer-work-end-to-end-once-the-qr-is-ready-including-from-the-share-dialog-and-show-clear-english-error-messages-when-downloads-cannot-be-performed",
+      "title": "Ensure “Download QR” and “Download Flyer” work end-to-end once the QR is ready, including from the Share dialog, and show clear English error messages when downloads cannot be performed.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-harden-the-copy-link-actions-to-use-the-existing-resilient-clipboard-helper-so-copying-the-share-url-works-reliably-across-common-browser-security-constraints-non-secure-contexts-permission-denial-in-both-the-share-dialog-and-flyer-page",
+      "title": "Harden the “Copy Link” actions to use the existing resilient clipboard helper so copying the share URL works reliably across common browser security constraints (non-secure contexts, permission denial) in both the Share dialog and Flyer page.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-perform-a-production-smoke-test-pass-for-the-share-and-flyer-flows-and-address-any-release-blocking-regressions-discovered-so-the-app-can-go-live-today",
+      "title": "Perform a production smoke-test pass for the Share and Flyer flows and address any release-blocking regressions discovered so the app can go live today.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-flyer-png-export-implementation-in-frontend-src-lib-flyerexport-ts-to-avoid-the-svg-foreignobject-approach-which-causes-tainted-canvases-may-not-be-exported-on-mobile-and-implement-a-cross-browser-dom-to-image-export-that-works-on-ios-and-android",
+      "title": "Replace the current flyer PNG export implementation in frontend/src/lib/flyerExport.ts to avoid the SVG <foreignObject> approach (which causes \"Tainted canvases may not be exported\" on mobile) and implement a cross-browser DOM-to-image export that works on iOS and Android.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-flyer-export-includes-the-rendered-qr-code-reliably-matching-what-the-user-sees-in-the-flyer-preview-and-does-not-depend-on-any-cross-origin-images-fonts-that-can-taint-the-export-canvas",
+      "title": "Ensure the flyer export includes the rendered QR code reliably (matching what the user sees in the flyer preview), and does not depend on any cross-origin images/fonts that can taint the export canvas.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-keep-all-flyer-download-user-facing-error-messages-in-clear-english-and-update-them-where-needed-to-reflect-the-new-export-flow-including-actionable-next-steps-like-retrying-or-using-copy-link",
+      "title": "Keep all flyer-download user-facing error messages in clear English and update them where needed to reflect the new export flow (including actionable next steps like retrying or using Copy Link).",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-perform-a-production-smoke-test-pass-specifically-for-flyer-downloading-1-flyer-page-download-flyer-2-share-dialog-download-flyer-auto-export-navigation-verifying-that-downloads-trigger-and-files-are-not-empty-blank",
+      "title": "Perform a production smoke-test pass specifically for flyer downloading: (1) Flyer page “Download Flyer”, (2) Share dialog “Download Flyer” auto-export navigation, verifying that downloads trigger and files are not empty/blank.",
+      "reqIds": [
+        "REQ-38"
       ],
       "version": 1
     }

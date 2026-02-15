@@ -12,13 +12,13 @@ export function downloadCanvasAsPNG(
   return new Promise((resolve, reject) => {
     // Validate canvas has non-zero dimensions
     if (!canvas.width || !canvas.height) {
-      reject(new Error('Canvas is not ready: dimensions are zero'));
+      reject(new Error('QR code is not ready yet. Please wait a moment and try again.'));
       return;
     }
 
     canvas.toBlob((blob) => {
       if (!blob) {
-        reject(new Error('Failed to create blob from canvas. The canvas may not be ready yet.'));
+        reject(new Error('QR code is not ready yet. Please wait a moment and try again.'));
         return;
       }
 
@@ -33,7 +33,7 @@ export function downloadCanvasAsPNG(
         URL.revokeObjectURL(url);
         resolve();
       } catch (error) {
-        reject(error);
+        reject(new Error('Failed to download. Please try again.'));
       }
     }, 'image/png');
   });

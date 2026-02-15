@@ -33,46 +33,39 @@ export async function quickShare(url: string, title: string): Promise<QuickShare
     // Check if we can share this specific data (some browsers support navigator.share but not all data types)
     const shareData = { title, url };
     
-    if (navigator.canShare && !navigator.canShare(shareData)) {
-      // Browser says it can't share this data - fall back to clipboard
-      return await fallbackToCopy(url);
+    // TypeScript-safe check for canShare
+    const hasCanShare = 'canShare' in navigator && typeof navigator.canShare === 'function';
+    if (hasCanShare && !navigator.canShare(shareData)) {
+      // Web Share API exists but can't share this data - fall back to clipboard
+      const copied = await copyToClipboard(url);
+      return copied ? { status: 'copied' } : { status: 'not-supported' };
     }
 
+    // Try to use Web Share API
     try {
       await navigator.share(shareData);
       return { status: 'success' };
     } catch (error: any) {
-      // User cancelled the share
+      // Check if user cancelled
       if (error.name === 'AbortError') {
         return { status: 'cancelled' };
       }
       
-      // NotAllowedError means permission denied or user gesture required
+      // Check for permission denied
       if (error.name === 'NotAllowedError') {
-        console.warn('Web Share API not allowed, falling back to clipboard');
-        return await fallbackToCopy(url);
+        // Try clipboard fallback
+        const copied = await copyToClipboard(url);
+        return copied ? { status: 'copied' } : { status: 'error', message: 'Permission denied for sharing' };
       }
       
-      // Other errors - fall back to clipboard
-      console.warn('Web Share API failed, falling back to clipboard:', error);
-      return await fallbackToCopy(url);
+      // Other error - try clipboard fallback
+      console.warn('Web Share API error:', error);
+      const copied = await copyToClipboard(url);
+      return copied ? { status: 'copied' } : { status: 'error', message: 'Failed to share' };
     }
-  } else {
-    // Web Share API not supported or not in secure context - use clipboard fallback
-    return await fallbackToCopy(url);
   }
-}
 
-/**
- * Fallback: copy URL to clipboard using resilient clipboard helper
- */
-async function fallbackToCopy(url: string): Promise<QuickShareResult> {
-  const success = await copyToClipboard(url);
-  
-  if (success) {
-    return { status: 'copied' };
-  } else {
-    // Clipboard copy failed - return not-supported so UI can guide user to manual copy
-    return { status: 'not-supported' };
-  }
+  // Web Share API not available - try clipboard fallback
+  const copied = await copyToClipboard(url);
+  return copied ? { status: 'copied' } : { status: 'not-supported' };
 }

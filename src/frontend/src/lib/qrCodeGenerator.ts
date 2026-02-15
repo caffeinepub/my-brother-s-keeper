@@ -22,13 +22,14 @@ const VERSION_CAPACITY = [
 ];
 
 class QRCodeGenerator {
-  private modules: boolean[][] = [];
+  private modules: (boolean | null)[][] = [];
   private moduleCount: number = 0;
 
   constructor(private version: number, private errorCorrectionLevel: ErrorCorrectionLevel) {
     this.moduleCount = version * 4 + 17;
+    // Initialize with null (unset) values so placement logic can detect empty cells
     this.modules = Array(this.moduleCount).fill(null).map(() => 
-      Array(this.moduleCount).fill(false)
+      Array(this.moduleCount).fill(null)
     );
   }
 

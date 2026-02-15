@@ -1,61 +1,67 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-15T00:01:57.777Z",
+  "generatedAt": "2026-02-15T00:55:43.487Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
-        "id": "REQ-27",
-        "summary": "Make the generated QR code standards-compliant so that common phone camera QR scanners detect and display the encoded app URL (the canonical share URL from getShareUrl()), in both the Share dialog and the Flyer page.",
+        "id": "REQ-35",
+        "summary": "Replace the current flyer PNG export implementation in frontend/src/lib/flyerExport.ts to avoid the SVG <foreignObject> approach (which causes \"Tainted canvases may not be exported\" on mobile) and implement a cross-browser DOM-to-image export that works on iOS and Android.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/package.json",
-          "frontend/src/lib/qr.ts",
-          "frontend/src/components/share/ShareDialog.tsx",
-          "frontend/src/pages/FlyerPage.tsx"
+          "frontend/src/lib/flyerExport.ts",
+          "frontend/src/lib/domToPng.ts",
+          "frontend/package.json"
         ],
         "matchedFiles": [
-          "frontend/src/lib/qr.ts",
-          "frontend/src/components/share/ShareDialog.tsx",
-          "frontend/src/pages/FlyerPage.tsx"
+          "frontend/src/lib/flyerExport.ts",
+          "frontend/src/lib/domToPng.ts"
         ]
       },
       {
-        "id": "REQ-28",
-        "summary": "Update QR rendering logic so QR generation is triggered reliably after the canvas element is mounted/available, avoiding cases where the dialog/page opens but the QR is not generated or is generated on a zero/incorrect canvas state.",
+        "id": "REQ-36",
+        "summary": "Ensure the flyer export includes the rendered QR code reliably (matching what the user sees in the flyer preview), and does not depend on any cross-origin images/fonts that can taint the export canvas.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useQrCodeCanvas.ts",
-          "frontend/src/components/share/ShareDialog.tsx",
-          "frontend/src/pages/FlyerPage.tsx",
-          "frontend/src/lib/qrDownload.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQrCodeCanvas.ts",
-          "frontend/src/components/share/ShareDialog.tsx",
-          "frontend/src/pages/FlyerPage.tsx",
-          "frontend/src/lib/qrDownload.ts"
-        ]
-      },
-      {
-        "id": "REQ-29",
-        "summary": "Ensure all share-related user-facing error messages for QR generation and QR downloading remain in English and clearly communicate what the user should do next (wait, retry, or use Copy Link).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/share/ShareDialog.tsx",
+          "frontend/src/lib/flyerExport.ts",
           "frontend/src/pages/FlyerPage.tsx",
           "frontend/src/components/share/FlyerPreview.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/share/ShareDialog.tsx",
+          "frontend/src/lib/flyerExport.ts",
+          "frontend/src/pages/FlyerPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-37",
+        "summary": "Keep all flyer-download user-facing error messages in clear English and update them where needed to reflect the new export flow (including actionable next steps like retrying or using Copy Link).",
+        "status": "implemented",
+        "plannedFiles": [
           "frontend/src/pages/FlyerPage.tsx",
-          "frontend/src/components/share/FlyerPreview.tsx"
+          "frontend/src/lib/flyerExport.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/FlyerPage.tsx",
+          "frontend/src/lib/flyerExport.ts"
+        ]
+      },
+      {
+        "id": "REQ-38",
+        "summary": "Perform a production smoke-test pass specifically for flyer downloading: (1) Flyer page “Download Flyer”, (2) Share dialog “Download Flyer” auto-export navigation, verifying that downloads trigger and files are not empty/blank.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/docs/flyer-download-smoke-test.md",
+          "frontend/src/pages/FlyerPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/docs/flyer-download-smoke-test.md",
+          "frontend/src/pages/FlyerPage.tsx"
         ]
       }
     ]
@@ -65,12 +71,9 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/share/FlyerPreview.tsx",
-    "frontend/src/components/share/ShareDialog.tsx",
-    "frontend/src/hooks/useQrCodeCanvas.ts",
-    "frontend/src/lib/qr.ts",
-    "frontend/src/lib/qrCodeGenerator.ts",
-    "frontend/src/lib/qrDownload.ts",
+    "frontend/docs/flyer-download-smoke-test.md",
+    "frontend/src/lib/domToPng.ts",
+    "frontend/src/lib/flyerExport.ts",
     "frontend/src/pages/FlyerPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",

@@ -1,19 +1,50 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-15T00:01:57.774Z",
-  "summary": "Diff adds a new client-side QR code generator and a canvas-based QR generation hook, then wires both ShareDialog and FlyerPage/FlyerPreview to generate and render QR codes from getShareUrl(), with margin/quiet-zone settings and English error toasts plus readiness guards for downloading.",
-  "missing_requirements": [],
-  "hallucinated_features": [],
-  "confidence": 0.66,
+  "generatedAt": "2026-02-15T00:55:43.483Z",
+  "summary": "Diff replaces the flyer export implementation with a custom canvas-rendered PNG flow and adds a manual smoke-test checklist doc. However, based on the truncated diff, several acceptance criteria cannot be verified (notably QR/share-URL rendering in the exported PNG), and the new error-toasting path in FlyerPage can surface raw exception text to users.",
+  "missing_requirements": [
+    {
+      "id": "REQ-36",
+      "requirement": "Ensure the flyer export includes the rendered QR code reliably (matching what the user sees in the flyer preview), and does not depend on any cross-origin images/fonts that can taint the export canvas.",
+      "reason": "FlyerPage now passes a QR canvas into exportFlyerAsPNG, but the shown portion of frontend/src/lib/flyerExport.ts does not include evidence that the QR canvas is actually drawn into the exported canvas (or that any tainting-prone assets are detected/handled). With the file truncated mid-body, QR rendering and taint-avoidance handling cannot be confirmed from the diff summary alone.",
+      "evidence": [
+        "frontend/src/lib/flyerExport.ts (truncated; no visible QR draw)",
+        "frontend/src/pages/FlyerPage.tsx (passes qrCanvasElement into exportFlyerAsPNG)"
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "requirement": "The exported PNG contains the full flyer content (title, intro text, QR code area, and the share URL text) at readable resolution.",
+      "reason": "The new exporter appears to draw some flyer elements (background, icon placeholder, title/subtitle, intro card text) and uses scale=2 for higher resolution, but the diff excerpt does not show rendering of the share URL text and does not show rendering of the QR code area. Because the exporter is manually drawing content rather than capturing the DOM, completeness vs the on-screen flyer cannot be verified from the truncated snippet.",
+      "evidence": [
+        "frontend/src/lib/flyerExport.ts (truncated; shows title/subtitle/intro rendering but not share URL/QR area rendering)"
+      ]
+    },
+    {
+      "id": "REQ-37",
+      "requirement": "Keep all flyer-download user-facing error messages in clear English and update them where needed to reflect the new export flow (including actionable next steps like retrying or using Copy Link), and avoid exposing raw technical exception text.",
+      "reason": "In the auto-export flow, FlyerPage catches errors and displays a toast containing the raw Error.message (`toast.error(`Failed to download flyer: ${errorMessage}`)`), which can leak technical/internal exception text to end users (contrary to the AC). The message also does not consistently provide actionable next steps like using Copy Link.",
+      "evidence": [
+        "frontend/src/pages/FlyerPage.tsx (auto-export catch: toast.error(`Failed to download flyer: ${errorMessage}`))"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Manual canvas re-implementation of flyer visuals (gradient background, icon placeholder, emoji shield) rather than a DOM-to-image capture utility.",
+      "reason": "REQ-35 asks to replace the foreignObject approach with a cross-browser DOM-to-image export. The diff shows a bespoke canvas drawing routine for the flyer layout, which is a materially different approach than DOM-to-image capture (even if it may solve tainting).",
+      "evidence": [
+        "frontend/src/lib/flyerExport.ts (comment: \"pure canvas rendering\"; manual drawing of background/icon/title/etc.)"
+      ]
+    }
+  ],
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/share/FlyerPreview.tsx",
-    "frontend/src/components/share/ShareDialog.tsx",
-    "frontend/src/hooks/useQrCodeCanvas.ts",
-    "frontend/src/lib/qr.ts",
-    "frontend/src/lib/qrCodeGenerator.ts",
-    "frontend/src/lib/qrDownload.ts",
+    "frontend/docs/flyer-download-smoke-test.md",
+    "frontend/src/lib/domToPng.ts",
+    "frontend/src/lib/flyerExport.ts",
     "frontend/src/pages/FlyerPage.tsx",
     "project_state.json"
   ]

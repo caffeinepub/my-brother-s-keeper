@@ -2,7 +2,7 @@ import { forwardRef } from 'react';
 import { Shield } from 'lucide-react';
 
 interface FlyerPreviewProps {
-  qrCanvasRef: React.RefObject<HTMLCanvasElement | null>;
+  qrCanvasRef: (node: HTMLCanvasElement | null) => void;
   shareUrl: string;
   isGenerating: boolean;
   qrError?: string | null;

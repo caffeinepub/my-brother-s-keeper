@@ -2,12 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-make-the-generated-qr-code-standards-compliant-so-that-common-phone-camera-qr-scanners-detect-and-display-the-encoded-app-url-the-canonical-share-url-from-getshareurl-in-both-the-share-dialog-and-the-flyer-page",
-      "featureTitle": "Make the generated QR code standards-compliant so that common phone camera QR scanners detect and display the encoded app URL (the canonical share URL from getShareUrl()), in both the Share dialog and the Flyer page.",
+      "featureId": "feature-replace-the-current-flyer-png-export-implementation-in-frontend-src-lib-flyerexport-ts-to-avoid-the-svg-foreignobject-approach-which-causes-tainted-canvases-may-not-be-exported-on-mobile-and-implement-a-cross-browser-dom-to-image-export-that-works-on-ios-and-android",
+      "featureTitle": "Replace the current flyer PNG export implementation in frontend/src/lib/flyerExport.ts to avoid the SVG <foreignObject> approach (which causes \"Tainted canvases may not be exported\" on mobile) and implement a cross-browser DOM-to-image export that works on iOS and Android.",
       "files": [
-        "frontend/src/components/share/ShareDialog.tsx",
-        "frontend/src/lib/qr.ts",
-        "frontend/src/pages/FlyerPage.tsx"
+        "frontend/src/lib/domToPng.ts",
+        "frontend/src/lib/flyerExport.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -19,17 +18,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-27"
+        "REQ-35"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-qr-rendering-logic-so-qr-generation-is-triggered-reliably-after-the-canvas-element-is-mounted-available-avoiding-cases-where-the-dialog-page-opens-but-the-qr-is-not-generated-or-is-generated-on-a-zero-incorrect-canvas-state",
-      "featureTitle": "Update QR rendering logic so QR generation is triggered reliably after the canvas element is mounted/available, avoiding cases where the dialog/page opens but the QR is not generated or is generated on a zero/incorrect canvas state.",
+      "featureId": "feature-ensure-the-flyer-export-includes-the-rendered-qr-code-reliably-matching-what-the-user-sees-in-the-flyer-preview-and-does-not-depend-on-any-cross-origin-images-fonts-that-can-taint-the-export-canvas",
+      "featureTitle": "Ensure the flyer export includes the rendered QR code reliably (matching what the user sees in the flyer preview), and does not depend on any cross-origin images/fonts that can taint the export canvas.",
       "files": [
-        "frontend/src/components/share/ShareDialog.tsx",
-        "frontend/src/hooks/useQrCodeCanvas.ts",
-        "frontend/src/lib/qrDownload.ts",
+        "frontend/src/lib/flyerExport.ts",
         "frontend/src/pages/FlyerPage.tsx"
       ],
       "components": [
@@ -42,16 +39,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-28"
+        "REQ-36"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-all-share-related-user-facing-error-messages-for-qr-generation-and-qr-downloading-remain-in-english-and-clearly-communicate-what-the-user-should-do-next-wait-retry-or-use-copy-link",
-      "featureTitle": "Ensure all share-related user-facing error messages for QR generation and QR downloading remain in English and clearly communicate what the user should do next (wait, retry, or use Copy Link).",
+      "featureId": "feature-keep-all-flyer-download-user-facing-error-messages-in-clear-english-and-update-them-where-needed-to-reflect-the-new-export-flow-including-actionable-next-steps-like-retrying-or-using-copy-link",
+      "featureTitle": "Keep all flyer-download user-facing error messages in clear English and update them where needed to reflect the new export flow (including actionable next steps like retrying or using Copy Link).",
       "files": [
-        "frontend/src/components/share/FlyerPreview.tsx",
-        "frontend/src/components/share/ShareDialog.tsx",
+        "frontend/src/lib/flyerExport.ts",
         "frontend/src/pages/FlyerPage.tsx"
       ],
       "components": [
@@ -64,7 +60,28 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-29"
+        "REQ-37"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-perform-a-production-smoke-test-pass-specifically-for-flyer-downloading-1-flyer-page-download-flyer-2-share-dialog-download-flyer-auto-export-navigation-verifying-that-downloads-trigger-and-files-are-not-empty-blank",
+      "featureTitle": "Perform a production smoke-test pass specifically for flyer downloading: (1) Flyer page “Download Flyer”, (2) Share dialog “Download Flyer” auto-export navigation, verifying that downloads trigger and files are not empty/blank.",
+      "files": [
+        "frontend/docs/flyer-download-smoke-test.md",
+        "frontend/src/pages/FlyerPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-38"
       ],
       "confidence": "high"
     }

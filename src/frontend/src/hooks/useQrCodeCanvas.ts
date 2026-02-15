@@ -19,7 +19,7 @@ interface UseQrCodeCanvasResult {
 /**
  * Hook to reliably generate a QR code on a canvas element after it's mounted.
  * Handles re-generation on dependency changes and tracks ready/error state.
- * Includes a 2-second safety timeout to prevent indefinite "generating" state.
+ * Includes a 3-second safety timeout to prevent indefinite "generating" state.
  */
 export function useQrCodeCanvas({
   canvas,
@@ -52,15 +52,15 @@ export function useQrCodeCanvas({
     setStatus('generating');
     setQrError(null);
 
-    // Safety timeout: if generation takes more than 2 seconds, mark as error
+    // Safety timeout: if generation takes more than 3 seconds, mark as error
     const safetyTimeout = setTimeout(() => {
       if (!abortController.signal.aborted) {
-        console.error('QR generation timeout after 2 seconds');
+        console.error('QR generation timeout after 3 seconds');
         setQrError('QR code generation timed out');
         setStatus('error');
         abortController.abort();
       }
-    }, 2000);
+    }, 3000);
 
     // Generate QR code
     const generateQR = async () => {

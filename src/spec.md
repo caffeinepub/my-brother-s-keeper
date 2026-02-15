@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Fix flyer PNG exporting so it reliably downloads on mobile (iOS Safari and Android Chrome) without tainted-canvas errors, while preserving the full flyer content including the QR code.
+**Goal:** Make the app’s client-side QR codes standards-compliant and reliably scannable on iOS and Android, and provide clear fallback guidance when scanning doesn’t work.
 
 **Planned changes:**
-- Replace the current flyer PNG export in `frontend/src/lib/flyerExport.ts` to avoid using SVG `<foreignObject>` and use a cross-browser DOM-to-image approach that works on iOS/Android.
-- Ensure the export reliably captures the rendered QR code and avoids/handles any assets (images/fonts) that could taint the canvas.
-- Update flyer-download error messaging to be clear, English, and user-actionable (e.g., retry or use “Copy Link”), without exposing raw browser exception text.
-- Perform a focused production smoke-test pass for both download entry points: the Flyer page “Download Flyer” and the Share dialog auto-export “Download Flyer” flow (verify non-blank PNG output and no regressions to QR/URL/copy-link).
+- Fix QR code generation/rendering in the Share dialog and Flyer page so the encoded content is exactly the canonical URL returned by `getShareUrl()` and is reliably recognized as a tappable URL by common phone camera QR scanners (iOS and Android).
+- Add English user-facing error states and recovery guidance in the Share dialog and Flyer page for cases where the QR code is present but not scannable, prominently directing users to use the displayed App Link / “Copy Link” as a fallback.
+- Ensure the QR area always reaches either a ready state or an actionable error state (no infinite loading), without adding any external QR generation service dependency.
 
-**User-visible outcome:** Tapping “Download Flyer” (from the Flyer page or Share dialog flow) downloads a readable PNG on mobile that includes the full flyer content and QR code, and failures show a friendly English message with next steps.
+**User-visible outcome:** Users can scan QR codes from both the Share dialog and Flyer page with typical iPhone/Android camera QR scanners to see and open the app link, and if scanning fails they are clearly guided to use the App Link / Copy Link instead.

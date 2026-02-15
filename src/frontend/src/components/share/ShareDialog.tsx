@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Copy, Download, Share2, FileText } from 'lucide-react';
+import { Copy, Download, Share2, FileText, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getShareUrl } from '@/lib/shareUrl';
 import { downloadCanvasAsPNG } from '@/lib/qrDownload';
@@ -168,9 +168,13 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
               </div>
             )}
             {qrError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-lg">
-                <div className="text-sm text-destructive px-4 text-center">
-                  QR code unavailable. Use "Copy Link" below.
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-lg p-4 text-center">
+                <AlertCircle className="h-6 w-6 text-destructive mb-2" />
+                <div className="text-sm text-destructive">
+                  QR code unavailable
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Use "Copy Link" below
                 </div>
               </div>
             )}
@@ -180,6 +184,13 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
               style={{ imageRendering: 'pixelated' }}
             />
           </div>
+
+          {/* Scanning tip */}
+          {qrReady && (
+            <div className="w-full bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground text-center">
+              <strong>Tip:</strong> If your camera doesn't recognize the QR code, try adjusting the distance or lighting. You can also use the "Copy Link" button below to share manually.
+            </div>
+          )}
 
           {/* Share URL */}
           <div className="w-full space-y-2">
@@ -201,59 +212,53 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex w-full flex-col gap-2">
-            <Button
-              variant="default"
-              className="w-full"
-              onClick={handleQuickShare}
-              disabled={isSharing || !shareUrl}
-            >
-              <Share2 className="mr-2 h-4 w-4" />
-              {isSharing ? 'Sharing...' : 'Quick Share'}
-            </Button>
-
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={handleDownloadFlyer}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download Flyer
-            </Button>
-            
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleDownloadQR}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download QR
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleCopyLink}
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                Copy Link
-              </Button>
-            </div>
-            
+          {/* Action Buttons */}
+          <div className="w-full grid grid-cols-2 gap-2">
             <Button
               variant="outline"
-              className="w-full"
-              onClick={handleViewFlyer}
+              onClick={handleQuickShare}
+              disabled={isSharing || !shareUrl}
+              className="gap-2"
             >
-              <FileText className="mr-2 h-4 w-4" />
-              View Flyer
+              <Share2 className="h-4 w-4" />
+              {isSharing ? 'Sharing...' : 'Quick Share'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleDownloadQR}
+              disabled={!qrReady}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download QR
             </Button>
           </div>
 
-          <p className="text-xs text-muted-foreground text-center">
-            Share responsibly. This link provides access to the trucker safety network.
-          </p>
+          {/* Flyer Actions */}
+          <div className="w-full pt-2 border-t border-border space-y-2">
+            <p className="text-sm text-muted-foreground text-center">
+              Need a printable flyer?
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="secondary"
+                onClick={handleViewFlyer}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                View Flyer
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleDownloadFlyer}
+                disabled={!qrReady}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download Flyer
+              </Button>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Download, Copy, ArrowLeft } from 'lucide-react';
+import { Download, Copy, ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getShareUrl } from '@/lib/shareUrl';
 import { exportFlyerAsPNG } from '@/lib/flyerExport';
@@ -79,7 +79,7 @@ export default function FlyerPage() {
           setIsExporting(false);
           clearUrlParam('autoExportFlyer');
         }
-      }, 200); // Increased delay for better stability
+      }, 200);
 
       return () => clearTimeout(timer);
     }
@@ -189,9 +189,26 @@ export default function FlyerPage() {
         )}
 
         {qrError && (
-          <p className="text-sm text-destructive text-center">
-            QR code generation failed. You can still copy the link above to share.
-          </p>
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 space-y-2">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              <p className="text-sm font-medium">QR code generation failed</p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              You can still share the app by copying the link above and sending it manually. The QR code is optional for sharing.
+            </p>
+          </div>
+        )}
+
+        {qrReady && (
+          <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
+            <p className="font-medium mb-1">Scanning Tips:</p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>Hold your phone camera 6-12 inches from the QR code</li>
+              <li>Ensure good lighting and avoid glare</li>
+              <li>If scanning doesn't work, use the "Copy Link" button above to share manually</li>
+            </ul>
+          </div>
         )}
       </div>
     </div>

@@ -1,165 +1,101 @@
-# Flyer Download Smoke Test Checklist
+# Flyer Download Smoke Test
 
-This document provides a manual smoke-test checklist for validating flyer download functionality across different browsers and devices.
+Manual production smoke-test checklist for flyer download functionality.
 
-## Test Environment Requirements
-- **Desktop**: Chrome/Edge (latest), Firefox (latest)
-- **Mobile**: Android Chrome, iOS Safari
+## Test Environment
+- [ ] Desktop browser (Chrome/Firefox/Safari)
+- [ ] Mobile browser (iOS Safari/Android Chrome)
 
-## Pre-Test Setup
-1. Deploy the application to a test environment
-2. Ensure you have access to both desktop and mobile devices
-3. Clear browser cache before testing
+## Test 1: Flyer Page Direct Download
 
-## Test Cases
-
-### 1. Manual Download from Flyer Page (/flyer)
-
-**Steps:**
+### Steps:
 1. Navigate to `/flyer` page
-2. Wait for QR code to fully generate (no "Generating..." message)
-3. Verify QR code is visible and not blank
-4. Verify share URL text is displayed below QR code
+2. Wait for QR code to generate (should show "Generating QR code..." then complete)
+3. Verify QR code is visible and clear
+4. Verify share URL is displayed below QR code
 5. Click "Download Flyer" button
-6. Wait for download to complete
+6. Check downloaded PNG file
 
-**Expected Results:**
-- ✅ Download triggers without errors
-- ✅ PNG file is saved to device
-- ✅ Downloaded image contains:
-  - App logo/icon
-  - "My Brother's Keeper" title
-  - Introduction text
-  - Visible QR code (not blank)
-  - Share URL text
-  - Footer text
-- ✅ Image is high resolution (not blurry)
-- ✅ No console errors related to "tainted canvas" or "toBlob"
+### Expected Results:
+- [ ] QR code generates within 3 seconds
+- [ ] QR code is visible and crisp (no blurring)
+- [ ] Share URL matches the current app URL
+- [ ] Download completes successfully
+- [ ] Downloaded PNG is not empty (file size > 50KB)
+- [ ] Downloaded PNG contains QR code, app branding, and URL
+- [ ] **QR code scans successfully with iPhone Camera app and shows tappable URL**
+- [ ] **QR code scans successfully with Android camera QR scanner and shows tappable URL**
 
-**Test on:**
-- [ ] Desktop Chrome
-- [ ] Desktop Firefox
-- [ ] Android Chrome
-- [ ] iOS Safari
+## Test 2: Share Dialog Auto-Export
 
----
+### Steps:
+1. Open Share dialog from header
+2. Wait for QR code to generate
+3. Click "Download Flyer" button in Share dialog
+4. Should navigate to `/flyer` page with auto-export
+5. Check downloaded PNG file
 
-### 2. Auto-Export from Share Dialog
+### Expected Results:
+- [ ] QR code generates in Share dialog
+- [ ] Navigation to `/flyer` page occurs
+- [ ] Auto-export triggers automatically
+- [ ] Download completes within 2 seconds of page load
+- [ ] Downloaded PNG is not empty (file size > 50KB)
+- [ ] Downloaded PNG contains QR code, app branding, and URL
+- [ ] **QR code scans successfully with iPhone Camera app and shows tappable URL**
+- [ ] **QR code scans successfully with Android camera QR scanner and shows tappable URL**
 
-**Steps:**
-1. Navigate to any page with the Share button (e.g., home page)
-2. Click the Share button to open Share Dialog
-3. Click "Download Flyer" button in the dialog
-4. Wait for navigation to `/flyer` page
-5. Wait for auto-download to trigger
+## Test 3: QR Code Scanning Verification
 
-**Expected Results:**
-- ✅ Navigates to `/flyer` page
-- ✅ QR code generates successfully
-- ✅ Download triggers automatically after QR is ready
-- ✅ Success toast appears: "Flyer downloaded successfully"
-- ✅ Downloaded PNG contains all expected content (same as Test Case 1)
-- ✅ No error toasts appear
-- ✅ No console errors
+### Steps:
+1. Download flyer from either method above
+2. Display the downloaded PNG on a computer screen or print it
+3. Use iPhone Camera app to scan the QR code
+4. Use Android camera QR scanner to scan the QR code
+5. Verify the URL appears and is tappable
 
-**Test on:**
-- [ ] Desktop Chrome
-- [ ] Desktop Firefox
-- [ ] Android Chrome
-- [ ] iOS Safari
+### Expected Results:
+- [ ] **iPhone Camera recognizes QR code immediately**
+- [ ] **iPhone Camera shows notification with app URL**
+- [ ] **Tapping notification opens the app URL in Safari**
+- [ ] **Android camera recognizes QR code immediately**
+- [ ] **Android camera shows the app URL**
+- [ ] **Tapping opens the app URL in Chrome/default browser**
+- [ ] **URL matches the canonical share URL from getShareUrl()**
 
----
+## Test 4: Error Handling
 
-### 3. Copy Link Functionality
+### Steps:
+1. Open Share dialog
+2. Immediately click "Download Flyer" before QR generates
+3. Verify error message appears
+4. Wait for QR to generate
+5. Try download again
 
-**Steps:**
-1. Navigate to `/flyer` page
-2. Click the "Copy" button next to the App Link field
-3. Paste the copied link into a new browser tab
+### Expected Results:
+- [ ] Error toast appears with clear message
+- [ ] Error message suggests waiting and trying again
+- [ ] Download succeeds after QR is ready
+- [ ] No infinite loading states
 
-**Expected Results:**
-- ✅ Success toast appears: "Link copied to clipboard"
-- ✅ Pasted link matches the displayed share URL
-- ✅ Link opens the application correctly
+## Test 5: Fallback Guidance
 
-**Test on:**
-- [ ] Desktop Chrome
-- [ ] Desktop Firefox
-- [ ] Android Chrome
-- [ ] iOS Safari
+### Steps:
+1. If QR generation fails (simulate by blocking canvas)
+2. Verify fallback messaging appears
+3. Verify "Copy Link" button is available
+4. Test copying the link manually
 
----
+### Expected Results:
+- [ ] Clear English message explains QR is unavailable
+- [ ] Message suggests using "Copy Link" as fallback
+- [ ] App Link field is visible and copyable
+- [ ] Copy button works correctly
+- [ ] No blame placed on user's device
 
-### 4. Error Handling
-
-**Steps:**
-1. Navigate to `/flyer` page
-2. Immediately click "Download Flyer" before QR code finishes generating
-3. Observe error message
-
-**Expected Results:**
-- ✅ User-friendly error message appears (not technical jargon)
-- ✅ Error message suggests waiting and trying again
-- ✅ No raw exception text visible to user
-- ✅ Console logs technical details for debugging
-
-**Test on:**
-- [ ] Desktop Chrome
-- [ ] Android Chrome
-
----
-
-### 5. Regression Tests
-
-**Steps:**
-1. Navigate to `/flyer` page
-2. Verify all existing functionality still works:
-   - QR code generation
-   - Share URL display
-   - Copy link button
-   - Back button navigation
-
-**Expected Results:**
-- ✅ QR code generates correctly
-- ✅ Share URL is displayed and correct
-- ✅ Copy link works
-- ✅ Back button returns to previous page
-- ✅ No visual regressions (layout, styling)
-
-**Test on:**
-- [ ] Desktop Chrome
-- [ ] Android Chrome
-- [ ] iOS Safari
-
----
-
-## Known Limitations
-- Export quality depends on browser rendering capabilities
-- Some CSS effects (e.g., complex gradients, shadows) may render differently in the exported image
-- Export time may vary based on device performance
-
-## Troubleshooting
-
-### Issue: Download fails with "tainted canvas" error
-**Solution:** This should no longer occur with the new implementation. If it does, check console logs and report the issue.
-
-### Issue: QR code is blank in downloaded image
-**Solution:** Ensure QR code has fully generated before downloading. The download button should be disabled until QR is ready.
-
-### Issue: Download doesn't trigger on mobile
-**Solution:** Check browser console for errors. Ensure browser allows downloads from the site.
-
-### Issue: Image quality is poor
-**Solution:** This is expected on very low-end devices. The export uses 2x scale for better quality.
-
----
-
-## Sign-Off
-
-**Tester Name:** ___________________________
-
-**Date:** ___________________________
-
-**Overall Result:** [ ] Pass [ ] Fail
-
-**Notes:**
+## Notes
+- Test on both desktop and mobile browsers
+- Verify QR codes are scannable in real-world conditions (printed or on-screen)
+- Check file sizes are reasonable (typically 100-300KB)
+- Ensure no console errors during the process
+- Verify all user-facing messages are in English and safety-focused

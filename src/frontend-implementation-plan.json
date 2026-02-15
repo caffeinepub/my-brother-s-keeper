@@ -1,97 +1,70 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix flyer PNG export for mobile (remove foreignObject, ensure QR renders, improve errors)",
+  "title": "Standards-compliant client-side QR codes with scan-failure fallback guidance",
   "requirements": [
     {
-      "id": "REQ-35",
-      "summary": "Replace the flyer PNG export implementation to avoid SVG foreignObject and use a cross-browser DOM-to-image approach that works on iOS/Android.",
+      "id": "REQ-39",
+      "summary": "Make Share dialog and Flyer page QR canvases encode the canonical app URL as a standards-compliant QR that reliably scans on iOS/Android cameras.",
       "acceptanceCriteria": [
-        "Clicking “Download Flyer” on /flyer produces a downloaded PNG file on mobile browsers (Android Chrome and iOS Safari) without throwing a tainted-canvas/toBlob error.",
-        "The export implementation does not use SVG <foreignObject> to render the flyer DOM.",
-        "The exported PNG contains the full flyer content (title, intro text, QR code area, and the share URL text) at readable resolution."
+        "From the Share dialog QR canvas, scanning with an iPhone Camera app shows the encoded app URL and allows tapping to open it.",
+        "From the Flyer page QR canvas, scanning with an iPhone Camera app shows the encoded app URL and allows tapping to open it.",
+        "From the Share dialog QR canvas, scanning with a typical Android camera QR scanner shows the encoded app URL and allows tapping to open it.",
+        "From the Flyer page QR canvas, scanning with a typical Android camera QR scanner shows the encoded app URL and allows tapping to open it.",
+        "The encoded content matches the canonical share URL returned by getShareUrl() (frontend/src/lib/shareUrl.ts).",
+        "The fix applies without reintroducing any dependency on external QR generation services."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/flyerExport.ts",
+          "path": "frontend/src/lib/qrCodeGenerator.ts",
           "operation": "modify",
-          "description": "Replace the current SVG foreignObject-based rendering with a DOM-to-image export that rasterizes the flyer element reliably on iOS/Android (e.g., via html2canvas or equivalent DOM snapshot technique), including high-DPI scaling, background handling, and a safe download trigger (avoid mobile toBlob pitfalls by supporting a fallback download mechanism when needed)."
+          "description": "Replace the current simplified QR implementation with a QR-spec-compliant implementation (proper byte-mode bitstream, version selection by byte capacity, error correction encoding, masking selection, and format information), and render with a reliable quiet zone so the resulting canvas QR is consistently decodable by common iOS/Android camera scanners."
         },
         {
-          "path": "frontend/src/lib/domToPng.ts",
-          "operation": "create",
-          "description": "Add a small utility wrapper for DOM-to-PNG capture used by flyer export (configure scale, background color, and safe defaults; ensure it does not rely on SVG foreignObject)."
+          "path": "frontend/src/hooks/useQrCodeCanvas.ts",
+          "operation": "modify",
+          "description": "Harden canvas rendering for scanner reliability (e.g., ensure crisp module edges by disabling canvas image smoothing and handling devicePixelRatio scaling) and ensure the hook always resolves to either ready or error without lingering generating state when text/canvas changes rapidly."
         },
         {
-          "path": "frontend/package.json",
-          "operation": "create",
-          "description": "Add/declare the required client-side DOM snapshot dependency used by the new exporter (e.g., html2canvas or another cross-browser DOM renderer) and ensure it is available to the frontend build."
-        }
-      ]
-    },
-    {
-      "id": "REQ-36",
-      "summary": "Ensure flyer export reliably includes the rendered QR code and avoids cross-origin assets that can taint the export canvas.",
-      "acceptanceCriteria": [
-        "The exported flyer PNG includes a visible QR code (not blank, not missing).",
-        "Export succeeds even when triggered via the Share dialog “Download Flyer” (auto-export flow) and when triggered directly from the Flyer page.",
-        "If any asset would cause tainting, the exporter either inlines it safely or excludes/replaces it so export still succeeds (no taint error)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/flyerExport.ts",
+          "path": "frontend/src/components/share/ShareDialog.tsx",
           "operation": "modify",
-          "description": "Update export flow to clone/sanitize the flyer DOM before capture: inline/replace the on-screen QR canvas with an inlined data URL image derived from the existing QR canvas (so exported output matches preview), and apply a taint-avoidance strategy for any potentially cross-origin assets (e.g., exclude/replace external images, prefer system fonts, avoid loading remote resources during capture)."
+          "description": "Ensure QR generation always uses the exact canonical URL from getShareUrl() as the encoded payload (no extra whitespace/formatting), and adjust QR rendering props (size/margin) as needed to align with the updated standards-compliant generator."
         },
         {
           "path": "frontend/src/pages/FlyerPage.tsx",
           "operation": "modify",
-          "description": "Tighten readiness gating for both manual download and auto-export (Share dialog navigation): wait for qrReady plus next-frame/layout stability before calling export, and ensure the same exporter is used for both flows."
+          "description": "Ensure the Flyer page QR generation uses the exact canonical URL from getShareUrl() as the encoded payload and align QR rendering props (size/margin) with the updated generator so exported/onscreen QR remains reliably scannable."
+        },
+        {
+          "path": "frontend/docs/flyer-download-smoke-test.md",
+          "operation": "modify",
+          "description": "Extend the manual smoke-test checklist to include QR scan verification on iOS Camera and a typical Android camera QR scanner for both Share dialog QR and Flyer page QR, confirming it appears as a tappable URL and matches the displayed App Link."
+        }
+      ]
+    },
+    {
+      "id": "REQ-40",
+      "summary": "Add clear English guidance and an obvious App Link fallback when QR is present but not scannable, without blaming the user’s phone and without introducing infinite loading.",
+      "acceptanceCriteria": [
+        "If QR generation fails or produces an unusable result, the UI provides an English message that recommends using “Copy Link” / the App Link field as the fallback.",
+        "All new/updated messages in ShareDialog.tsx and FlyerPage.tsx remain in English and match the app’s existing safety-focused tone.",
+        "No infinite loading state is introduced; the QR area must either reach a ready state or show an actionable error state."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/share/ShareDialog.tsx",
+          "operation": "modify",
+          "description": "Update the QR area overlay and any toast/error text to provide clear, safety-focused English recovery guidance (e.g., suggest using the App Link field and the “Copy Link” action), and add a neutral tip for when the QR is visible but the camera doesn’t recognize it (without implying the user’s phone is at fault)."
+        },
+        {
+          "path": "frontend/src/pages/FlyerPage.tsx",
+          "operation": "modify",
+          "description": "Adjust on-page QR status messaging to include an actionable fallback path (use the App Link + copy button) for both generation failures and “QR visible but not recognized” scenarios, while ensuring the QR section never remains in an indefinite generating state."
         },
         {
           "path": "frontend/src/components/share/FlyerPreview.tsx",
           "operation": "modify",
-          "description": "Ensure the flyer preview markup is export-friendly: avoid introducing any cross-origin images/fonts in the flyer content and keep QR area predictable for the exporter (e.g., stable container sizing)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-37",
-      "summary": "Update flyer download failure messages to be clear English with actionable next steps, without raw technical exception text.",
-      "acceptanceCriteria": [
-        "When flyer download fails for any reason, the user sees an English toast/message that clearly indicates what happened and what to do next (e.g., wait and retry, or use “Copy Link”).",
-        "No raw/technical browser exception text (e.g., “foreignObject”, “tainted canvases”) is shown directly to end users unless it is wrapped with a friendly explanation."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/FlyerPage.tsx",
-          "operation": "modify",
-          "description": "Replace current flyer download error toasts to avoid dumping raw exception messages; map known failure types (not ready, capture failed, download blocked) to friendly English text with next steps (retry, wait for QR, or use Copy Link)."
-        },
-        {
-          "path": "frontend/src/lib/flyerExport.ts",
-          "operation": "modify",
-          "description": "Normalize/translate low-level export errors into user-safe Error messages (English) so UI can show consistent, non-technical copy while still logging the raw error to console for debugging."
-        }
-      ]
-    },
-    {
-      "id": "REQ-38",
-      "summary": "Add a production smoke-test checklist for flyer downloading (Flyer page and Share dialog auto-export) to validate downloads are non-blank and no regressions occur.",
-      "acceptanceCriteria": [
-        "Manual verification checklist is completed: Flyer downloads correctly from /flyer and from the Share dialog auto-export flow.",
-        "No regression to QR generation, share URL display, or copy-link behavior on the flyer page."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/docs/flyer-download-smoke-test.md",
-          "operation": "create",
-          "description": "Add a concise manual production smoke-test checklist covering: (1) /flyer “Download Flyer”, (2) Share dialog “Download Flyer” auto-export navigation, plus validations for QR visibility, share URL text presence, and non-empty PNG output on Android Chrome and iOS Safari."
-        },
-        {
-          "path": "frontend/src/pages/FlyerPage.tsx",
-          "operation": "modify",
-          "description": "Add lightweight developer-facing console logs (non-user-facing) around auto-export and manual export start/success/failure to support the documented smoke-test steps and troubleshooting without exposing technical details in toasts."
+          "description": "Enhance the Flyer preview’s QR overlay text to include concise, English fallback guidance (e.g., “If scanning doesn’t work, use the link shown below”) while preserving the existing flyer layout and tone."
         }
       ]
     }

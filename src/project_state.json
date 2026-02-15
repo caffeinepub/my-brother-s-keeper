@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 23,
+  "projectStateVersion": 25,
   "summary": "Build “My Brother’s Keeper”: a safety-focused app for truck drivers to share routes, find trusted/safe places (hotels, restaurants, shops, gas stations, mechanics), submit/view community locations, and manage emergency info (next of kin/health) with an SOS location snapshot and SOS card screen. Includes subscriber identity + trucking license upload for admin review; fees not included in v1.",
   "architectural_notes": [
     "Emergency location in v1 is a one-time SOS location snapshot, not continuous live tracking.",
@@ -13,7 +13,8 @@
     "Share dialog QR code/link area appears blank and QR is not scannable (camera focuses but no link is detected).",
     "Downloading from the Share dialog produces no visible result (no file downloaded).",
     "Root cause identified for blank/unscannable QR: custom QR generator initializes module grid with false instead of null, causing placement/drawing logic to skip all modules and leave canvas empty; needs fix so QR renders/scans reliably.",
-    "Flyer export/download fails with \"Failed to execute 'toBlob' on 'HTMLCanvasElement': Tainted canvases may not be exported\" due to current SVG <foreignObject>-based exporter; needs replacement with a non-tainting, cross-browser export method (especially for mobile)."
+    "Flyer export/download fails with \"Failed to execute 'toBlob' on 'HTMLCanvasElement': Tainted canvases may not be exported\" due to current SVG <foreignObject>-based exporter; needs replacement with a non-tainting, cross-browser export method (especially for mobile).",
+    "QR code now appears visually, but phone cameras do not recognize it as a link (QR is not scannable/decodable despite being rendered)."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -318,6 +319,22 @@
       "title": "Perform a production smoke-test pass specifically for flyer downloading: (1) Flyer page “Download Flyer”, (2) Share dialog “Download Flyer” auto-export navigation, verifying that downloads trigger and files are not empty/blank.",
       "reqIds": [
         "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-client-side-qr-code-generation-so-that-the-qr-codes-rendered-in-the-share-dialog-and-flyer-page-are-standards-compliant-and-reliably-scannable-decodable-by-common-phone-camera-qr-scanners-ios-and-android-showing-the-encoded-app-link-as-a-tappable-url",
+      "title": "Fix the client-side QR code generation so that the QR codes rendered in the Share dialog and Flyer page are standards-compliant and reliably scannable/decodable by common phone camera QR scanners (iOS and Android), showing the encoded app link as a tappable URL.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-clear-english-user-facing-error-handling-and-recovery-guidance-specifically-for-the-case-where-a-qr-code-is-rendered-but-cannot-be-scanned-including-an-obvious-fallback-path-to-share-via-the-displayed-app-link-copy-share-without-implying-the-user-s-phone-is-at-fault",
+      "title": "Add clear, English, user-facing error handling and recovery guidance specifically for the case where a QR code is rendered but cannot be scanned, including an obvious fallback path to share via the displayed App Link (copy/share) without implying the user’s phone is at fault.",
+      "reqIds": [
+        "REQ-40"
       ],
       "version": 1
     }

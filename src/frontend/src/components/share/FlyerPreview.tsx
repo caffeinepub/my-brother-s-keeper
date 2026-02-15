@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { Shield } from 'lucide-react';
+import { Shield, AlertCircle } from 'lucide-react';
 
 interface FlyerPreviewProps {
   qrCanvasRef: (node: HTMLCanvasElement | null) => void;
@@ -66,9 +66,13 @@ const FlyerPreview = forwardRef<HTMLDivElement, FlyerPreviewProps>(
                 </div>
               )}
               {qrError && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-xl">
-                  <div className="text-sm text-destructive px-4 text-center">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-xl p-4 text-center">
+                  <AlertCircle className="h-6 w-6 text-destructive mb-2" />
+                  <div className="text-sm text-destructive">
                     QR code unavailable
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Use the link below
                   </div>
                 </div>
               )}
@@ -88,6 +92,11 @@ const FlyerPreview = forwardRef<HTMLDivElement, FlyerPreviewProps>(
             <p className="font-mono text-sm md:text-base font-semibold text-primary break-all px-4">
               {shareUrl}
             </p>
+          </div>
+
+          {/* Scanning tip */}
+          <div className="text-center text-xs text-muted-foreground max-w-md mx-auto">
+            <strong>Tip:</strong> If scanning doesn't work, copy the link above and share it directly.
           </div>
         </div>
 

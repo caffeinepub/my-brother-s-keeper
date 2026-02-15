@@ -1,11 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Make the app’s client-side QR codes standards-compliant and reliably scannable on iOS and Android, and provide clear fallback guidance when scanning doesn’t work.
+**Goal:** Temporarily remove/disable QR code functionality from the Share dialog and Flyer flow while keeping link sharing and downloads working.
 
 **Planned changes:**
-- Fix QR code generation/rendering in the Share dialog and Flyer page so the encoded content is exactly the canonical URL returned by `getShareUrl()` and is reliably recognized as a tappable URL by common phone camera QR scanners (iOS and Android).
-- Add English user-facing error states and recovery guidance in the Share dialog and Flyer page for cases where the QR code is present but not scannable, prominently directing users to use the displayed App Link / “Copy Link” as a fallback.
-- Ensure the QR area always reaches either a ready state or an actionable error state (no infinite loading), without adding any external QR generation service dependency.
+- Update the Share dialog to remove QR canvas rendering and QR generation hook usage, remove/disable the “Download QR” action, and revise helper text to reference sharing via the app link (no QR scanning references).
+- Update the Flyer page to remove QR generation/rendering and related UI states, ensure the preview still shows the share URL, and adjust flyer export so “Download Flyer” (including auto-export via `autoExportFlyer=1`) produces a non-empty PNG without requiring any QR canvas/state.
 
-**User-visible outcome:** Users can scan QR codes from both the Share dialog and Flyer page with typical iPhone/Android camera QR scanners to see and open the app link, and if scanning fails they are clearly guided to use the App Link / Copy Link instead.
+**User-visible outcome:** Users can share via the app link (copy/quick share) and download a flyer PNG that includes branding and the share URL, with no QR code shown or referenced anywhere in Share or Flyer screens.

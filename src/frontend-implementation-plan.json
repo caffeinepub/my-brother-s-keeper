@@ -1,70 +1,56 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Standards-compliant client-side QR codes with scan-failure fallback guidance",
+  "title": "Temporarily disable QR code in Share dialog and Flyer flows while preserving link sharing and downloads",
   "requirements": [
     {
-      "id": "REQ-39",
-      "summary": "Make Share dialog and Flyer page QR canvases encode the canonical app URL as a standards-compliant QR that reliably scans on iOS/Android cameras.",
+      "id": "REQ-1",
+      "summary": "Remove QR canvas generation/rendering and QR download action from the Share dialog while keeping App Link display, Copy Link, and Quick Share unchanged, and update user-facing text to reference sharing via the app link.",
       "acceptanceCriteria": [
-        "From the Share dialog QR canvas, scanning with an iPhone Camera app shows the encoded app URL and allows tapping to open it.",
-        "From the Flyer page QR canvas, scanning with an iPhone Camera app shows the encoded app URL and allows tapping to open it.",
-        "From the Share dialog QR canvas, scanning with a typical Android camera QR scanner shows the encoded app URL and allows tapping to open it.",
-        "From the Flyer page QR canvas, scanning with a typical Android camera QR scanner shows the encoded app URL and allows tapping to open it.",
-        "The encoded content matches the canonical share URL returned by getShareUrl() (frontend/src/lib/shareUrl.ts).",
-        "The fix applies without reintroducing any dependency on external QR generation services."
+        "Opening the Share dialog no longer shows a QR canvas or any “Generating QR code…” / QR error overlay states.",
+        "The Share dialog still shows the App Link field populated with the canonical share URL and allows the user to copy it.",
+        "Quick Share still works as before (including existing error handling) and remains enabled when a share URL exists.",
+        "There is no “Download QR” button/action available in the Share dialog (removed or clearly disabled with no QR dependency).",
+        "All Share dialog user-facing text is in English and does not reference scanning a QR code."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/qrCodeGenerator.ts",
-          "operation": "modify",
-          "description": "Replace the current simplified QR implementation with a QR-spec-compliant implementation (proper byte-mode bitstream, version selection by byte capacity, error correction encoding, masking selection, and format information), and render with a reliable quiet zone so the resulting canvas QR is consistently decodable by common iOS/Android camera scanners."
-        },
-        {
-          "path": "frontend/src/hooks/useQrCodeCanvas.ts",
-          "operation": "modify",
-          "description": "Harden canvas rendering for scanner reliability (e.g., ensure crisp module edges by disabling canvas image smoothing and handling devicePixelRatio scaling) and ensure the hook always resolves to either ready or error without lingering generating state when text/canvas changes rapidly."
-        },
-        {
           "path": "frontend/src/components/share/ShareDialog.tsx",
           "operation": "modify",
-          "description": "Ensure QR generation always uses the exact canonical URL from getShareUrl() as the encoded payload (no extra whitespace/formatting), and adjust QR rendering props (size/margin) as needed to align with the updated standards-compliant generator."
-        },
-        {
-          "path": "frontend/src/pages/FlyerPage.tsx",
-          "operation": "modify",
-          "description": "Ensure the Flyer page QR generation uses the exact canonical URL from getShareUrl() as the encoded payload and align QR rendering props (size/margin) with the updated generator so exported/onscreen QR remains reliably scannable."
-        },
-        {
-          "path": "frontend/docs/flyer-download-smoke-test.md",
-          "operation": "modify",
-          "description": "Extend the manual smoke-test checklist to include QR scan verification on iOS Camera and a typical Android camera QR scanner for both Share dialog QR and Flyer page QR, confirming it appears as a tappable URL and matches the displayed App Link."
+          "description": "Remove QR-related imports/state (useQrCodeCanvas, canvas ref/state, qrReady/qrError/status), remove QR canvas block and generating/error overlays, remove scanning tip copy, and remove the “Download QR” button/action. Update dialog description/tip text to direct users to share via the App Link. Ensure “Download Flyer” is no longer gated on QR readiness and remains enabled when a share URL exists; keep Copy Link + Quick Share behavior and existing error handling intact. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-40",
-      "summary": "Add clear English guidance and an obvious App Link fallback when QR is present but not scannable, without blaming the user’s phone and without introducing infinite loading.",
+      "id": "REQ-2",
+      "summary": "Remove QR generation/rendering from the Flyer page and preview while keeping the flyer preview readable and the flyer PNG export (including branding and share URL) working without QR readiness gating, including auto-export behavior.",
       "acceptanceCriteria": [
-        "If QR generation fails or produces an unusable result, the UI provides an English message that recommends using “Copy Link” / the App Link field as the fallback.",
-        "All new/updated messages in ShareDialog.tsx and FlyerPage.tsx remain in English and match the app’s existing safety-focused tone.",
-        "No infinite loading state is introduced; the QR area must either reach a ready state or show an actionable error state."
+        "The Flyer page no longer attempts to generate a QR code and no longer displays QR-specific UI (canvas, generating state, QR error state, scanning tips).",
+        "The flyer preview still displays the share URL clearly.",
+        "“Download Flyer” works without waiting for any QR-ready state and produces a non-empty PNG download.",
+        "Auto-export download (navigation to /flyer with autoExportFlyer=1) completes without requiring a QR canvas and clears the URL parameter afterward as it does today.",
+        "All flyer-related user-facing text is in English and does not instruct users to scan a QR code."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/share/ShareDialog.tsx",
-          "operation": "modify",
-          "description": "Update the QR area overlay and any toast/error text to provide clear, safety-focused English recovery guidance (e.g., suggest using the App Link field and the “Copy Link” action), and add a neutral tip for when the QR is visible but the camera doesn’t recognize it (without implying the user’s phone is at fault)."
-        },
-        {
           "path": "frontend/src/pages/FlyerPage.tsx",
           "operation": "modify",
-          "description": "Adjust on-page QR status messaging to include an actionable fallback path (use the App Link + copy button) for both generation failures and “QR visible but not recognized” scenarios, while ensuring the QR section never remains in an indefinite generating state."
+          "description": "Remove QR canvas ref/state and useQrCodeCanvas usage, eliminate qrReady/generating/error gating and any QR-related toasts/UI. Update manual download and auto-export logic to export as soon as the flyer ref + shareUrl are available (no QR dependency), and keep clearing autoExportFlyer afterward. Ensure the preview still shows the share URL and the download produces a non-empty PNG. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/components/share/FlyerPreview.tsx",
           "operation": "modify",
-          "description": "Enhance the Flyer preview’s QR overlay text to include concise, English fallback guidance (e.g., “If scanning doesn’t work, use the link shown below”) while preserving the existing flyer layout and tone."
+          "description": "Remove the QR section entirely (canvas, generating overlay, error overlay, scan-to-join headings, scanning tips). Update props to no longer require qrCanvasRef/isGenerating/qrError, and ensure the preview continues to present app branding and the share URL clearly in the layout. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/lib/flyerExport.ts",
+          "operation": "modify",
+          "description": "Adjust flyer export implementation to no longer require a QR canvas and to not render any QR-related text/graphics. Update the export function signature and rendering to include app branding plus the provided share URL text in the exported PNG. Ensure export still produces a non-empty PNG and maintains existing user-friendly error handling. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/docs/flyer-download-smoke-test.md",
+          "operation": "modify",
+          "description": "Update the manual smoke-test checklist to remove QR-generation and QR-scanning expectations, and replace with checks for share URL visibility, successful manual download, and successful auto-export (autoExportFlyer=1) producing a non-empty PNG with branding + URL. Verify the component's usage instructions before implementing."
         }
       ]
     }

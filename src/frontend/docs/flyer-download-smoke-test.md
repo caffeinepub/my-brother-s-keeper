@@ -10,92 +10,81 @@ Manual production smoke-test checklist for flyer download functionality.
 
 ### Steps:
 1. Navigate to `/flyer` page
-2. Wait for QR code to generate (should show "Generating QR code..." then complete)
-3. Verify QR code is visible and clear
-4. Verify share URL is displayed below QR code
-5. Click "Download Flyer" button
-6. Check downloaded PNG file
+2. Verify share URL is displayed
+3. Verify flyer preview shows app branding and URL
+4. Click "Download Flyer" button
+5. Check downloaded PNG file
 
 ### Expected Results:
-- [ ] QR code generates within 3 seconds
-- [ ] QR code is visible and crisp (no blurring)
 - [ ] Share URL matches the current app URL
+- [ ] Flyer preview displays correctly with branding
 - [ ] Download completes successfully
 - [ ] Downloaded PNG is not empty (file size > 50KB)
-- [ ] Downloaded PNG contains QR code, app branding, and URL
-- [ ] **QR code scans successfully with iPhone Camera app and shows tappable URL**
-- [ ] **QR code scans successfully with Android camera QR scanner and shows tappable URL**
+- [ ] Downloaded PNG contains app branding and URL
 
 ## Test 2: Share Dialog Auto-Export
 
 ### Steps:
 1. Open Share dialog from header
-2. Wait for QR code to generate
-3. Click "Download Flyer" button in Share dialog
-4. Should navigate to `/flyer` page with auto-export
-5. Check downloaded PNG file
+2. Click "Download Flyer" button in Share dialog
+3. Should navigate to `/flyer` page with auto-export
+4. Check downloaded PNG file
 
 ### Expected Results:
-- [ ] QR code generates in Share dialog
 - [ ] Navigation to `/flyer` page occurs
 - [ ] Auto-export triggers automatically
 - [ ] Download completes within 2 seconds of page load
 - [ ] Downloaded PNG is not empty (file size > 50KB)
-- [ ] Downloaded PNG contains QR code, app branding, and URL
-- [ ] **QR code scans successfully with iPhone Camera app and shows tappable URL**
-- [ ] **QR code scans successfully with Android camera QR scanner and shows tappable URL**
+- [ ] Downloaded PNG contains app branding and URL
 
-## Test 3: QR Code Scanning Verification
+## Test 3: Link Sharing Verification
 
 ### Steps:
-1. Download flyer from either method above
-2. Display the downloaded PNG on a computer screen or print it
-3. Use iPhone Camera app to scan the QR code
-4. Use Android camera QR scanner to scan the QR code
-5. Verify the URL appears and is tappable
+1. Open Share dialog
+2. Verify App Link field shows the correct URL
+3. Click "Copy Link" button
+4. Paste the link in a browser
+5. Verify the app loads correctly
 
 ### Expected Results:
-- [ ] **iPhone Camera recognizes QR code immediately**
-- [ ] **iPhone Camera shows notification with app URL**
-- [ ] **Tapping notification opens the app URL in Safari**
-- [ ] **Android camera recognizes QR code immediately**
-- [ ] **Android camera shows the app URL**
-- [ ] **Tapping opens the app URL in Chrome/default browser**
-- [ ] **URL matches the canonical share URL from getShareUrl()**
+- [ ] App Link field displays the full, correct URL
+- [ ] Copy Link button successfully copies to clipboard
+- [ ] Pasted link opens the app correctly
+- [ ] URL matches the canonical share URL from getShareUrl()
 
 ## Test 4: Error Handling
 
 ### Steps:
 1. Open Share dialog
-2. Immediately click "Download Flyer" before QR generates
-3. Verify error message appears
-4. Wait for QR to generate
+2. Immediately click "Download Flyer" before page fully loads
+3. Verify error message appears if needed
+4. Wait for page to load
 5. Try download again
 
 ### Expected Results:
-- [ ] Error toast appears with clear message
+- [ ] Error toast appears with clear message if download fails
 - [ ] Error message suggests waiting and trying again
-- [ ] Download succeeds after QR is ready
+- [ ] Download succeeds after page is ready
 - [ ] No infinite loading states
 
-## Test 5: Fallback Guidance
+## Test 5: Quick Share Functionality
 
 ### Steps:
-1. If QR generation fails (simulate by blocking canvas)
-2. Verify fallback messaging appears
-3. Verify "Copy Link" button is available
-4. Test copying the link manually
+1. Open Share dialog
+2. Click "Quick Share" button
+3. Test on mobile device with native share support
+4. Test on desktop without native share support
 
 ### Expected Results:
-- [ ] Clear English message explains QR is unavailable
-- [ ] Message suggests using "Copy Link" as fallback
-- [ ] App Link field is visible and copyable
-- [ ] Copy button works correctly
-- [ ] No blame placed on user's device
+- [ ] Quick Share opens native share sheet on mobile
+- [ ] Quick Share falls back to clipboard copy on desktop
+- [ ] Clear success/error messages appear
+- [ ] App Link field remains available as fallback
 
 ## Notes
 - Test on both desktop and mobile browsers
-- Verify QR codes are scannable in real-world conditions (printed or on-screen)
+- Verify flyer downloads are readable and contain all necessary information
 - Check file sizes are reasonable (typically 100-300KB)
 - Ensure no console errors during the process
 - Verify all user-facing messages are in English and safety-focused
+- QR code functionality has been temporarily removed and will be revisited later

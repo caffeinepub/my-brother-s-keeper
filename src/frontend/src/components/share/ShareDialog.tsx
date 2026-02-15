@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,13 +8,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Copy, Download, Share2, FileText, AlertCircle } from 'lucide-react';
+import { Copy, Download, Share2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { getShareUrl } from '@/lib/shareUrl';
-import { downloadCanvasAsPNG } from '@/lib/qrDownload';
 import { quickShare } from '@/lib/quickShare';
 import { useNavigate } from '@tanstack/react-router';
-import { useQrCodeCanvas } from '@/hooks/useQrCodeCanvas';
 import { copyToClipboard } from '@/lib/clipboard';
 
 interface ShareDialogProps {
@@ -25,39 +23,15 @@ interface ShareDialogProps {
 export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
   const [shareUrl, setShareUrl] = useState('');
   const [isSharing, setIsSharing] = useState(false);
-  const [canvasElement, setCanvasElement] = useState<HTMLCanvasElement | null>(null);
   const navigate = useNavigate();
-
-  // Callback ref to capture canvas element when it mounts
-  const canvasRef = useCallback((node: HTMLCanvasElement | null) => {
-    setCanvasElement(node);
-  }, []);
 
   // Set share URL when dialog opens
   useEffect(() => {
     if (open) {
       const url = getShareUrl();
       setShareUrl(url);
-    } else {
-      // Reset canvas when dialog closes
-      setCanvasElement(null);
     }
   }, [open]);
-
-  // Generate QR code using the hook with mount-aware canvas
-  const { qrReady, qrError, status } = useQrCodeCanvas({
-    canvas: open ? canvasElement : null,
-    text: shareUrl,
-    size: 256,
-    margin: 4,
-  });
-
-  // Show error toast if QR generation fails
-  useEffect(() => {
-    if (qrError) {
-      toast.error('Failed to generate QR code. You can still copy the link below.');
-    }
-  }, [qrError]);
 
   const handleCopyLink = async () => {
     const success = await copyToClipboard(shareUrl);
@@ -108,43 +82,15 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
     }
   };
 
-  const handleDownloadQR = async () => {
-    if (!canvasElement) {
-      toast.error('QR code not ready. Please wait a moment and try again.');
-      return;
-    }
-
-    if (!qrReady) {
-      toast.error('QR code is still generating. Please wait a moment and try again.');
-      return;
-    }
-
-    try {
-      await downloadCanvasAsPNG(canvasElement, 'my-brothers-keeper-qr.png');
-      toast.success('QR code downloaded');
-    } catch (error) {
-      console.error('Download error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Failed to download QR code: ${errorMessage}`);
-    }
-  };
-
   const handleViewFlyer = () => {
     onOpenChange(false);
     navigate({ to: '/flyer' });
   };
 
   const handleDownloadFlyer = () => {
-    if (!qrReady) {
-      toast.error('Please wait for QR code to finish generating, then try again.');
-      return;
-    }
-    
     onOpenChange(false);
     navigate({ to: '/flyer', search: { autoExportFlyer: '1' } });
   };
-
-  const isGenerating = status === 'generating';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -155,43 +101,11 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
             Share App
           </DialogTitle>
           <DialogDescription>
-            Share this app with drivers and subscribers. Scan the QR code or copy the link below.
+            Share this app with drivers and subscribers using the link below.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col items-center gap-6 py-4">
-          {/* QR Code */}
-          <div className="relative flex items-center justify-center rounded-lg border-2 border-border bg-white p-4">
-            {isGenerating && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-lg">
-                <div className="text-sm text-muted-foreground">Generating QR code...</div>
-              </div>
-            )}
-            {qrError && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-lg p-4 text-center">
-                <AlertCircle className="h-6 w-6 text-destructive mb-2" />
-                <div className="text-sm text-destructive">
-                  QR code unavailable
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Use "Copy Link" below
-                </div>
-              </div>
-            )}
-            <canvas
-              ref={canvasRef}
-              className="max-w-full"
-              style={{ imageRendering: 'pixelated' }}
-            />
-          </div>
-
-          {/* Scanning tip */}
-          {qrReady && (
-            <div className="w-full bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground text-center">
-              <strong>Tip:</strong> If your camera doesn't recognize the QR code, try adjusting the distance or lighting. You can also use the "Copy Link" button below to share manually.
-            </div>
-          )}
-
+        <div className="flex flex-col gap-6 py-4">
           {/* Share URL */}
           <div className="w-full space-y-2">
             <label className="text-sm font-medium">App Link</label>
@@ -213,24 +127,15 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
           </div>
 
           {/* Action Buttons */}
-          <div className="w-full grid grid-cols-2 gap-2">
+          <div className="w-full">
             <Button
               variant="outline"
               onClick={handleQuickShare}
               disabled={isSharing || !shareUrl}
-              className="gap-2"
+              className="w-full gap-2"
             >
               <Share2 className="h-4 w-4" />
               {isSharing ? 'Sharing...' : 'Quick Share'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleDownloadQR}
-              disabled={!qrReady}
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download QR
             </Button>
           </div>
 
@@ -251,7 +156,7 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
               <Button
                 variant="secondary"
                 onClick={handleDownloadFlyer}
-                disabled={!qrReady}
+                disabled={!shareUrl}
                 className="gap-2"
               >
                 <Download className="h-4 w-4" />

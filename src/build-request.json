@@ -1,60 +1,70 @@
 {
   "kind": "build_request",
-  "title": "Fix QR codes so phone cameras recognize and open the app link",
-  "priority": "high",
+  "title": "Temporarily remove QR code from Share and Flyer flows (keep link sharing)",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-39",
-      "text": "Fix the client-side QR code generation so that the QR codes rendered in the Share dialog and Flyer page are standards-compliant and reliably scannable/decodable by common phone camera QR scanners (iOS and Android), showing the encoded app link as a tappable URL.",
+      "id": "REQ-1",
+      "text": "Update the Share dialog to temporarily remove/disable the QR code feature while keeping the rest of the dialog functionality unchanged (App Link display, Copy Link, and Quick Share). Specifically: remove QR canvas rendering and the QR generation hook usage; remove or disable the “Download QR” action; and update the dialog description/tip text so it no longer instructs users to scan a QR code and instead directs them to share via the app link.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-1"
         ],
         "quotes": [
-          "When I point the camera towards it nothing pops up for a link on the phones screen but the QR code is present."
+          "The QR code isn't working. I have tried it a couple times. I like everything else. If it isn't going to work right now we can remove it and try it again at a later date, correct?"
         ]
       },
       "acceptanceCriteria": [
-        "From the Share dialog QR canvas, scanning with an iPhone Camera app shows the encoded app URL and allows tapping to open it.",
-        "From the Flyer page QR canvas, scanning with an iPhone Camera app shows the encoded app URL and allows tapping to open it.",
-        "From the Share dialog QR canvas, scanning with a typical Android camera QR scanner shows the encoded app URL and allows tapping to open it.",
-        "From the Flyer page QR canvas, scanning with a typical Android camera QR scanner shows the encoded app URL and allows tapping to open it.",
-        "The encoded content matches the canonical share URL returned by getShareUrl() (frontend/src/lib/shareUrl.ts).",
-        "The fix applies without reintroducing any dependency on external QR generation services."
+        "Opening the Share dialog no longer shows a QR canvas or any “Generating QR code…” / QR error overlay states.",
+        "The Share dialog still shows the App Link field populated with the canonical share URL and allows the user to copy it.",
+        "Quick Share still works as before (including existing error handling) and remains enabled when a share URL exists.",
+        "There is no “Download QR” button/action available in the Share dialog (removed or clearly disabled with no QR dependency).",
+        "All Share dialog user-facing text is in English and does not reference scanning a QR code."
       ]
     },
     {
-      "id": "REQ-40",
-      "text": "Add clear, English, user-facing error handling and recovery guidance specifically for the case where a QR code is rendered but cannot be scanned, including an obvious fallback path to share via the displayed App Link (copy/share) without implying the user’s phone is at fault.",
+      "id": "REQ-2",
+      "text": "Update the Flyer experience to temporarily remove/disable QR code generation and rendering, while keeping the flyer page usable and downloadable. Specifically: remove the QR canvas from the flyer preview UI, remove QR generation state handling (ready/generating/error gating), and adjust the flyer export implementation so it can export a flyer PNG without requiring a QR canvas (the exported flyer should still include the app title/branding and the share URL).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-1"
         ],
         "quotes": [
-          "When I point the camera towards it nothing pops up for a link on the phones screen but the QR code is present."
+          "If it isn't going to work right now we can remove it and try it again at a later date, correct?"
         ]
       },
       "acceptanceCriteria": [
-        "If QR generation fails or produces an unusable result, the UI provides an English message that recommends using “Copy Link” / the App Link field as the fallback.",
-        "All new/updated messages in ShareDialog.tsx and FlyerPage.tsx remain in English and match the app’s existing safety-focused tone.",
-        "No infinite loading state is introduced; the QR area must either reach a ready state or show an actionable error state."
+        "The Flyer page no longer attempts to generate a QR code and no longer displays QR-specific UI (canvas, generating state, QR error state, scanning tips).",
+        "The flyer preview still displays the share URL clearly.",
+        "“Download Flyer” works without waiting for any QR-ready state and produces a non-empty PNG download.",
+        "Auto-export download (navigation to /flyer with autoExportFlyer=1) completes without requiring a QR canvas and clears the URL parameter afterward as it does today.",
+        "All flyer-related user-facing text is in English and does not instruct users to scan a QR code."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/components/ui (read-only).",
-    "Keep all QR generation fully client-side (no external QR server/API).",
-    "Use English for any new or updated user-facing text."
+    "Do not modify any frontend files under frontend/src/components/ui or any paths listed in SYSTEM_CONTEXT.frontend.immutablePaths.",
+    "Do not add new backend services or external dependencies; keep the application on the existing stack."
   ],
   "nonGoals": [
-    "Backend/canister changes.",
-    "Adding live tracking or any new sharing destinations beyond fixing QR scannability.",
-    "Changing the canonical share URL behavior beyond ensuring the QR encodes getShareUrl() output."
+    "Do not fix or improve the QR code generator/encoding behavior in this change (QR will be revisited later).",
+    "Do not change backend canister logic or data schemas as part of this QR removal.",
+    "Do not redesign unrelated parts of the app; only adjust Share/Flyer content as needed to remove QR references."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

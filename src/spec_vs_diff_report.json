@@ -1,38 +1,34 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-15T02:41:10.331Z",
-  "summary": "Implemented a new client-side QR generation pipeline (custom ISO/IEC-18004-style generator + mount-aware React hook) and integrated it into both ShareDialog and FlyerPage, with loading/error states and fallback messaging. However, the diff evidence focuses on generation failures/timeouts and does not clearly show user-facing guidance for the case where a QR code renders but is still not scannable.",
+  "generatedAt": "2026-02-15T22:28:44.019Z",
+  "summary": "The diff clearly removes QR-related UI from the flyer preview and updates flyer export to generate a PNG without relying on a QR canvas, including preserving auto-export behavior. The Share dialog description is updated to link-sharing language, but the diff snippet is truncated before showing whether QR rendering/hook usage and the “Download QR” action were actually removed/disabled, so REQ-1 cannot be fully verified from the provided evidence.",
   "missing_requirements": [
     {
-      "id": "REQ-40",
-      "requirement": "Add clear, English, user-facing error handling and recovery guidance specifically for the case where a QR code is rendered but cannot be scanned, including an obvious fallback path to share via the displayed App Link (copy/share) without implying the user’s phone is at fault.",
-      "reason": "The changes add error handling for QR generation failure/timeout (toast + overlay), but there is no clear evidence of guidance for the scenario where the QR code successfully renders yet a user still can’t scan it (e.g., a persistent ‘Having trouble scanning?’ helper with explicit Copy Link/App Link fallback).",
+      "id": "REQ-1",
+      "requirement": "Remove QR canvas rendering and QR generation hook usage from the Share dialog; remove/disable the “Download QR” action; ensure no QR generating/error overlay states appear.",
+      "reason": "ShareDialog.tsx is truncated before the relevant UI/actions area; the shown portion does not include any QR canvas, QR hook usage, or a “Download QR” button, but the truncation prevents confirming they were removed rather than existing further down the file.",
       "evidence": [
-        "frontend/src/components/share/FlyerPreview.tsx",
-        "frontend/src/components/share/ShareDialog.tsx",
-        "frontend/src/pages/FlyerPage.tsx",
-        "frontend/src/hooks/useQrCodeCanvas.ts"
+        "frontend/src/components/share/ShareDialog.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added a manual smoke-test checklist document for flyer download and QR scanning.",
-      "reason": "BuildRequest did not ask for new documentation/tests; it only requested QR scannability fixes and UI error handling.",
+      "description": "Added a manual flyer download smoke-test document.",
+      "reason": "BuildRequest did not request new documentation/checklists; this is additional scope beyond removing QR from Share/Flyer flows.",
       "evidence": [
         "frontend/docs/flyer-download-smoke-test.md"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.64,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/docs/flyer-download-smoke-test.md",
     "frontend/src/components/share/FlyerPreview.tsx",
     "frontend/src/components/share/ShareDialog.tsx",
-    "frontend/src/hooks/useQrCodeCanvas.ts",
-    "frontend/src/lib/qrCodeGenerator.ts",
+    "frontend/src/lib/flyerExport.ts",
     "frontend/src/pages/FlyerPage.tsx",
     "project_state.json"
   ]

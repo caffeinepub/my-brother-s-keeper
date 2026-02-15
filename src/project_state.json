@@ -1,340 +1,29 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 25,
-  "summary": "Build “My Brother’s Keeper”: a safety-focused app for truck drivers to share routes, find trusted/safe places (hotels, restaurants, shops, gas stations, mechanics), submit/view community locations, and manage emergency info (next of kin/health) with an SOS location snapshot and SOS card screen. Includes subscriber identity + trucking license upload for admin review; fees not included in v1.",
+  "projectStateVersion": 3,
+  "summary": "New project",
   "architectural_notes": [
-    "Emergency location in v1 is a one-time SOS location snapshot, not continuous live tracking.",
-    "Fees/subscriptions pricing is explicitly deferred to a later version.",
-    "Flyer export should avoid SVG <foreignObject>-based DOM-to-image methods that can taint the canvas on mobile; use a cross-browser DOM→canvas/image export approach to ensure downloads work on iOS/Android."
+    "Share dialog QR generation must use the full canonical share URL string (not a visually truncated display value) when encoding the QR."
   ],
   "known_issues": [
-    "Previous build attempts failed; may require simplified scope/prompt for builder to run reliably.",
-    "Share launch action fails: pressing Share does nothing and shows a failure message.",
-    "Share dialog QR code/link area appears blank and QR is not scannable (camera focuses but no link is detected).",
-    "Downloading from the Share dialog produces no visible result (no file downloaded).",
-    "Root cause identified for blank/unscannable QR: custom QR generator initializes module grid with false instead of null, causing placement/drawing logic to skip all modules and leave canvas empty; needs fix so QR renders/scans reliably.",
-    "Flyer export/download fails with \"Failed to execute 'toBlob' on 'HTMLCanvasElement': Tainted canvases may not be exported\" due to current SVG <foreignObject>-based exporter; needs replacement with a non-tainting, cross-browser export method (especially for mobile).",
-    "QR code now appears visually, but phone cameras do not recognize it as a link (QR is not scannable/decodable despite being rendered)."
+    "QR code in Share dialog is not scannable; scanners show no reaction/'no text found' (likely encoding empty/invalid data).",
+    "App Link display appears cut off/non-scrollable; may be related to QR being generated from truncated/incorrect value."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-implement-internet-identity-sign-in-and-a-basic-user-onboarding-flow-for-my-brother-s-keeper-creating-a-user-profile-record-on-first-login",
-      "title": "Implement Internet Identity sign-in and a basic user onboarding flow for “My Brother’s Keeper,” creating a user profile record on first login.",
+      "id": "feature-update-the-share-dialog-to-temporarily-remove-disable-the-qr-code-feature-while-keeping-the-rest-of-the-dialog-functionality-unchanged-app-link-display-copy-link-and-quick-share-specifically-remove-qr-canvas-rendering-and-the-qr-generation-hook-usage-remove-or-disable-the-download-qr-action-and-update-the-dialog-description-tip-text-so-it-no-longer-instructs-users-to-scan-a-qr-code-and-instead-directs-them-to-share-via-the-app-link",
+      "title": "Update the Share dialog to temporarily remove/disable the QR code feature while keeping the rest of the dialog functionality unchanged (App Link display, Copy Link, and Quick Share). Specifically: remove QR canvas rendering and the QR generation hook usage; remove or disable the “Download QR” action; and update the dialog description/tip text so it no longer instructs users to scan a QR code and instead directs them to share via the app link.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-subscriber-verification-uploads-allow-users-to-upload-proof-of-identity-and-proof-of-trucking-license-photo-document-uploads-that-are-stored-and-marked-as-pending-for-admin-review",
-      "title": "Add subscriber verification uploads: allow users to upload proof of identity and proof of trucking license (photo/document uploads) that are stored and marked as “pending” for admin review.",
+      "id": "feature-update-the-flyer-experience-to-temporarily-remove-disable-qr-code-generation-and-rendering-while-keeping-the-flyer-page-usable-and-downloadable-specifically-remove-the-qr-canvas-from-the-flyer-preview-ui-remove-qr-generation-state-handling-ready-generating-error-gating-and-adjust-the-flyer-export-implementation-so-it-can-export-a-flyer-png-without-requiring-a-qr-canvas-the-exported-flyer-should-still-include-the-app-title-branding-and-the-share-url",
+      "title": "Update the Flyer experience to temporarily remove/disable QR code generation and rendering, while keeping the flyer page usable and downloadable. Specifically: remove the QR canvas from the flyer preview UI, remove QR generation state handling (ready/generating/error gating), and adjust the flyer export implementation so it can export a flyer PNG without requiring a QR canvas (the exported flyer should still include the app title/branding and the share URL).",
       "reqIds": [
         "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-an-admin-review-dashboard-accessible-only-to-the-canister-controller-or-a-configurable-admin-principal-list-to-review-verification-uploads-and-approve-reject-users",
-      "title": "Implement an admin review dashboard accessible only to the canister/controller (or a configurable admin principal list) to review verification uploads and approve/reject users.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-a-places-directory-for-safe-trusted-locations-with-categories-hotels-restaurants-shops-gas-stations-and-mechanics-users-can-browse-and-search-filter-places",
-      "title": "Create a “Places” directory for safe/trusted locations with categories: hotels, restaurants, shops, gas stations, and mechanics. Users can browse and search/filter places.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-allow-community-submissions-authenticated-users-can-add-a-new-place-entry-to-the-directory",
-      "title": "Allow community submissions: authenticated users can add a new place entry to the directory.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-route-sharing-authenticated-users-can-create-and-share-planned-routes-that-other-users-can-view-basic-fields-such-as-start-destination-optional-waypoints-notes-date-time",
-      "title": "Implement route sharing: authenticated users can create and share planned routes that other users can view (basic fields such as start, destination, optional waypoints/notes, date/time).",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-emergency-profile-section-where-a-user-can-store-next-of-kin-and-important-health-conditions-and-keep-this-information-private-by-default",
-      "title": "Add an Emergency Profile section where a user can store next of kin and important health conditions, and keep this information private by default.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-an-sos-feature-that-generates-a-one-time-sos-location-snapshot-not-live-tracking-using-browser-geolocation-stores-it-in-the-backend-and-displays-it-to-the-user-with-timestamp-and-coordinates",
-      "title": "Create an SOS feature that generates a one-time “SOS location snapshot” (not live tracking) using browser geolocation, stores it in the backend, and displays it to the user with timestamp and coordinates.",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-an-emergency-sos-card-screen-that-shows-the-user-s-name-identifier-emergency-contacts-health-details-and-the-latest-sos-snapshot-details-for-first-responders",
-      "title": "Implement an “Emergency SOS Card” screen that shows the user’s name/identifier, emergency contacts, health details, and the latest SOS snapshot details for first responders.",
-      "reqIds": [
-        "REQ-9"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-provide-a-first-responder-access-method-by-generating-an-emergency-access-code-rotatable-by-the-user-that-can-be-entered-on-a-public-emergency-lookup-page-to-view-the-sos-card-data-for-that-user",
-      "title": "Provide a first-responder access method by generating an “Emergency Access Code” (rotatable by the user) that can be entered on a public “Emergency Lookup” page to view the SOS Card data for that user.",
-      "reqIds": [
-        "REQ-10"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-a-coherent-safety-focused-visual-theme-for-the-app-and-apply-it-consistently-across-all-screens-typography-colors-layout-and-component-styling-avoid-blue-purple-as-primary-colors",
-      "title": "Create a coherent, safety-focused visual theme for the app and apply it consistently across all screens (typography, colors, layout, and component styling). Avoid blue/purple as primary colors.",
-      "reqIds": [
-        "REQ-11"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-basic-app-navigation-with-pages-for-places-list-detail-add-routes-list-detail-add-profile-including-emergency-profile-verification-uploads-access-code-sos-snapshot-sos-card-admin-review",
-      "title": "Add basic app navigation with pages for: Places (list/detail/add), Routes (list/detail/add), Profile (including emergency profile + verification uploads + access code), SOS (snapshot + SOS card), Admin (review).",
-      "reqIds": [
-        "REQ-12"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-user-accessible-share-action-that-displays-a-qr-code-for-the-app-s-share-url-the-current-app-base-url-so-the-user-can-quickly-share-the-app-with-clients-subscribers",
-      "title": "Add a user-accessible “Share” action that displays a QR code for the app’s share URL (the current app base URL) so the user can quickly share the app with clients/subscribers.",
-      "reqIds": [
-        "REQ-13"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-provide-a-way-for-the-user-to-download-the-generated-qr-code-as-an-image-file-for-offline-sharing-e-g-send-via-text-print-or-include-in-marketing-materials",
-      "title": "Provide a way for the user to download the generated QR code as an image file for offline sharing (e.g., send via text, print, or include in marketing materials).",
-      "reqIds": [
-        "REQ-14"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-all-new-user-facing-text-related-to-sharing-the-app-is-in-english-and-matches-the-existing-safety-focused-tone-and-visual-style",
-      "title": "Ensure all new user-facing text related to sharing the app is in English and matches the existing safety-focused tone and visual style.",
-      "reqIds": [
-        "REQ-15"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-flyer-experience-that-creates-a-shareable-single-page-flyer-containing-an-introduction-to-my-brother-s-keeper-and-a-scannable-qr-code-to-the-app-base-url-window-location-origin-the-flyer-must-be-viewable-in-app-and-suitable-for-sending-separately-as-an-image",
-      "title": "Add a “Flyer” experience that creates a shareable, single-page flyer containing an introduction to “My Brother’s Keeper” and a scannable QR code to the app base URL (window.location.origin). The flyer must be viewable in-app and suitable for sending separately as an image.",
-      "reqIds": [
-        "REQ-16"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-provide-a-download-flyer-action-that-exports-the-flyer-as-a-downloadable-png-image-file-so-it-can-be-sent-separately-outside-the-app",
-      "title": "Provide a “Download Flyer” action that exports the flyer as a downloadable PNG image file so it can be sent separately outside the app.",
-      "reqIds": [
-        "REQ-17"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-extend-the-existing-share-dialog-to-include-an-entry-point-to-the-flyer-e-g-a-button-labeled-create-flyer-view-flyer-while-preserving-the-current-qr-and-link-sharing-behavior-as-is",
-      "title": "Extend the existing Share dialog to include an entry point to the flyer (e.g., a button labeled “Create Flyer” / “View Flyer”) while preserving the current QR and link sharing behavior as-is.",
-      "reqIds": [
-        "REQ-18"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-download-flyer-action-to-the-existing-share-dialog-so-a-user-can-download-the-shareable-flyer-png-directly-from-the-dialog-without-manually-navigating-to-the-flyer-page",
-      "title": "Add a \"Download Flyer\" action to the existing Share dialog so a user can download the shareable flyer PNG directly from the dialog without manually navigating to the flyer page.",
-      "reqIds": [
-        "REQ-19"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-support-an-auto-export-flow-on-the-flyer-page-so-the-share-dialog-can-trigger-a-direct-download-e-g-by-navigating-to-flyer-with-a-url-parameter-that-causes-the-flyer-to-export-once-the-qr-is-generated-then-leaves-the-user-on-the-flyer-page",
-      "title": "Support an auto-export flow on the flyer page so the Share dialog can trigger a direct download (e.g., by navigating to /flyer with a URL parameter that causes the flyer to export once the QR is generated, then leaves the user on the flyer page).",
-      "reqIds": [
-        "REQ-20"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-quick-share-action-to-the-existing-share-dialog-frontend-src-components-share-sharedialog-tsx-that-uses-the-browser-s-native-share-sheet-web-share-api-to-share-the-app-url-window-location-origin-and-place-it-alongside-the-existing-download-actions-so-users-can-share-in-one-tap",
-      "title": "Add a \"Quick Share\" action to the existing Share dialog (frontend/src/components/share/ShareDialog.tsx) that uses the browser's native share sheet (Web Share API) to share the app URL (window.location.origin), and place it alongside the existing download actions so users can share in one tap.",
-      "reqIds": [
-        "REQ-21"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-remove-the-dependency-on-the-external-qr-server-api-for-generating-the-share-dialog-and-flyer-qr-codes-and-generate-qr-codes-fully-client-side-so-sharing-works-reliably-even-when-third-party-services-are-unavailable",
-      "title": "Remove the dependency on the external QR Server API for generating the Share dialog and Flyer QR codes, and generate QR codes fully client-side so sharing works reliably even when third-party services are unavailable.",
-      "reqIds": [
-        "REQ-22"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-share-link-used-across-the-app-resolves-to-the-correct-public-app-entry-url-for-end-users-the-canonical-app-base-url-and-is-displayed-consistently-in-the-share-dialog-and-flyer-page",
-      "title": "Ensure the share link used across the app resolves to the correct public app entry URL for end users (the canonical app base URL) and is displayed consistently in the Share dialog and Flyer page.",
-      "reqIds": [
-        "REQ-23"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-fix-the-share-dialog-s-quick-share-action-so-it-reliably-triggers-sharing-on-supported-devices-and-does-not-silently-fail-when-web-share-is-unsupported-or-blocked",
-      "title": "Fix the Share dialog’s “Quick Share” action so it reliably triggers sharing on supported devices and does not silently fail when Web Share is unsupported or blocked.",
-      "reqIds": [
-        "REQ-24"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-quick-share-status-handling-so-all-possible-results-are-handled-explicitly-and-produce-clear-english-user-facing-feedback-consistent-with-the-app-tone",
-      "title": "Update the Quick Share status handling so all possible results are handled explicitly and produce clear English user-facing feedback consistent with the app tone.",
-      "reqIds": [
-        "REQ-25"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-harden-clipboard-fallback-behavior-for-sharing-so-it-works-across-common-browser-security-constraints-and-provide-a-graceful-failure-message-when-clipboard-access-is-denied",
-      "title": "Harden clipboard fallback behavior for sharing so it works across common browser security constraints, and provide a graceful failure message when clipboard access is denied.",
-      "reqIds": [
-        "REQ-26"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-make-the-generated-qr-code-standards-compliant-so-that-common-phone-camera-qr-scanners-detect-and-display-the-encoded-app-url-the-canonical-share-url-from-getshareurl-in-both-the-share-dialog-and-the-flyer-page",
-      "title": "Make the generated QR code standards-compliant so that common phone camera QR scanners detect and display the encoded app URL (the canonical share URL from getShareUrl()), in both the Share dialog and the Flyer page.",
-      "reqIds": [
-        "REQ-27"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-qr-rendering-logic-so-qr-generation-is-triggered-reliably-after-the-canvas-element-is-mounted-available-avoiding-cases-where-the-dialog-page-opens-but-the-qr-is-not-generated-or-is-generated-on-a-zero-incorrect-canvas-state",
-      "title": "Update QR rendering logic so QR generation is triggered reliably after the canvas element is mounted/available, avoiding cases where the dialog/page opens but the QR is not generated or is generated on a zero/incorrect canvas state.",
-      "reqIds": [
-        "REQ-28"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-all-share-related-user-facing-error-messages-for-qr-generation-and-qr-downloading-remain-in-english-and-clearly-communicate-what-the-user-should-do-next-wait-retry-or-use-copy-link",
-      "title": "Ensure all share-related user-facing error messages for QR generation and QR downloading remain in English and clearly communicate what the user should do next (wait, retry, or use Copy Link).",
-      "reqIds": [
-        "REQ-29"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-fix-the-custom-qr-code-generator-so-modules-are-initialized-with-null-unset-values-instead-of-false-allowing-finder-timing-data-placement-logic-to-write-modules-and-produce-a-non-empty-scannable-qr-code-on-the-canvas",
-      "title": "Fix the custom QR code generator so modules are initialized with null (unset) values instead of false, allowing finder/timing/data placement logic to write modules and produce a non-empty, scannable QR code on the canvas.",
-      "reqIds": [
-        "REQ-30"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-make-qr-generation-trigger-reliably-after-the-canvas-element-is-mounted-available-in-both-the-share-dialog-and-the-flyer-page-avoiding-cases-where-the-ui-stays-on-generating-qr-code-indefinitely-due-to-a-null-canvas-ref",
-      "title": "Make QR generation trigger reliably after the canvas element is mounted/available in both the Share dialog and the Flyer page, avoiding cases where the UI stays on “Generating QR code…” indefinitely due to a null canvas ref.",
-      "reqIds": [
-        "REQ-31"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-download-qr-and-download-flyer-work-end-to-end-once-the-qr-is-ready-including-from-the-share-dialog-and-show-clear-english-error-messages-when-downloads-cannot-be-performed",
-      "title": "Ensure “Download QR” and “Download Flyer” work end-to-end once the QR is ready, including from the Share dialog, and show clear English error messages when downloads cannot be performed.",
-      "reqIds": [
-        "REQ-32"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-harden-the-copy-link-actions-to-use-the-existing-resilient-clipboard-helper-so-copying-the-share-url-works-reliably-across-common-browser-security-constraints-non-secure-contexts-permission-denial-in-both-the-share-dialog-and-flyer-page",
-      "title": "Harden the “Copy Link” actions to use the existing resilient clipboard helper so copying the share URL works reliably across common browser security constraints (non-secure contexts, permission denial) in both the Share dialog and Flyer page.",
-      "reqIds": [
-        "REQ-33"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-perform-a-production-smoke-test-pass-for-the-share-and-flyer-flows-and-address-any-release-blocking-regressions-discovered-so-the-app-can-go-live-today",
-      "title": "Perform a production smoke-test pass for the Share and Flyer flows and address any release-blocking regressions discovered so the app can go live today.",
-      "reqIds": [
-        "REQ-34"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-replace-the-current-flyer-png-export-implementation-in-frontend-src-lib-flyerexport-ts-to-avoid-the-svg-foreignobject-approach-which-causes-tainted-canvases-may-not-be-exported-on-mobile-and-implement-a-cross-browser-dom-to-image-export-that-works-on-ios-and-android",
-      "title": "Replace the current flyer PNG export implementation in frontend/src/lib/flyerExport.ts to avoid the SVG <foreignObject> approach (which causes \"Tainted canvases may not be exported\" on mobile) and implement a cross-browser DOM-to-image export that works on iOS and Android.",
-      "reqIds": [
-        "REQ-35"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-flyer-export-includes-the-rendered-qr-code-reliably-matching-what-the-user-sees-in-the-flyer-preview-and-does-not-depend-on-any-cross-origin-images-fonts-that-can-taint-the-export-canvas",
-      "title": "Ensure the flyer export includes the rendered QR code reliably (matching what the user sees in the flyer preview), and does not depend on any cross-origin images/fonts that can taint the export canvas.",
-      "reqIds": [
-        "REQ-36"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-keep-all-flyer-download-user-facing-error-messages-in-clear-english-and-update-them-where-needed-to-reflect-the-new-export-flow-including-actionable-next-steps-like-retrying-or-using-copy-link",
-      "title": "Keep all flyer-download user-facing error messages in clear English and update them where needed to reflect the new export flow (including actionable next steps like retrying or using Copy Link).",
-      "reqIds": [
-        "REQ-37"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-perform-a-production-smoke-test-pass-specifically-for-flyer-downloading-1-flyer-page-download-flyer-2-share-dialog-download-flyer-auto-export-navigation-verifying-that-downloads-trigger-and-files-are-not-empty-blank",
-      "title": "Perform a production smoke-test pass specifically for flyer downloading: (1) Flyer page “Download Flyer”, (2) Share dialog “Download Flyer” auto-export navigation, verifying that downloads trigger and files are not empty/blank.",
-      "reqIds": [
-        "REQ-38"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-fix-the-client-side-qr-code-generation-so-that-the-qr-codes-rendered-in-the-share-dialog-and-flyer-page-are-standards-compliant-and-reliably-scannable-decodable-by-common-phone-camera-qr-scanners-ios-and-android-showing-the-encoded-app-link-as-a-tappable-url",
-      "title": "Fix the client-side QR code generation so that the QR codes rendered in the Share dialog and Flyer page are standards-compliant and reliably scannable/decodable by common phone camera QR scanners (iOS and Android), showing the encoded app link as a tappable URL.",
-      "reqIds": [
-        "REQ-39"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-clear-english-user-facing-error-handling-and-recovery-guidance-specifically-for-the-case-where-a-qr-code-is-rendered-but-cannot-be-scanned-including-an-obvious-fallback-path-to-share-via-the-displayed-app-link-copy-share-without-implying-the-user-s-phone-is-at-fault",
-      "title": "Add clear, English, user-facing error handling and recovery guidance specifically for the case where a QR code is rendered but cannot be scanned, including an obvious fallback path to share via the displayed App Link (copy/share) without implying the user’s phone is at fault.",
-      "reqIds": [
-        "REQ-40"
       ],
       "version": 1
     }
@@ -342,91 +31,18 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "User accounts for truck drivers with subscriber onboarding",
+      "summary": "Fix Share dialog QR code so it reliably encodes a valid, scannable full https URL (currently scans as no data/invalid).",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Upload proof of identity and trucking license for admin review (document/photo uploads)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Route sharing: users can share planned routes",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Places directory: safe hotels, restaurants, shops, gas stations, and trusted mechanics (view/search)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Community-submitted places: users can add locations for other drivers to view",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Emergency profile: store next of kin and important health conditions",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-7",
-      "summary": "Emergency SOS feature: one-time SOS location snapshot (not live tracking)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-8",
-      "summary": "Emergency SOS card screen showing name, emergency contacts, and health details for first responders",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-9",
-      "summary": "Admin identity/license verification review dashboard (approve/reject uploads)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-10",
-      "summary": "Stripe integration for future subscription/credit-card payments",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-11",
-      "summary": "Generate/share a QR code that links to the app URL for faster client/subscriber access",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-12",
-      "summary": "Create a shareable intro flyer (separate from app) that includes an introduction and a QR code button/link to the app",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-13",
-      "summary": "Add a download option for the flyer so users can export/download the flyer as an image (e.g., PNG) for sharing outside the app",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-14",
-      "summary": "Add a quick share link (copyable app URL) alongside the existing download option in the Share experience",
+      "summary": "Temporarily remove/disable the QR code feature from the Share dialog (keep the rest of the app unchanged) and revisit adding it later.",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "My Brother’s Keeper",
+  "projectName": "Temporarily remove QR code from Share and Flyer flows (keep link sharing)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

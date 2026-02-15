@@ -7,12 +7,12 @@
 /**
  * Export the flyer as a PNG file.
  * @param flyerElement The flyer container element to export
- * @param qrCanvas The QR code canvas element
+ * @param shareUrl The share URL to include in the flyer
  * @param filename The filename for the downloaded image
  */
 export async function exportFlyerAsPNG(
   flyerElement: HTMLDivElement,
-  qrCanvas: HTMLCanvasElement,
+  shareUrl: string,
   filename: string = 'flyer.png'
 ): Promise<void> {
   try {
@@ -21,8 +21,8 @@ export async function exportFlyerAsPNG(
       throw new Error('Flyer is not ready yet. Please wait a moment and try again.');
     }
     
-    if (!qrCanvas || !qrCanvas.width || !qrCanvas.height) {
-      throw new Error('QR code is not ready yet. Please wait a moment and try again.');
+    if (!shareUrl || shareUrl.trim().length === 0) {
+      throw new Error('Share URL is not ready yet. Please wait a moment and try again.');
     }
 
     console.log('[Flyer Export] Starting export process...');
@@ -144,58 +144,68 @@ export async function exportFlyerAsPNG(
 
     yOffset = cardY + cardHeight + 48;
 
-    // Draw "Scan to Join" section
+    // Draw "Visit the Platform" section
     ctx.textAlign = 'center';
     ctx.fillStyle = '#000000';
-    ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
-    ctx.fillText('Scan to Join', rect.width / 2, yOffset);
-    yOffset += 30;
-
-    ctx.fillStyle = '#666666';
-    ctx.font = '14px system-ui, -apple-system, sans-serif';
-    ctx.fillText('Scan this QR code with your phone to access the platform', rect.width / 2, yOffset);
+    ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+    ctx.fillText('Visit the Platform', rect.width / 2, yOffset);
     yOffset += 40;
 
-    // Draw QR code
-    try {
-      const qrSize = 300;
-      const qrX = rect.width / 2 - qrSize / 2;
-      
-      // Draw white background with border for QR code
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#e5e5e5';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.roundRect(qrX - 24, yOffset - 24, qrSize + 48, qrSize + 48, 12);
-      ctx.fill();
-      ctx.stroke();
-      
-      // Draw the QR code canvas
-      ctx.drawImage(qrCanvas, qrX, yOffset, qrSize, qrSize);
-      console.log('[Flyer Export] QR code drawn successfully');
-      
-      yOffset += qrSize + 48;
-    } catch (error) {
-      console.error('[Flyer Export] Failed to draw QR code:', error);
-      throw new Error('Failed to include QR code in export. Please try again.');
-    }
+    ctx.fillStyle = '#666666';
+    ctx.font = '16px system-ui, -apple-system, sans-serif';
+    ctx.fillText('Access the platform by visiting the link below:', rect.width / 2, yOffset);
+    yOffset += 50;
 
-    // Draw "Or visit directly" section
+    // Draw URL card background
+    const urlCardX = cardPadding;
+    const urlCardWidth = rect.width - cardPadding * 2;
+    const urlCardHeight = 140;
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#ff9900';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(urlCardX, yOffset, urlCardWidth, urlCardHeight, 12);
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw "APP LINK:" label
     ctx.fillStyle = '#999999';
     ctx.font = '12px system-ui, -apple-system, sans-serif';
-    ctx.fillText('OR VISIT DIRECTLY:', rect.width / 2, yOffset);
-    yOffset += 24;
+    ctx.fillText('APP LINK:', rect.width / 2, yOffset + 24);
 
     // Draw URL
-    const shareUrl = window.location.origin;
     ctx.fillStyle = '#ff9900';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText(shareUrl, rect.width / 2, yOffset);
-    yOffset += 48;
+    ctx.font = 'bold 20px monospace';
+    
+    // Handle long URLs by wrapping if needed
+    const maxWidth = urlCardWidth - 48;
+    const urlWords = shareUrl.split('/');
+    let currentLine = '';
+    let urlY = yOffset + 60;
+    
+    urlWords.forEach((word, index) => {
+      const testLine = currentLine + (index > 0 ? '/' : '') + word;
+      const metrics = ctx.measureText(testLine);
+      
+      if (metrics.width > maxWidth && currentLine !== '') {
+        ctx.fillText(currentLine, rect.width / 2, urlY);
+        currentLine = word;
+        urlY += 28;
+      } else {
+        currentLine = testLine;
+      }
+    });
+    
+    if (currentLine !== '') {
+      ctx.fillText(currentLine, rect.width / 2, urlY);
+    }
+
+    yOffset += urlCardHeight + 48;
 
     // Draw footer
     ctx.fillStyle = '#999999';
-    ctx.font = '12px system-ui, -apple-system, sans-serif';
+    ctx.font = '14px system-ui, -apple-system, sans-serif';
     ctx.fillText('Built with care for the trucking community', rect.width / 2, yOffset);
 
     console.log('[Flyer Export] Canvas rendering complete');

@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-15T02:41:10.334Z",
+  "generatedAt": "2026-02-15T22:28:44.021Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,37 +11,31 @@
     "implemented": 2,
     "items": [
       {
-        "id": "REQ-39",
-        "summary": "Fix the client-side QR code generation so that the QR codes rendered in the Share dialog and Flyer page are standards-compliant and reliably scannable/decodable by common phone camera QR scanners (iOS and Android), showing the encoded app link as a tappable URL.",
+        "id": "REQ-1",
+        "summary": "Update the Share dialog to temporarily remove/disable the QR code feature while keeping the rest of the dialog functionality unchanged (App Link display, Copy Link, and Quick Share). Specifically: remove QR canvas rendering and the QR generation hook usage; remove or disable the “Download QR” action; and update the dialog description/tip text so it no longer instructs users to scan a QR code and instead directs them to share via the app link.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/qrCodeGenerator.ts",
-          "frontend/src/hooks/useQrCodeCanvas.ts",
-          "frontend/src/components/share/ShareDialog.tsx",
-          "frontend/src/pages/FlyerPage.tsx",
-          "frontend/docs/flyer-download-smoke-test.md"
+          "frontend/src/components/share/ShareDialog.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/qrCodeGenerator.ts",
-          "frontend/src/hooks/useQrCodeCanvas.ts",
-          "frontend/src/components/share/ShareDialog.tsx",
-          "frontend/src/pages/FlyerPage.tsx",
-          "frontend/docs/flyer-download-smoke-test.md"
+          "frontend/src/components/share/ShareDialog.tsx"
         ]
       },
       {
-        "id": "REQ-40",
-        "summary": "Add clear, English, user-facing error handling and recovery guidance specifically for the case where a QR code is rendered but cannot be scanned, including an obvious fallback path to share via the displayed App Link (copy/share) without implying the user’s phone is at fault.",
+        "id": "REQ-2",
+        "summary": "Update the Flyer experience to temporarily remove/disable QR code generation and rendering, while keeping the flyer page usable and downloadable. Specifically: remove the QR canvas from the flyer preview UI, remove QR generation state handling (ready/generating/error gating), and adjust the flyer export implementation so it can export a flyer PNG without requiring a QR canvas (the exported flyer should still include the app title/branding and the share URL).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/share/ShareDialog.tsx",
           "frontend/src/pages/FlyerPage.tsx",
-          "frontend/src/components/share/FlyerPreview.tsx"
+          "frontend/src/components/share/FlyerPreview.tsx",
+          "frontend/src/lib/flyerExport.ts",
+          "frontend/docs/flyer-download-smoke-test.md"
         ],
         "matchedFiles": [
-          "frontend/src/components/share/ShareDialog.tsx",
           "frontend/src/pages/FlyerPage.tsx",
-          "frontend/src/components/share/FlyerPreview.tsx"
+          "frontend/src/components/share/FlyerPreview.tsx",
+          "frontend/src/lib/flyerExport.ts",
+          "frontend/docs/flyer-download-smoke-test.md"
         ]
       }
     ]
@@ -54,8 +48,7 @@
     "frontend/docs/flyer-download-smoke-test.md",
     "frontend/src/components/share/FlyerPreview.tsx",
     "frontend/src/components/share/ShareDialog.tsx",
-    "frontend/src/hooks/useQrCodeCanvas.ts",
-    "frontend/src/lib/qrCodeGenerator.ts",
+    "frontend/src/lib/flyerExport.ts",
     "frontend/src/pages/FlyerPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",

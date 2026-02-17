@@ -1,54 +1,85 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-15T22:28:44.021Z",
+  "generatedAt": "2026-02-17T01:33:03.684Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 4,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the Share dialog to temporarily remove/disable the QR code feature while keeping the rest of the dialog functionality unchanged (App Link display, Copy Link, and Quick Share). Specifically: remove QR canvas rendering and the QR generation hook usage; remove or disable the “Download QR” action; and update the dialog description/tip text so it no longer instructs users to scan a QR code and instead directs them to share via the app link.",
+        "summary": "Add an admin dashboard page that allows admins to view a list of registered users (registrations) in the app UI.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/share/ShareDialog.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/AdminDashboardPage.tsx",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/share/ShareDialog.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/AdminDashboardPage.tsx",
+          "frontend/src/App.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Update the Flyer experience to temporarily remove/disable QR code generation and rendering, while keeping the flyer page usable and downloadable. Specifically: remove the QR canvas from the flyer preview UI, remove QR generation state handling (ready/generating/error gating), and adjust the flyer export implementation so it can export a flyer PNG without requiring a QR canvas (the exported flyer should still include the app title/branding and the share URL).",
+        "summary": "Extend the backend to support admin-gated retrieval of registrations (registered user profiles) needed by the admin dashboard.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Update the existing admin area UI so it reads as a single “Admin Dashboard” experience (with the current Admin Review functionality still available), and update admin navigation labeling accordingly.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/FlyerPage.tsx",
-          "frontend/src/components/share/FlyerPreview.tsx",
-          "frontend/src/lib/flyerExport.ts",
-          "frontend/docs/flyer-download-smoke-test.md"
+          "frontend/src/pages/AdminReviewPage.tsx",
+          "frontend/src/pages/AdminDashboardPage.tsx",
+          "frontend/src/components/layout/AppNav.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/FlyerPage.tsx",
-          "frontend/src/components/share/FlyerPreview.tsx",
-          "frontend/src/lib/flyerExport.ts",
-          "frontend/docs/flyer-download-smoke-test.md"
+          "frontend/src/pages/AdminReviewPage.tsx",
+          "frontend/src/pages/AdminDashboardPage.tsx",
+          "frontend/src/components/layout/AppNav.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Add user-facing copy (in the Share dialog and the Flyer page) clarifying that recipients/subscribers can use the same shared link and do not need to download a separate app to access/register.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/share/ShareDialog.tsx",
+          "frontend/src/pages/FlyerPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/share/ShareDialog.tsx",
+          "frontend/src/pages/FlyerPage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
+    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/docs/flyer-download-smoke-test.md",
-    "frontend/src/components/share/FlyerPreview.tsx",
+    "frontend/src/App.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/layout/AppNav.tsx",
     "frontend/src/components/share/ShareDialog.tsx",
-    "frontend/src/lib/flyerExport.ts",
+    "frontend/src/config.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/AdminDashboardPage.tsx",
+    "frontend/src/pages/AdminReviewPage.tsx",
     "frontend/src/pages/FlyerPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",

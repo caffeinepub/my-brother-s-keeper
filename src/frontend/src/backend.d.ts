@@ -70,6 +70,7 @@ export interface backendInterface {
         sosSnapshot?: SOSSnapshot;
         emergencyProfile?: EmergencyProfile;
     }>;
+    getAllUserProfiles(): Promise<Array<[Principal, UserProfile]>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getRoutes(user: Principal): Promise<Array<Route>>;

@@ -91,7 +91,22 @@ export function useReviewVerification() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+            queryClient.invalidateQueries({ queryKey: ['allUserProfiles'] });
         }
+    });
+}
+
+// Admin Queries
+export function useGetAllUserProfiles() {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<Array<[Principal, UserProfile]>>({
+        queryKey: ['allUserProfiles'],
+        queryFn: async () => {
+            if (!actor) return [];
+            return actor.getAllUserProfiles();
+        },
+        enabled: !!actor && !actorFetching
     });
 }
 

@@ -54,7 +54,7 @@ export default function AppNav({ onNavigate }: AppNavProps) {
                         onClick={() => handleNavigate('/admin')}
                     >
                         <Shield className="h-5 w-5" />
-                        Admin Review
+                        Admin Dashboard
                     </Button>
                 </>
             )}

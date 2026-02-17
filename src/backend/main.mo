@@ -13,7 +13,6 @@ import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
 actor {
-  // Mixins
   include MixinStorage();
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -95,6 +94,14 @@ actor {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.add(caller, profile);
+  };
+
+  // NEW: Admin-gated function to list all user profiles
+  public query ({ caller }) func getAllUserProfiles() : async [(Principal, UserProfile)] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can access all user profiles");
+    };
+    userProfiles.toArray();
   };
 
   // User Profile Functions

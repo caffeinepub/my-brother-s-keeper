@@ -1,34 +1,47 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-15T22:28:44.019Z",
-  "summary": "The diff clearly removes QR-related UI from the flyer preview and updates flyer export to generate a PNG without relying on a QR canvas, including preserving auto-export behavior. The Share dialog description is updated to link-sharing language, but the diff snippet is truncated before showing whether QR rendering/hook usage and the “Download QR” action were actually removed/disabled, so REQ-1 cannot be fully verified from the provided evidence.",
+  "generatedAt": "2026-02-17T01:33:03.681Z",
+  "summary": "Admin Dashboard page, admin nav label, and backend admin-gated registrations API were added. However, the backend registrations retrieval does not show deterministic ordering, and the Flyer page clarification copy cannot be confirmed from the provided truncated diff. Some additional Flyer auto-export/query-param behavior appears added beyond the request.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Remove QR canvas rendering and QR generation hook usage from the Share dialog; remove/disable the “Download QR” action; ensure no QR generating/error overlay states appear.",
-      "reason": "ShareDialog.tsx is truncated before the relevant UI/actions area; the shown portion does not include any QR canvas, QR hook usage, or a “Download QR” button, but the truncation prevents confirming they were removed rather than existing further down the file.",
+      "id": "REQ-2",
+      "requirement": "The admin-only backend method for retrieving registrations must return stable, deterministic data for a given state (e.g., consistent ordering such as by name or principal).",
+      "reason": "The new admin-gated method returns `userProfiles.toArray()` with no explicit sorting, so ordering may be non-deterministic.",
       "evidence": [
-        "frontend/src/components/share/ShareDialog.tsx (truncated)"
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Flyer page includes clarification that recipients can use the shared link and do not need to download a separate app.",
+      "reason": "The diff snippet for `FlyerPage.tsx` is truncated and does not show any added “Sharing Tips” (or equivalent) copy containing the required clarification; only ShareDialog shows the new note.",
+      "evidence": [
+        "frontend/src/pages/FlyerPage.tsx",
+        "frontend/src/components/share/ShareDialog.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added a manual flyer download smoke-test document.",
-      "reason": "BuildRequest did not request new documentation/checklists; this is additional scope beyond removing QR from Share/Flyer flows.",
+      "description": "Flyer page supports an `autoExportFlyer` query parameter to auto-download the flyer and clears the URL param afterward (auto-export workflow).",
+      "reason": "REQ-4 only requested adding user-facing clarification copy in Share dialog and Flyer page; it did not request adding/altering flyer auto-export behavior or URL-parameter driven downloads.",
       "evidence": [
-        "frontend/docs/flyer-download-smoke-test.md"
+        "frontend/src/App.tsx",
+        "frontend/src/pages/FlyerPage.tsx"
       ]
     }
   ],
-  "confidence": 0.64,
+  "confidence": 0.72,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/docs/flyer-download-smoke-test.md",
-    "frontend/src/components/share/FlyerPreview.tsx",
+    "frontend/src/App.tsx",
+    "frontend/src/components/layout/AppNav.tsx",
     "frontend/src/components/share/ShareDialog.tsx",
-    "frontend/src/lib/flyerExport.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/AdminDashboardPage.tsx",
+    "frontend/src/pages/AdminReviewPage.tsx",
     "frontend/src/pages/FlyerPage.tsx",
     "project_state.json"
   ]

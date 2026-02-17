@@ -1,29 +1,32 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
-  "architectural_notes": [
-    "Share dialog QR generation must use the full canonical share URL string (not a visually truncated display value) when encoding the QR."
-  ],
-  "known_issues": [
-    "QR code in Share dialog is not scannable; scanners show no reaction/'no text found' (likely encoding empty/invalid data).",
-    "App Link display appears cut off/non-scrollable; may be related to QR being generated from truncated/incorrect value."
-  ],
-  "isFixRequest": true,
+  "summary": "App with subscriber registration and user-entered sections (e.g., Safe Places, Routes, Profile, SOS Card); user now wants an admin dashboard to view registrations/management.",
+  "architectural_notes": [],
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-update-the-share-dialog-to-temporarily-remove-disable-the-qr-code-feature-while-keeping-the-rest-of-the-dialog-functionality-unchanged-app-link-display-copy-link-and-quick-share-specifically-remove-qr-canvas-rendering-and-the-qr-generation-hook-usage-remove-or-disable-the-download-qr-action-and-update-the-dialog-description-tip-text-so-it-no-longer-instructs-users-to-scan-a-qr-code-and-instead-directs-them-to-share-via-the-app-link",
-      "title": "Update the Share dialog to temporarily remove/disable the QR code feature while keeping the rest of the dialog functionality unchanged (App Link display, Copy Link, and Quick Share). Specifically: remove QR canvas rendering and the QR generation hook usage; remove or disable the “Download QR” action; and update the dialog description/tip text so it no longer instructs users to scan a QR code and instead directs them to share via the app link.",
+      "id": "feature-add-an-admin-dashboard-page-that-allows-admins-to-view-a-list-of-registered-users-registrations-in-the-app-ui",
+      "title": "Add an admin dashboard page that allows admins to view a list of registered users (registrations) in the app UI.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-the-flyer-experience-to-temporarily-remove-disable-qr-code-generation-and-rendering-while-keeping-the-flyer-page-usable-and-downloadable-specifically-remove-the-qr-canvas-from-the-flyer-preview-ui-remove-qr-generation-state-handling-ready-generating-error-gating-and-adjust-the-flyer-export-implementation-so-it-can-export-a-flyer-png-without-requiring-a-qr-canvas-the-exported-flyer-should-still-include-the-app-title-branding-and-the-share-url",
-      "title": "Update the Flyer experience to temporarily remove/disable QR code generation and rendering, while keeping the flyer page usable and downloadable. Specifically: remove the QR canvas from the flyer preview UI, remove QR generation state handling (ready/generating/error gating), and adjust the flyer export implementation so it can export a flyer PNG without requiring a QR canvas (the exported flyer should still include the app title/branding and the share URL).",
+      "id": "feature-update-the-existing-admin-area-ui-so-it-reads-as-a-single-admin-dashboard-experience-with-the-current-admin-review-functionality-still-available-and-update-admin-navigation-labeling-accordingly",
+      "title": "Update the existing admin area UI so it reads as a single “Admin Dashboard” experience (with the current Admin Review functionality still available), and update admin navigation labeling accordingly.",
       "reqIds": [
-        "REQ-2"
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-user-facing-copy-in-the-share-dialog-and-the-flyer-page-clarifying-that-recipients-subscribers-can-use-the-same-shared-link-and-do-not-need-to-download-a-separate-app-to-access-register",
+      "title": "Add user-facing copy (in the Share dialog and the Flyer page) clarifying that recipients/subscribers can use the same shared link and do not need to download a separate app to access/register.",
+      "reqIds": [
+        "REQ-4"
       ],
       "version": 1
     }
@@ -31,18 +34,21 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Fix Share dialog QR code so it reliably encodes a valid, scannable full https URL (currently scans as no data/invalid).",
+      "summary": "Add an admin dashboard (e.g., to view/manage registrations and related admin info).",
       "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-2",
-      "summary": "Temporarily remove/disable the QR code feature from the Share dialog (keep the rest of the app unchanged) and revisit adding it later.",
-      "reqIds": [],
+      "id": "AR-3",
+      "summary": "Extend the backend to support admin-gated retrieval of registrations (registered user profiles) needed by the admin dashboard.",
+      "reqIds": [
+        "REQ-2"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "Temporarily remove QR code from Share and Flyer flows (keep link sharing)",
+  "gameProjectType": "none",
+  "projectName": "My Brother's Keeper",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

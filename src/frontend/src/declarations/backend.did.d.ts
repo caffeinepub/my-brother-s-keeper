@@ -99,6 +99,7 @@ export interface _SERVICE {
       'emergencyProfile' : [] | [EmergencyProfile],
     }
   >,
+  'getAllUserProfiles' : ActorMethod<[], Array<[Principal, UserProfile]>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getRoutes' : ActorMethod<[Principal], Array<Route>>,

@@ -13,7 +13,7 @@ import AddRoutePage from './pages/AddRoutePage';
 import ProfilePage from './pages/ProfilePage';
 import SOSPage from './pages/SOSPage';
 import SOSCardPage from './pages/SOSCardPage';
-import AdminReviewPage from './pages/AdminReviewPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import EmergencyLookupPage from './pages/EmergencyLookupPage';
 import LandingPage from './pages/LandingPage';
 import FlyerPage from './pages/FlyerPage';
@@ -92,7 +92,7 @@ const sosCardRoute = createRoute({
 const adminRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/admin',
-    component: AdminReviewPage
+    component: AdminDashboardPage
 });
 
 const emergencyLookupRoute = createRoute({

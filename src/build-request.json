@@ -1,70 +1,96 @@
 {
   "kind": "build_request",
-  "title": "Temporarily remove QR code from Share and Flyer flows (keep link sharing)",
+  "title": "Add Admin Dashboard (registrations overview) and clarify sharing requires no new app download",
+  "projectName": "My Brother's Keeper",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the Share dialog to temporarily remove/disable the QR code feature while keeping the rest of the dialog functionality unchanged (App Link display, Copy Link, and Quick Share). Specifically: remove QR canvas rendering and the QR generation hook usage; remove or disable the “Download QR” action; and update the dialog description/tip text so it no longer instructs users to scan a QR code and instead directs them to share via the app link.",
-      "target": "frontend",
+      "text": "Add an admin dashboard page that allows admins to view a list of registered users (registrations) in the app UI.",
+      "target": "both",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "The QR code isn't working. I have tried it a couple times. I like everything else. If it isn't going to work right now we can remove it and try it again at a later date, correct?"
+          "I would like to add an admin dashboard."
         ]
       },
       "acceptanceCriteria": [
-        "Opening the Share dialog no longer shows a QR canvas or any “Generating QR code…” / QR error overlay states.",
-        "The Share dialog still shows the App Link field populated with the canonical share URL and allows the user to copy it.",
-        "Quick Share still works as before (including existing error handling) and remains enabled when a share URL exists.",
-        "There is no “Download QR” button/action available in the Share dialog (removed or clearly disabled with no QR dependency).",
-        "All Share dialog user-facing text is in English and does not reference scanning a QR code."
+        "An admin-only page exists (reachable from the in-app navigation for admins) that displays a table/list of registered users.",
+        "The registrations list includes, at minimum: user principal, user name (if available), and verification status.",
+        "Non-admin users attempting to access the admin dashboard route are shown the existing access denied screen.",
+        "The registrations list loads from the backend via a dedicated admin-gated API, not hardcoded data.",
+        "Errors from the backend are surfaced in the UI with a clear English error message."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update the Flyer experience to temporarily remove/disable QR code generation and rendering, while keeping the flyer page usable and downloadable. Specifically: remove the QR canvas from the flyer preview UI, remove QR generation state handling (ready/generating/error gating), and adjust the flyer export implementation so it can export a flyer PNG without requiring a QR canvas (the exported flyer should still include the app title/branding and the share URL).",
+      "text": "Extend the backend to support admin-gated retrieval of registrations (registered user profiles) needed by the admin dashboard.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "I would like to add an admin dashboard."
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new admin-only backend method exists that returns a list of user registrations derived from stored user profiles.",
+        "The method traps/denies access when called by a non-admin principal.",
+        "The method returns stable, deterministic data for a given state (e.g., consistent ordering such as by name or principal)."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Update the existing admin area UI so it reads as a single “Admin Dashboard” experience (with the current Admin Review functionality still available), and update admin navigation labeling accordingly.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "If it isn't going to work right now we can remove it and try it again at a later date, correct?"
+          "I would like to add an admin dashboard."
         ]
       },
       "acceptanceCriteria": [
-        "The Flyer page no longer attempts to generate a QR code and no longer displays QR-specific UI (canvas, generating state, QR error state, scanning tips).",
-        "The flyer preview still displays the share URL clearly.",
-        "“Download Flyer” works without waiting for any QR-ready state and produces a non-empty PNG download.",
-        "Auto-export download (navigation to /flyer with autoExportFlyer=1) completes without requiring a QR canvas and clears the URL parameter afterward as it does today.",
-        "All flyer-related user-facing text is in English and does not instruct users to scan a QR code."
+        "Admin navigation entry text is updated to “Admin Dashboard” (or equivalent) while still linking to the admin area.",
+        "The existing verification review workflow remains accessible for admins (no regression in lookup, approve, reject).",
+        "The admin area provides a clear way to switch between “Registrations” and “Verification Review” (e.g., tabs/sections), without requiring manual URL edits."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Add user-facing copy (in the Share dialog and the Flyer page) clarifying that recipients/subscribers can use the same shared link and do not need to download a separate app to access/register.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "I have sent this version to some potential subscribers will they have to use another app download?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Share dialog includes a short English note stating that recipients can open the shared link and do not need to download another app.",
+        "Flyer page includes the same clarification in its “Sharing Tips” (or equivalent) section.",
+        "The added copy does not mention draft vs production and does not instruct users to install anything."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any frontend files under frontend/src/components/ui or any paths listed in SYSTEM_CONTEXT.frontend.immutablePaths.",
-    "Do not add new backend services or external dependencies; keep the application on the existing stack."
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
+    "Do not edit files under frontend/src/components/ui (compose existing UI components instead).",
+    "Do not modify frontend immutable hook files (frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx)."
   ],
   "nonGoals": [
-    "Do not fix or improve the QR code generator/encoding behavior in this change (QR will be revisited later).",
-    "Do not change backend canister logic or data schemas as part of this QR removal.",
-    "Do not redesign unrelated parts of the app; only adjust Share/Flyer content as needed to remove QR references."
+    "Building a separate native mobile app (iOS/Android) or app-store distribution.",
+    "Adding third-party analytics/tracking of subscribers beyond showing registrations already stored in the canister.",
+    "Adding new authentication providers beyond Internet Identity."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

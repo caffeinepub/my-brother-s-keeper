@@ -101,7 +101,7 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
             Share App
           </DialogTitle>
           <DialogDescription>
-            Share this app with drivers and subscribers using the link below.
+            Share this app with drivers and subscribers. Recipients can open the link directly—no separate app download needed.
           </DialogDescription>
         </DialogHeader>
 

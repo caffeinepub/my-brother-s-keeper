@@ -1,6 +1,6 @@
 {
-  "frontend/src/App.tsx": "Main application component with TanStack Router setup, route definitions for all pages including the flyer route with autoExportFlyer search parameter validation, and theme provider integration.",
-  "frontend/src/hooks/useQueries.ts": "React Query hooks for all backend operations including user profiles, verification, places, routes, emergency profiles, and SOS snapshots with proper cache invalidation.",
+  "frontend/src/App.tsx": "Main application component with TanStack Router setup, route definitions for all pages including admin dashboard route, and theme provider integration.",
+  "frontend/src/hooks/useQueries.ts": "React Query hooks for all backend operations including user profiles, verification, places, routes, emergency profiles, SOS snapshots, and new admin registrations list with proper cache invalidation.",
   "frontend/src/lib/placeCategory.ts": "Helper functions and constants for place category labels and options used across place-related components.",
   "frontend/src/lib/time.ts": "Utility functions for converting between JavaScript Date objects and backend Time (bigint) type, plus formatting helpers.",
   "frontend/src/lib/geolocation.ts": "Browser geolocation wrapper with error handling and user-friendly error messages for SOS location capture.",
@@ -8,7 +8,7 @@
   "frontend/src/lib/fileValidation.ts": "File upload validation helpers for verification documents with size and type checks.",
   "frontend/src/components/layout/AppLayout.tsx": "Main layout wrapper with responsive header, sidebar navigation (desktop), mobile sheet menu, and footer with attribution.",
   "frontend/src/components/layout/BrandHeader.tsx": "Application header with logo, title, share button, emergency lookup link, and login button; manages ShareDialog state.",
-  "frontend/src/components/layout/AppNav.tsx": "Navigation menu component with links to all main pages and conditional admin link based on user role.",
+  "frontend/src/components/layout/AppNav.tsx": "Navigation menu component with links to all main pages and conditional admin dashboard link based on user role.",
   "frontend/src/components/auth/LoginButton.tsx": "Internet Identity login/logout button with loading states and query cache clearing on logout.",
   "frontend/src/components/auth/AuthenticatedRouteGuard.tsx": "Route guard component that prompts login for unauthenticated users trying to access protected pages.",
   "frontend/src/components/auth/AdminRouteGuard.tsx": "Route guard component that blocks non-admin users from accessing admin-only pages with access denied screen.",
@@ -34,9 +34,9 @@
   "frontend/src/lib/shareUrl.ts": "Returns the canonical, absolute share URL using window.location.origin with consistent formatting across all sharing contexts.",
   "frontend/src/lib/qr.ts": "Lightweight client-side QR code generator using canvas-based implementation with Galois field error correction, generating QR codes entirely in the browser without external dependencies or API calls.",
   "frontend/src/lib/qrDownload.ts": "Utility function to download a canvas as PNG with validation of canvas dimensions and readiness, providing clear, user-friendly English error messages that instruct users to wait and retry when QR is not ready.",
-  "frontend/src/components/share/ShareDialog.tsx": "Share dialog component with App Link display, copy functionality, Quick Share, and flyer export options; QR code generation and download removed.",
+  "frontend/src/components/share/ShareDialog.tsx": "Share dialog component with App Link display, copy functionality, Quick Share, flyer export options, and clarification that recipients don't need a separate app download.",
   "frontend/package.json": "Frontend package configuration with all dependencies including html2canvas for reliable cross-browser DOM-to-image conversion.",
-  "frontend/src/pages/FlyerPage.tsx": "Public flyer page with auto-export flow, manual download, and comprehensive error handling; QR code generation removed, flyer now displays share URL prominently.",
+  "frontend/src/pages/FlyerPage.tsx": "Public flyer page with auto-export flow, manual download, comprehensive error handling, and sharing tips clarifying that recipients can use the link without downloading another app.",
   "frontend/src/components/share/FlyerPreview.tsx": "Reusable flyer preview component displaying app branding, safety introduction, and app URL in a print-ready layout; QR code section removed.",
   "frontend/src/lib/flyerExport.ts": "Flyer PNG export utility using pure canvas rendering, manually drawing all flyer elements (logo, title, text, URL) with proper styling and layout; QR code rendering removed.",
   "frontend/src/lib/urlParams.ts": "Utility functions for managing URL parameters including clearing and retrieving parameters, supporting both query string and hash-based routing without page reloads.",
@@ -44,5 +44,6 @@
   "frontend/src/lib/clipboard.ts": "Resilient clipboard copy utility that handles browser security constraints, attempts modern Clipboard API first, then falls back to DOM-based copy method, returning boolean success without throwing exceptions.",
   "frontend/src/hooks/useQrCodeCanvas.ts": "React hook for generating QR codes on canvas elements with explicit status tracking (idle/generating/ready/error), 3-second safety timeout, and proper cleanup using AbortController to prevent stale state updates.",
   "frontend/src/lib/qrCodeGenerator.ts": "Standards-compliant QR Code generator with proper ISO/IEC 18004 byte mode encoding, Reed-Solomon error correction using Galois field mathematics, mask pattern selection with penalty calculation, and high-DPI canvas rendering with crisp module edges for reliable scanning on iOS and Android cameras.",
-  "frontend/docs/flyer-download-smoke-test.md": "Manual production smoke-test checklist covering flyer download, link sharing, and Quick Share functionality; QR code scanning tests removed."
+  "frontend/docs/flyer-download-smoke-test.md": "Manual production smoke-test checklist covering flyer download, link sharing, and Quick Share functionality; QR code scanning tests removed.",
+  "frontend/src/pages/AdminDashboardPage.tsx": "Admin dashboard page with tabs for viewing user registrations table and verification review workflow, guarded with authentication and admin route guards."
 }

@@ -1,10 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Temporarily remove/disable QR code functionality from the Share dialog and Flyer flow while keeping link sharing and downloads working.
+**Goal:** Add an admin dashboard experience that includes a registrations overview, and clarify in sharing UI copy that recipients can use the same link without downloading another app.
 
 **Planned changes:**
-- Update the Share dialog to remove QR canvas rendering and QR generation hook usage, remove/disable the “Download QR” action, and revise helper text to reference sharing via the app link (no QR scanning references).
-- Update the Flyer page to remove QR generation/rendering and related UI states, ensure the preview still shows the share URL, and adjust flyer export so “Download Flyer” (including auto-export via `autoExportFlyer=1`) produces a non-empty PNG without requiring any QR canvas/state.
+- Add an admin-only “Admin Dashboard” page/area in the app UI that includes a “Registrations” view showing a list/table of registered users.
+- Implement an admin-gated backend API to retrieve registrations from stored user profiles with stable/deterministic ordering.
+- Update the existing admin area labeling/navigation to read as “Admin Dashboard” while keeping the current Verification Review workflow available, and add an in-page switch between “Registrations” and “Verification Review”.
+- Update the Share dialog and the Flyer page with user-facing copy stating recipients can open the shared link and do not need to download a separate app.
 
-**User-visible outcome:** Users can share via the app link (copy/quick share) and download a flyer PNG that includes branding and the share URL, with no QR code shown or referenced anywhere in Share or Flyer screens.
+**User-visible outcome:** Admins can open an Admin Dashboard to view registrations and continue using Verification Review, while all users see clearer sharing guidance that shared links work directly without requiring another app download.

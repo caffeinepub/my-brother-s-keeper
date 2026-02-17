@@ -1,56 +1,80 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Temporarily disable QR code in Share dialog and Flyer flows while preserving link sharing and downloads",
+  "title": "Admin Dashboard (registrations overview) + sharing copy clarification",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Remove QR canvas generation/rendering and QR download action from the Share dialog while keeping App Link display, Copy Link, and Quick Share unchanged, and update user-facing text to reference sharing via the app link.",
+      "summary": "Add an admin-only dashboard view that loads and displays registrations (stored user profiles) from the backend in a table/list with clear error handling.",
       "acceptanceCriteria": [
-        "Opening the Share dialog no longer shows a QR canvas or any “Generating QR code…” / QR error overlay states.",
-        "The Share dialog still shows the App Link field populated with the canonical share URL and allows the user to copy it.",
-        "Quick Share still works as before (including existing error handling) and remains enabled when a share URL exists.",
-        "There is no “Download QR” button/action available in the Share dialog (removed or clearly disabled with no QR dependency).",
-        "All Share dialog user-facing text is in English and does not reference scanning a QR code."
+        "An admin-only page exists (reachable from the in-app navigation for admins) that displays a table/list of registered users.",
+        "The registrations list includes, at minimum: user principal, user name (if available), and verification status.",
+        "Non-admin users attempting to access the admin dashboard route are shown the existing access denied screen.",
+        "The registrations list loads from the backend via a dedicated admin-gated API, not hardcoded data.",
+        "Errors from the backend are surfaced in the UI with a clear English error message."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a React Query hook for the admin registrations list that calls the backend capability for retrieving all user profiles (registrations) and exposes loading/error state. Ensure it is enabled only when an actor is available. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/AdminDashboardPage.tsx",
+          "operation": "create",
+          "description": "Create an Admin Dashboard page (guarded with AuthenticatedRouteGuard + AdminRouteGuard) with a “Registrations” section that renders a table/list of registrations from the new admin registrations hook, showing principal, name (fallback when missing), and verification status. Surface backend failures as a clear English message (and/or toast) and provide an empty state when no registrations exist. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire the admin dashboard page into routing by updating the existing /admin route to render the new AdminDashboardPage. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Unify the admin area into a single Admin Dashboard experience with in-page switching between Registrations and Verification Review, and update admin navigation labeling.",
+      "acceptanceCriteria": [
+        "Admin navigation entry text is updated to “Admin Dashboard” (or equivalent) while still linking to the admin area.",
+        "The existing verification review workflow remains accessible for admins (no regression in lookup, approve, reject).",
+        "The admin area provides a clear way to switch between “Registrations” and “Verification Review” (e.g., tabs/sections), without requiring manual URL edits."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AdminReviewPage.tsx",
+          "operation": "modify",
+          "description": "Refactor the existing admin review page into a reusable “Verification Review” section component (or exportable child) that can be embedded within the new AdminDashboardPage without duplicating route guards, while preserving lookup + approve + reject behavior. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/AdminDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Add a clear in-page switch between “Registrations” and “Verification Review” (e.g., tabs/segmented controls) and embed the refactored verification review UI as the second section, keeping the overall experience labeled as “Admin Dashboard”. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/layout/AppNav.tsx",
+          "operation": "modify",
+          "description": "Update the admin navigation item label from “Admin Review” to “Admin Dashboard” while keeping it routed to /admin for admins. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Add user-facing copy clarifying that recipients can use the shared link and do not need to download a separate app, in both Share dialog and Flyer page.",
+      "acceptanceCriteria": [
+        "Share dialog includes a short English note stating that recipients can open the shared link and do not need to download another app.",
+        "Flyer page includes the same clarification in its “Sharing Tips” (or equivalent) section.",
+        "The added copy does not mention draft vs production and does not instruct users to install anything."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/share/ShareDialog.tsx",
           "operation": "modify",
-          "description": "Remove QR-related imports/state (useQrCodeCanvas, canvas ref/state, qrReady/qrError/status), remove QR canvas block and generating/error overlays, remove scanning tip copy, and remove the “Download QR” button/action. Update dialog description/tip text to direct users to share via the App Link. Ensure “Download Flyer” is no longer gated on QR readiness and remains enabled when a share URL exists; keep Copy Link + Quick Share behavior and existing error handling intact. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Remove QR generation/rendering from the Flyer page and preview while keeping the flyer preview readable and the flyer PNG export (including branding and share URL) working without QR readiness gating, including auto-export behavior.",
-      "acceptanceCriteria": [
-        "The Flyer page no longer attempts to generate a QR code and no longer displays QR-specific UI (canvas, generating state, QR error state, scanning tips).",
-        "The flyer preview still displays the share URL clearly.",
-        "“Download Flyer” works without waiting for any QR-ready state and produces a non-empty PNG download.",
-        "Auto-export download (navigation to /flyer with autoExportFlyer=1) completes without requiring a QR canvas and clears the URL parameter afterward as it does today.",
-        "All flyer-related user-facing text is in English and does not instruct users to scan a QR code."
-      ],
-      "file_operations": [
+          "description": "Update the Share dialog copy to include a short clarification that recipients can open the shared link and do not need to download another app. Keep the wording simple and avoid mentioning draft/production or instructing installs. Verify the component's usage instructions before implementing."
+        },
         {
           "path": "frontend/src/pages/FlyerPage.tsx",
           "operation": "modify",
-          "description": "Remove QR canvas ref/state and useQrCodeCanvas usage, eliminate qrReady/generating/error gating and any QR-related toasts/UI. Update manual download and auto-export logic to export as soon as the flyer ref + shareUrl are available (no QR dependency), and keep clearing autoExportFlyer afterward. Ensure the preview still shows the share URL and the download produces a non-empty PNG. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/share/FlyerPreview.tsx",
-          "operation": "modify",
-          "description": "Remove the QR section entirely (canvas, generating overlay, error overlay, scan-to-join headings, scanning tips). Update props to no longer require qrCanvasRef/isGenerating/qrError, and ensure the preview continues to present app branding and the share URL clearly in the layout. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/lib/flyerExport.ts",
-          "operation": "modify",
-          "description": "Adjust flyer export implementation to no longer require a QR canvas and to not render any QR-related text/graphics. Update the export function signature and rendering to include app branding plus the provided share URL text in the exported PNG. Ensure export still produces a non-empty PNG and maintains existing user-friendly error handling. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/docs/flyer-download-smoke-test.md",
-          "operation": "modify",
-          "description": "Update the manual smoke-test checklist to remove QR-generation and QR-scanning expectations, and replace with checks for share URL visibility, successful manual download, and successful auto-export (autoExportFlyer=1) producing a non-empty PNG with branding + URL. Verify the component's usage instructions before implementing."
+          "description": "Update the Flyer page “Sharing Tips” section to include the same clarification that recipients can use the shared link and do not need to download another app, without mentioning draft/production or installation steps. Verify the component's usage instructions before implementing."
         }
       ]
     }

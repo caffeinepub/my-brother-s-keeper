@@ -118,6 +118,11 @@ export const idlService = IDL.Service({
       ],
       ['query'],
     ),
+  'getAllUserProfiles' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
+      ['query'],
+    ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getRoutes' : IDL.Func([IDL.Principal], [IDL.Vec(Route)], ['query']),
@@ -256,6 +261,11 @@ export const idlFactory = ({ IDL }) => {
             'emergencyProfile' : IDL.Opt(EmergencyProfile),
           }),
         ],
+        ['query'],
+      ),
+    'getAllUserProfiles' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
         ['query'],
       ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),

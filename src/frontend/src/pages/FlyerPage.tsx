@@ -158,6 +158,7 @@ export default function FlyerPage() {
         <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
           <p className="font-medium mb-1">Sharing Tips:</p>
           <ul className="list-disc list-inside space-y-1 text-xs">
+            <li>Recipients can open the shared link directly—no separate app download needed</li>
             <li>Use the "Copy Link" button above to share the app link with others</li>
             <li>Download the flyer to print or share digitally</li>
             <li>The flyer includes app branding and the link for easy reference</li>

@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-meetup-location-lookup-flow-so-that-the-entered-meetup-code-is-actually-used-to-validate-the-fetched-location-instead-of-using-the-locally-stored-share-code",
-      "featureTitle": "Fix the meetup location lookup flow so that the entered meetup code is actually used to validate the fetched location, instead of using the locally stored share code.",
+      "featureId": "feature-add-a-user-facing-control-to-fine-tune-google-maps-link-behavior-by-allowing-the-user-to-set-a-preferred-zoom-level-with-a-sensible-default-and-persist-that-preference-locally-e-g-localstorage-so-it-is-reused-across-sessions",
+      "featureTitle": "Add a user-facing control to fine-tune Google Maps link behavior by allowing the user to set a preferred zoom level (with a sensible default) and persist that preference locally (e.g., localStorage) so it is reused across sessions.",
       "files": [
-        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/components/maps/MapZoomControl.tsx",
+        "frontend/src/lib/mapZoomPreference.ts",
         "frontend/src/pages/MeetupPage.tsx"
       ],
       "components": [
@@ -23,10 +24,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-improve-meetup-lookup-ux-and-error-handling-validate-principal-id-format-before-lookup-show-clear-inline-errors-and-ensure-lookupcode-is-required-for-lookup",
-      "featureTitle": "Improve meetup lookup UX and error handling: validate Principal ID format before lookup, show clear inline errors, and ensure lookupCode is required for lookup.",
+      "featureId": "feature-update-all-existing-google-maps-links-in-the-app-that-open-coordinates-to-use-the-preferred-zoom-level-when-generating-the-url-including-meetuppage-and-the-sos-last-known-location-view",
+      "featureTitle": "Update all existing Google Maps links in the app that open coordinates to use the preferred zoom level when generating the URL (including MeetupPage and the SOS last-known-location view).",
       "files": [
-        "frontend/src/lib/principal.ts",
+        "frontend/src/components/sos/LastKnownLocationCard.tsx",
         "frontend/src/pages/MeetupPage.tsx"
       ],
       "components": [
@@ -44,9 +45,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-refine-the-location-result-panel-to-make-the-found-meetup-location-easier-to-use-show-last-updated-time-clearly-provide-a-one-click-google-maps-link-and-provide-a-copy-to-clipboard-action-for-coordinates-and-or-the-maps-url",
-      "featureTitle": "Refine the location result panel to make the found meetup location easier to use: show last-updated time clearly, provide a one-click Google Maps link, and provide a copy-to-clipboard action for coordinates and/or the Maps URL.",
+      "featureId": "feature-refactor-map-url-generation-into-a-shared-frontend-utility-so-all-map-links-are-consistent-and-easy-to-adjust-in-one-place-e-g-a-single-function-that-takes-latitude-longitude-and-optional-zoom",
+      "featureTitle": "Refactor map URL generation into a shared frontend utility so all map links are consistent and easy to adjust in one place (e.g., a single function that takes latitude, longitude, and optional zoom).",
       "files": [
+        "frontend/src/components/sos/LastKnownLocationCard.tsx",
+        "frontend/src/lib/googleMapsUrl.ts",
         "frontend/src/pages/MeetupPage.tsx"
       ],
       "components": [
@@ -60,26 +63,6 @@
       ],
       "testIds": [
         "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-refine-the-sharing-status-panel-to-better-communicate-current-state-show-a-clear-active-inactive-indicator-show-last-successful-update-time-and-show-a-clear-error-state-if-periodic-updates-fail-including-stopping-sharing-if-updates-fail",
-      "featureTitle": "Refine the sharing status panel to better communicate current state: show a clear active/inactive indicator, show last successful update time, and show a clear error state if periodic updates fail (including stopping sharing if updates fail).",
-      "files": [
-        "frontend/src/pages/MeetupPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
       ],
       "confidence": "high"
     }

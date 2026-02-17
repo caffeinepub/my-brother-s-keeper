@@ -1,39 +1,22 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T22:31:14.517Z",
-  "summary": "Diff adds Principal validation utilities and updates MeetupPage with new sharing state tracking and error-stop behavior for periodic location updates. However, key parts of the requested meetup lookup validation, cache-key behavior, lookup UX/error handling, and the location result panel enhancements are not clearly evidenced in the truncated diff. Some unrelated refactoring in useQueries.ts appears beyond the BuildRequest scope.",
+  "generatedAt": "2026-02-17T23:16:12.032Z",
+  "summary": "The diff adds a localStorage-backed zoom preference, a shared Google Maps URL builder, and updates LastKnownLocationCard to include a zoom parameter. MeetupPage shows imports for the zoom control and URL/preference utilities, but the truncated diff does not provide evidence that the control is rendered in the required panel or that MeetupPage map links are actually generated with the preferred zoom.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Use the entered Meetup Share Code to validate the fetched location (not a locally stored code) and ensure the lookup query cache key varies by both Principal ID and entered code.",
-      "reason": "MeetupPage shows lookup state split into lookupPrincipal/lookupCode and searchPrincipal/searchCode and calls useGetLatestMeetupLocation(searchPrincipal, searchCode), but the diff does not show the actual validation step (e.g., comparing returned location.name to the entered code) nor the react-query queryKey composition for the meetup lookup hook.",
+      "requirement": "A zoom control is available in the UI where map links are shown (at minimum on the Meetup location result panel).",
+      "reason": "A MapZoomControl component was added and imported into MeetupPage, but the provided (truncated) MeetupPage diff does not show it being rendered in the location result panel where map links are shown.",
       "evidence": [
-        "frontend/src/pages/MeetupPage.tsx (truncated)",
-        "frontend/src/hooks/useQueries.ts (truncated)"
+        "frontend/src/components/maps/MapZoomControl.tsx",
+        "frontend/src/pages/MeetupPage.tsx (truncated)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Validate Principal ID format before lookup, require lookupCode for lookup, and show clear inline errors without starting the request when invalid/empty.",
-      "reason": "A Principal validator helper is added and MeetupPage defines principalError state, but the diff does not show UI wiring that prevents lookup when invalid/empty, nor inline error rendering or the exact \"No active location found / code incorrect\" message behavior.",
-      "evidence": [
-        "frontend/src/lib/principal.ts",
-        "frontend/src/pages/MeetupPage.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Enhance the found-location result card to show readable last-updated time and lat/long, provide a one-click Google Maps link, and include a copy-to-clipboard action with success confirmation.",
-      "reason": "MeetupPage imports formatDateTime and copyToClipboard and map/copy icons, but the diff snippet does not show the result panel UI rendering these fields/actions, nor the Google Maps URL generation/open-in-new-tab behavior.",
-      "evidence": [
-        "frontend/src/pages/MeetupPage.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Sharing status panel: show clear active/inactive indicator, show last successful update time, and show clear error state when periodic updates fail (and stop sharing).",
-      "reason": "Stopping the interval on update error and tracking lastSuccessfulUpdate are shown, but the diff does not include the UI that displays the active/inactive indicator and last successful update time, nor the specific actionable English error-state messaging in the sharing status panel (beyond a toast of error.message).",
+      "requirement": "MeetupPage map link(s) include the zoom parameter and reflect the user-selected zoom value (or default if unset).",
+      "reason": "MeetupPage imports buildGoogleMapsUrl and getMapZoomPreference, but the truncated diff does not include the actual map link generation/anchor href showing use of the zoom parameter.",
       "evidence": [
         "frontend/src/pages/MeetupPage.tsx (truncated)"
       ]
@@ -41,19 +24,20 @@
   ],
   "hallucinated_features": [
     {
-      "description": "Refactoring/behavior changes to non-meetup React Query hooks to accept string | null Principal IDs and add internal Principal conversion/error handling.",
-      "reason": "BuildRequest scope is limited to refining the Meetup Location View; the diff summary indicates broader changes across hooks beyond meetup lookup/sharing.",
+      "description": "Added extra preference-management helpers (clearMapZoomPreference, getDefaultZoom, getZoomRange) beyond the stated requirements.",
+      "reason": "The BuildRequest only asks to persist and reuse a preferred zoom with a sensible default; it does not request a clear/reset function or explicit range/default accessors (though they may be reasonable internal additions).",
       "evidence": [
-        "frontend/src/hooks/useQueries.ts (truncated)",
-        "frontend-file-summaries.txt (truncated)"
+        "frontend/src/lib/mapZoomPreference.ts"
       ]
     }
   ],
-  "confidence": 0.64,
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/lib/principal.ts",
+    "frontend/src/components/maps/MapZoomControl.tsx",
+    "frontend/src/components/sos/LastKnownLocationCard.tsx",
+    "frontend/src/lib/googleMapsUrl.ts",
+    "frontend/src/lib/mapZoomPreference.ts",
     "frontend/src/pages/MeetupPage.tsx",
     "project_state.json"
   ]

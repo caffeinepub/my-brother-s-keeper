@@ -3,38 +3,32 @@
   "projectStateVersion": 3,
   "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [],
+  "known_issues": [
+    "Automated build failed/struggled when attempting to implement 'fine-tune the map' request; may require rephrasing or breaking into smaller steps."
+  ],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-fix-the-meetup-location-lookup-flow-so-that-the-entered-meetup-code-is-actually-used-to-validate-the-fetched-location-instead-of-using-the-locally-stored-share-code",
-      "title": "Fix the meetup location lookup flow so that the entered meetup code is actually used to validate the fetched location, instead of using the locally stored share code.",
+      "id": "feature-add-a-user-facing-control-to-fine-tune-google-maps-link-behavior-by-allowing-the-user-to-set-a-preferred-zoom-level-with-a-sensible-default-and-persist-that-preference-locally-e-g-localstorage-so-it-is-reused-across-sessions",
+      "title": "Add a user-facing control to fine-tune Google Maps link behavior by allowing the user to set a preferred zoom level (with a sensible default) and persist that preference locally (e.g., localStorage) so it is reused across sessions.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-improve-meetup-lookup-ux-and-error-handling-validate-principal-id-format-before-lookup-show-clear-inline-errors-and-ensure-lookupcode-is-required-for-lookup",
-      "title": "Improve meetup lookup UX and error handling: validate Principal ID format before lookup, show clear inline errors, and ensure lookupCode is required for lookup.",
+      "id": "feature-update-all-existing-google-maps-links-in-the-app-that-open-coordinates-to-use-the-preferred-zoom-level-when-generating-the-url-including-meetuppage-and-the-sos-last-known-location-view",
+      "title": "Update all existing Google Maps links in the app that open coordinates to use the preferred zoom level when generating the URL (including MeetupPage and the SOS last-known-location view).",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-refine-the-location-result-panel-to-make-the-found-meetup-location-easier-to-use-show-last-updated-time-clearly-provide-a-one-click-google-maps-link-and-provide-a-copy-to-clipboard-action-for-coordinates-and-or-the-maps-url",
-      "title": "Refine the location result panel to make the found meetup location easier to use: show last-updated time clearly, provide a one-click Google Maps link, and provide a copy-to-clipboard action for coordinates and/or the Maps URL.",
+      "id": "feature-refactor-map-url-generation-into-a-shared-frontend-utility-so-all-map-links-are-consistent-and-easy-to-adjust-in-one-place-e-g-a-single-function-that-takes-latitude-longitude-and-optional-zoom",
+      "title": "Refactor map URL generation into a shared frontend utility so all map links are consistent and easy to adjust in one place (e.g., a single function that takes latitude, longitude, and optional zoom).",
       "reqIds": [
         "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-refine-the-sharing-status-panel-to-better-communicate-current-state-show-a-clear-active-inactive-indicator-show-last-successful-update-time-and-show-a-clear-error-state-if-periodic-updates-fail-including-stopping-sharing-if-updates-fail",
-      "title": "Refine the sharing status panel to better communicate current state: show a clear active/inactive indicator, show last successful update time, and show a clear error state if periodic updates fail (including stopping sharing if updates fail).",
-      "reqIds": [
-        "REQ-4"
       ],
       "version": 1
     }
@@ -42,7 +36,7 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Refine the meetup location view",
+      "summary": "Add an option to fine-tune map controls",
       "reqIds": [],
       "status": "pending"
     }

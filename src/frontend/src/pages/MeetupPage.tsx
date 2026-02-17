@@ -16,6 +16,9 @@ import { generateMeetupShareCode, getStoredMeetupShareCode, storeMeetupShareCode
 import { isValidPrincipal } from '../lib/principal';
 import { formatDateTime } from '../lib/time';
 import { copyToClipboard } from '../lib/clipboard';
+import { buildGoogleMapsUrl } from '../lib/googleMapsUrl';
+import { getMapZoomPreference } from '../lib/mapZoomPreference';
+import MapZoomControl from '../components/maps/MapZoomControl';
 
 type SharingState = 'inactive' | 'active' | 'error';
 
@@ -151,7 +154,8 @@ export default function MeetupPage() {
     };
 
     const handleCopyMapUrl = async (lat: number, lng: number) => {
-        const url = getMapUrl(lat, lng);
+        const zoom = getMapZoomPreference();
+        const url = buildGoogleMapsUrl(lat, lng, zoom);
         const success = await copyToClipboard(url);
         if (success) {
             toast.success('Map URL copied');
@@ -189,7 +193,8 @@ export default function MeetupPage() {
     };
 
     const getMapUrl = (lat: number, lng: number) => {
-        return `https://www.google.com/maps?q=${lat},${lng}&z=15`;
+        const zoom = getMapZoomPreference();
+        return buildGoogleMapsUrl(lat, lng, zoom);
     };
 
     // Cleanup on unmount
@@ -417,43 +422,44 @@ export default function MeetupPage() {
                                         <Button
                                             onClick={() => handleCopyCoordinates(lookupLocation.latitude, lookupLocation.longitude)}
                                             variant="outline"
-                                            className="flex-1 gap-2"
+                                            size="sm"
+                                            className="gap-2"
                                         >
-                                            <Copy className="h-4 w-4" />
+                                            <Copy className="h-3 w-3" />
                                             Copy Coordinates
                                         </Button>
                                         <Button
                                             onClick={() => handleCopyMapUrl(lookupLocation.latitude, lookupLocation.longitude)}
                                             variant="outline"
-                                            className="flex-1 gap-2"
+                                            size="sm"
+                                            className="gap-2"
                                         >
-                                            <Copy className="h-4 w-4" />
+                                            <Copy className="h-3 w-3" />
                                             Copy Map URL
                                         </Button>
                                     </div>
 
-                                    <Button
-                                        asChild
-                                        className="w-full gap-2"
+                                    <a
+                                        href={getMapUrl(lookupLocation.latitude, lookupLocation.longitude)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
                                     >
-                                        <a
-                                            href={getMapUrl(lookupLocation.latitude, lookupLocation.longitude)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                        >
-                                            <ExternalLink className="h-4 w-4" />
-                                            View on Google Maps
-                                        </a>
-                                    </Button>
+                                        <ExternalLink className="h-4 w-4" />
+                                        Open in Google Maps
+                                    </a>
+
+                                    <Separator />
+
+                                    <MapZoomControl />
                                 </CardContent>
                             </Card>
                         )}
 
                         {searchPrincipal && !lookupLocation && !isLoadingLookup && (
-                            <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
+                            <Alert>
                                 <AlertDescription>
-                                    No active location found or code incorrect. The member may not be sharing their location, or the meetup code you entered doesn't match their current share code.
+                                    No active location found. The member may not be sharing their location or the code may be incorrect.
                                 </AlertDescription>
                             </Alert>
                         )}

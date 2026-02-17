@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatDateTime } from '../../lib/time';
 import { MapPin, Clock } from 'lucide-react';
+import { buildGoogleMapsUrl } from '../../lib/googleMapsUrl';
+import { getMapZoomPreference } from '../../lib/mapZoomPreference';
 import type { SOSSnapshot } from '../../backend';
 
 interface LastKnownLocationCardProps {
@@ -9,6 +11,12 @@ interface LastKnownLocationCardProps {
 }
 
 export default function LastKnownLocationCard({ sosSnapshot }: LastKnownLocationCardProps) {
+    const getMapUrl = () => {
+        if (!sosSnapshot) return '';
+        const zoom = getMapZoomPreference();
+        return buildGoogleMapsUrl(sosSnapshot.latitude, sosSnapshot.longitude, zoom);
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -31,7 +39,7 @@ export default function LastKnownLocationCard({ sosSnapshot }: LastKnownLocation
                             <p>Longitude: {sosSnapshot.longitude.toFixed(6)}</p>
                         </div>
                         <a
-                            href={`https://www.google.com/maps?q=${sosSnapshot.latitude},${sosSnapshot.longitude}`}
+                            href={getMapUrl()}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-block text-sm text-primary hover:underline"

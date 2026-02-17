@@ -1,79 +1,78 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Refine Meetup Location View (sharing + lookup UX fixes)",
+  "title": "User-adjustable Google Maps link zoom preference (local persistence) and shared URL utility",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Use the user-entered meetup code for lookup validation and ensure the lookup cache key varies by both Principal ID and entered code.",
+      "summary": "Add a user-facing zoom preference control for Google Maps links and persist the setting locally with a sensible default.",
       "acceptanceCriteria": [
-        "On the Meetup page, entering a Member's Principal ID and a Meetup Share Code and clicking “Find Location” uses the entered meetup code to validate the returned location (e.g., compares returned location.name to the entered code).",
-        "Lookup works even when the current user has a different locally stored meetup share code in localStorage.",
-        "The lookup query cache key varies by both Principal ID and entered code so changing either input triggers a new lookup result (no stale results carried over)."
+        "A zoom control is available in the UI where map links are shown (at minimum on the Meetup location result panel).",
+        "The selected zoom value persists across page reloads (stored locally in the browser).",
+        "A default zoom is used when the user has not set a preference.",
+        "User-facing text is in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Update the meetup lookup query hook so it accepts both the target Principal text and the user-entered meetup share code; ensure the React Query queryKey includes both values and validate the returned MeetupLocation against the entered code (stop using localStorage for validation)."
+          "path": "frontend/src/lib/mapZoomPreference.ts",
+          "operation": "create",
+          "description": "Implement a small localStorage-backed preference helper for a Google Maps zoom setting, including: a constant storage key, a default zoom value, safe get/set/clear functions, and basic validation/clamping to an allowed numeric range."
+        },
+        {
+          "path": "frontend/src/components/maps/MapZoomControl.tsx",
+          "operation": "create",
+          "description": "Create a reusable MapZoomControl component that reads the stored zoom preference on mount, allows adjusting it via a simple UI control (e.g., select or number input), and persists updates via the mapZoomPreference helper. Keep all user-facing labels/help text in English."
         },
         {
           "path": "frontend/src/pages/MeetupPage.tsx",
           "operation": "modify",
-          "description": "Wire the lookup form to pass both the entered Principal ID and entered meetup code into the meetup lookup hook, so the entered code (not locally stored share code) determines whether a fetched location is considered a match."
+          "description": "Add the MapZoomControl to the Meetup location result panel (where the map link is shown) so users can fine-tune the map zoom from that context; initialize it with the default if unset and ensure changes persist locally."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add input validation and clear, inline lookup errors for invalid/empty Principal ID and missing meetup code; handle no-match states without console errors.",
+      "summary": "Update coordinate-based Google Maps links in MeetupPage and the SOS last-known-location view to include the preferred zoom parameter (or default when unset).",
       "acceptanceCriteria": [
-        "If the Principal ID is not a valid textual Principal, the UI shows an inline validation message and does not start the lookup request.",
-        "If either Principal ID or Meetup Share Code is empty, the UI prevents lookup and shows a clear user-facing message (toast and/or inline error).",
-        "If no active location is found (or code mismatch), the UI shows a clear “No active location found / code incorrect” message without throwing console errors."
+        "MeetupPage map link(s) include the zoom parameter and reflect the user-selected zoom value.",
+        "LastKnownLocationCard “View on Google Maps” link includes the zoom parameter and reflects the user-selected zoom value.",
+        "If the preference is unset, links use the app’s default zoom."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/principal.ts",
-          "operation": "create",
-          "description": "Add a small helper to validate whether a string is a valid textual Principal (e.g., safe wrapper around Principal.fromText with try/catch) for preflight UI validation before starting lookups."
-        },
-        {
           "path": "frontend/src/pages/MeetupPage.tsx",
           "operation": "modify",
-          "description": "Add inline validation for the lookup Principal ID and meetup code (required); prevent lookup submission when invalid/empty, show clear inline messages (and optional toast), and render a clean 'No active location found / code incorrect' state when lookup returns null (including code mismatch) without producing console errors."
+          "description": "Replace the current hard-coded Google Maps URL generation for coordinate links so it always includes the zoom parameter driven by the stored preference (falling back to the default when unset). Ensure both open-in-new-tab links and any 'copy map URL' functionality use the same preferred zoom."
+        },
+        {
+          "path": "frontend/src/components/sos/LastKnownLocationCard.tsx",
+          "operation": "modify",
+          "description": "Update the 'View on Google Maps' coordinate link to include the zoom parameter using the stored preferred zoom (defaulting when unset), keeping the existing behavior of opening Google Maps in a new tab."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Improve the found location card with readable last-updated time, a one-click Google Maps link, and copy-to-clipboard actions with confirmation.",
+      "summary": "Centralize Google Maps URL generation into a shared frontend utility used by both MeetupPage and LastKnownLocationCard.",
       "acceptanceCriteria": [
-        "When a location is found, the result card displays the last updated timestamp in a readable format and the latitude/longitude values.",
-        "The “View on Google Maps” button opens a new tab with a valid Google Maps URL for the returned coordinates.",
-        "The result card includes at least one copy action (coordinates or Maps URL) and shows a success confirmation when copied."
+        "There is a single shared utility used by both MeetupPage and LastKnownLocationCard to build Google Maps URLs.",
+        "No duplicate ad-hoc string templates for Google Maps URLs remain in the updated areas."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/MeetupPage.tsx",
-          "operation": "modify",
-          "description": "Refine the lookup result panel to use the shared time formatter (frontend/src/lib/time.ts) for the last-updated timestamp; keep/show coordinates; add a one-click Google Maps link based on coordinates; add at least one copy action (coordinates and/or Maps URL) using the existing clipboard utility (frontend/src/lib/clipboard.ts) and show a success toast when copying succeeds and an error toast when it fails."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Enhance sharing status UI with clear active/inactive/error states, show last successful update time, and stop sharing if periodic updates fail.",
-      "acceptanceCriteria": [
-        "When sharing is active, the UI shows an obvious “Sharing Active” status and shows the last successful update time.",
-        "If an update fails during periodic sharing, sharing stops and the UI reflects the stopped state (no interval continues running).",
-        "User-facing error messages are in English and are actionable (e.g., mention location permission issues when relevant)."
-      ],
-      "file_operations": [
+          "path": "frontend/src/lib/googleMapsUrl.ts",
+          "operation": "create",
+          "description": "Create a shared utility for building Google Maps URLs from latitude/longitude and an optional zoom (e.g., a single function that takes latitude, longitude, and optional zoom). Ensure the generated URL consistently applies zoom when provided and remains compatible with current 'open in new tab' behavior."
+        },
         {
           "path": "frontend/src/pages/MeetupPage.tsx",
           "operation": "modify",
-          "description": "Add explicit sharing state management for Active/Inactive/Error, track last successful update time, and ensure the periodic update interval is always cleared immediately on update failures; on failures, stop sharing without leaving the interval running and surface actionable English error messages (leveraging existing geolocation error messages from frontend/src/lib/geolocation.ts), while keeping manual stop behavior intact."
+          "description": "Refactor MeetupPage to use the shared googleMapsUrl utility (and the stored zoom preference) instead of any inline/ad-hoc Google Maps string templates."
+        },
+        {
+          "path": "frontend/src/components/sos/LastKnownLocationCard.tsx",
+          "operation": "modify",
+          "description": "Refactor LastKnownLocationCard to use the shared googleMapsUrl utility (and the stored zoom preference) instead of inline/ad-hoc Google Maps string templates."
         }
       ]
     }

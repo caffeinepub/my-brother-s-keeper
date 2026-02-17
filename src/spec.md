@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Add an admin dashboard experience that includes a registrations overview, and clarify in sharing UI copy that recipients can use the same link without downloading another app.
+**Goal:** Refine the Meetup page location lookup and sharing panels so lookups validate against the entered meetup code, errors are clear, and found locations are easier to use.
 
 **Planned changes:**
-- Add an admin-only “Admin Dashboard” page/area in the app UI that includes a “Registrations” view showing a list/table of registered users.
-- Implement an admin-gated backend API to retrieve registrations from stored user profiles with stable/deterministic ordering.
-- Update the existing admin area labeling/navigation to read as “Admin Dashboard” while keeping the current Verification Review workflow available, and add an in-page switch between “Registrations” and “Verification Review”.
-- Update the Share dialog and the Flyer page with user-facing copy stating recipients can open the shared link and do not need to download a separate app.
+- Update the meetup location lookup flow to validate results using the user-entered Meetup Share Code (not any locally stored share code), and ensure the lookup cache key varies by both Principal ID and entered code.
+- Add client-side validation and user-friendly error handling for lookup inputs (valid textual Principal required; Principal ID and share code both required) and show a clear “No active location found / code incorrect” state without console errors.
+- Improve the location result panel to show last-updated time in a readable format, display coordinates, provide a “View on Google Maps” link that opens in a new tab, and add a copy-to-clipboard action with success confirmation.
+- Improve the sharing status panel with a clear active/inactive indicator, last successful update time, and a stopped/error state when periodic updates fail (including stopping the update interval and showing actionable English error messages).
 
-**User-visible outcome:** Admins can open an Admin Dashboard to view registrations and continue using Verification Review, while all users see clearer sharing guidance that shared links work directly without requiring another app download.
+**User-visible outcome:** Users can reliably find a member’s active meetup location using the entered Principal ID + share code, understand and fix input/lookup issues via clear messages, quickly open the location in Google Maps or copy details, and clearly see whether sharing is active (including when it stops due to errors).

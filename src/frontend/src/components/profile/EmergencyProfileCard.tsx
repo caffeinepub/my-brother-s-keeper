@@ -58,7 +58,7 @@ export default function EmergencyProfileCard() {
                 <Alert className="mb-4">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                        This information is private by default and only accessible via your Emergency Access Code.
+                        This information is private and only accessible via Emergency Lookup using your Principal ID + Emergency Access Code. Share only with trusted members.
                     </AlertDescription>
                 </Alert>
 

@@ -38,7 +38,7 @@ export default function SOSPage() {
                 <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                        This captures a one-time location snapshot, not real-time tracking. Your location will be accessible via your Emergency Access Code.
+                        This captures a one-time location snapshot, not real-time tracking. Anyone with your Principal ID + Emergency Access Code can view it via Emergency Lookup.
                     </AlertDescription>
                 </Alert>
 

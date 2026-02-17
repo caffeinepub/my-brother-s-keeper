@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Key, RefreshCw, Copy, Eye, EyeOff } from 'lucide-react';
+import { Key, RefreshCw, Copy, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 
 export default function EmergencyAccessCodeCard() {
     const { identity } = useInternetIdentity();
@@ -58,8 +58,9 @@ export default function EmergencyAccessCodeCard() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <Alert>
+                    <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                        First responders can use this code along with your Principal ID to access your emergency profile and SOS location.
+                        Share only with trusted members. This code + your Principal ID enables access to your emergency profile and last SOS location (one-time snapshot, not real-time tracking) via Emergency Lookup.
                     </AlertDescription>
                 </Alert>
 

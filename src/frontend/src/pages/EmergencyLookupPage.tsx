@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useEmergencyLookup } from '../hooks/useQueries';
 import PublicSOSCardView from '../components/sos/PublicSOSCardView';
+import LastKnownLocationCard from '../components/sos/LastKnownLocationCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Search, AlertTriangle } from 'lucide-react';
+import { Search, AlertTriangle, XCircle } from 'lucide-react';
 
 export default function EmergencyLookupPage() {
     const [principalInput, setPrincipalInput] = useState('');
@@ -25,6 +26,10 @@ export default function EmergencyLookupPage() {
         setLookupPrincipal(principalInput.trim());
         setLookupAccessCode(accessCodeInput.trim());
     };
+
+    // Determine if we have valid authorized data
+    const hasValidData = emergencyData && (emergencyData.emergencyProfile || emergencyData.sosSnapshot);
+    const hasInvalidCredentials = lookupPrincipal && lookupAccessCode && !isLoading && !hasValidData && !error;
 
     return (
         <div className="space-y-6 max-w-2xl mx-auto">
@@ -82,23 +87,62 @@ export default function EmergencyLookupPage() {
                 </div>
             )}
 
-            {lookupPrincipal && lookupAccessCode && !isLoading && (
-                <>
-                    {emergencyData?.emergencyProfile ? (
-                        <PublicSOSCardView
-                            emergencyProfile={emergencyData.emergencyProfile}
-                            sosSnapshot={emergencyData.sosSnapshot}
-                        />
-                    ) : (
+            {error && (
+                <Card>
+                    <CardContent className="py-12 text-center space-y-3">
+                        <XCircle className="h-12 w-12 text-destructive mx-auto" />
+                        <p className="text-muted-foreground">
+                            An error occurred while looking up emergency information. Please try again.
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
+
+            {hasInvalidCredentials && (
+                <Card>
+                    <CardContent className="py-12 text-center space-y-3">
+                        <XCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+                        <p className="font-semibold">Invalid Credentials</p>
+                        <p className="text-muted-foreground">
+                            No emergency information found. Please verify the Principal ID and Access Code are correct.
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
+
+            {hasValidData && emergencyData.emergencyProfile && (
+                <PublicSOSCardView
+                    emergencyProfile={emergencyData.emergencyProfile}
+                    sosSnapshot={emergencyData.sosSnapshot}
+                    userName={emergencyData.userName}
+                />
+            )}
+
+            {hasValidData && !emergencyData.emergencyProfile && emergencyData.sosSnapshot && (
+                <div className="space-y-4">
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="font-semibold">
+                            EMERGENCY INFORMATION - FOR FIRST RESPONDERS
+                        </AlertDescription>
+                    </Alert>
+
+                    {emergencyData.userName && (
                         <Card>
-                            <CardContent className="py-12 text-center">
-                                <p className="text-muted-foreground">
-                                    No emergency information found. Please verify the Principal ID and Access Code are correct.
-                                </p>
+                            <CardHeader>
+                                <CardTitle>Driver Information</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">Driver Name</p>
+                                    <p className="text-lg font-semibold">{emergencyData.userName}</p>
+                                </div>
                             </CardContent>
                         </Card>
                     )}
-                </>
+
+                    <LastKnownLocationCard sosSnapshot={emergencyData.sosSnapshot} />
+                </div>
             )}
         </div>
     );

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGetAllUserProfiles, useGetUserProfile, useReviewVerification } from '../hooks/useQueries';
+import { useGetAllUserProfiles, useGetUserProfile, useReviewVerification, useGetAllLatestSOSLocations } from '../hooks/useQueries';
 import AdminRouteGuard from '../components/auth/AdminRouteGuard';
 import AuthenticatedRouteGuard from '../components/auth/AuthenticatedRouteGuard';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Shield, CheckCircle, XCircle, Search, Users } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Search, Users, MapPin, ExternalLink, AlertTriangle } from 'lucide-react';
 
 export default function AdminDashboardPage() {
     const [activeTab, setActiveTab] = useState('registrations');
@@ -24,6 +24,9 @@ export default function AdminDashboardPage() {
     const [lookupPrincipal, setLookupPrincipal] = useState<string | null>(null);
     const { data: userProfile, isLoading: isLoadingUser } = useGetUserProfile(lookupPrincipal);
     const reviewVerification = useReviewVerification();
+
+    // SOS Locations tab state
+    const { data: sosLocations, isLoading: isLoadingSOSLocations } = useGetAllLatestSOSLocations();
 
     const handleLookup = () => {
         if (!principalInput.trim()) {
@@ -44,6 +47,15 @@ export default function AdminDashboardPage() {
         }
     };
 
+    const getMapUrl = (lat: number, lng: number) => {
+        return `https://www.google.com/maps?q=${lat},${lng}&z=15`;
+    };
+
+    const truncatePrincipal = (principal: string) => {
+        if (principal.length <= 20) return principal;
+        return `${principal.slice(0, 10)}...${principal.slice(-10)}`;
+    };
+
     return (
         <AuthenticatedRouteGuard>
             <AdminRouteGuard>
@@ -52,12 +64,12 @@ export default function AdminDashboardPage() {
                         <Shield className="h-8 w-8" />
                         <div>
                             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-                            <p className="text-muted-foreground">Manage user registrations and verification</p>
+                            <p className="text-muted-foreground">Manage user registrations, verification, and emergency data</p>
                         </div>
                     </div>
 
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
-                        <TabsList className="grid w-full max-w-md grid-cols-2">
+                        <TabsList className="grid w-full max-w-2xl grid-cols-3">
                             <TabsTrigger value="registrations" className="gap-2">
                                 <Users className="h-4 w-4" />
                                 Registrations
@@ -66,6 +78,10 @@ export default function AdminDashboardPage() {
                                 <Shield className="h-4 w-4" />
                                 Verification Review
                             </TabsTrigger>
+                            <TabsTrigger value="sos-locations" className="gap-2">
+                                <AlertTriangle className="h-4 w-4" />
+                                SOS Locations
+                            </TabsTrigger>
                         </TabsList>
 
                         {/* Registrations Tab */}
@@ -73,62 +89,66 @@ export default function AdminDashboardPage() {
                             <Card>
                                 <CardHeader>
                                     <CardTitle>User Registrations</CardTitle>
-                                    <CardDescription>View all registered users and their verification status</CardDescription>
+                                    <CardDescription>
+                                        All registered users and their verification status
+                                    </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    {isLoadingProfiles && (
-                                        <div className="text-center py-8">
-                                            <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-                                            <p className="text-sm text-muted-foreground">Loading registrations...</p>
+                                    {isLoadingProfiles ? (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            Loading registrations...
                                         </div>
-                                    )}
-
-                                    {profilesError && (
-                                        <div className="text-center py-8">
-                                            <p className="text-sm text-destructive">
-                                                Failed to load registrations. {profilesError instanceof Error ? profilesError.message : 'Please try again.'}
-                                            </p>
+                                    ) : profilesError ? (
+                                        <div className="text-center py-8 text-destructive">
+                                            Failed to load registrations
                                         </div>
-                                    )}
-
-                                    {!isLoadingProfiles && !profilesError && allProfiles && (
-                                        <>
-                                            {allProfiles.length === 0 ? (
-                                                <div className="text-center py-8">
-                                                    <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                                                    <p className="text-sm text-muted-foreground">No registered users yet</p>
-                                                </div>
-                                            ) : (
-                                                <div className="rounded-md border">
-                                                    <Table>
-                                                        <TableHeader>
-                                                            <TableRow>
-                                                                <TableHead>Name</TableHead>
-                                                                <TableHead>Principal ID</TableHead>
-                                                                <TableHead>Status</TableHead>
-                                                            </TableRow>
-                                                        </TableHeader>
-                                                        <TableBody>
-                                                            {allProfiles.map(([principal, profile]) => (
-                                                                <TableRow key={principal.toString()}>
-                                                                    <TableCell className="font-medium">
-                                                                        {profile.name || 'Anonymous'}
-                                                                    </TableCell>
-                                                                    <TableCell className="font-mono text-xs">
-                                                                        {principal.toString().slice(0, 20)}...
-                                                                    </TableCell>
-                                                                    <TableCell>
-                                                                        <Badge variant={profile.isVerified ? 'default' : 'secondary'}>
-                                                                            {profile.isVerified ? 'Verified' : 'Pending'}
-                                                                        </Badge>
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            ))}
-                                                        </TableBody>
-                                                    </Table>
-                                                </div>
-                                            )}
-                                        </>
+                                    ) : !allProfiles || allProfiles.length === 0 ? (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            No registrations found
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-md border">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Name</TableHead>
+                                                        <TableHead>Principal ID</TableHead>
+                                                        <TableHead>Status</TableHead>
+                                                        <TableHead>Documents</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {allProfiles.map(([principal, profile]) => (
+                                                        <TableRow key={principal.toString()}>
+                                                            <TableCell className="font-medium">
+                                                                {profile.name}
+                                                            </TableCell>
+                                                            <TableCell className="font-mono text-sm">
+                                                                {truncatePrincipal(principal.toString())}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Badge variant={profile.isVerified ? 'default' : 'secondary'}>
+                                                                    {profile.isVerified ? 'Verified' : 'Pending'}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex gap-2 text-xs">
+                                                                    {profile.licenseProof && (
+                                                                        <Badge variant="outline">License</Badge>
+                                                                    )}
+                                                                    {profile.idProof && (
+                                                                        <Badge variant="outline">ID</Badge>
+                                                                    )}
+                                                                    {!profile.licenseProof && !profile.idProof && (
+                                                                        <span className="text-muted-foreground">None</span>
+                                                                    )}
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                     )}
                                 </CardContent>
                             </Card>
@@ -138,118 +158,185 @@ export default function AdminDashboardPage() {
                         <TabsContent value="verification" className="space-y-4">
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Lookup User</CardTitle>
-                                    <CardDescription>Enter a user's Principal ID to review their verification</CardDescription>
+                                    <CardTitle>Verification Review</CardTitle>
+                                    <CardDescription>
+                                        Look up a user by Principal ID to review their verification documents
+                                    </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="flex gap-2">
-                                        <div className="flex-1 space-y-2">
-                                            <Label htmlFor="principal">Principal ID</Label>
+                                        <div className="flex-1">
+                                            <Label htmlFor="principal-lookup">Principal ID</Label>
                                             <Input
-                                                id="principal"
+                                                id="principal-lookup"
                                                 value={principalInput}
                                                 onChange={(e) => setPrincipalInput(e.target.value)}
-                                                placeholder="Enter Principal ID..."
+                                                placeholder="Enter Principal ID"
+                                                className="font-mono"
                                             />
                                         </div>
-                                        <Button onClick={handleLookup} className="mt-auto gap-2">
-                                            <Search className="h-4 w-4" />
-                                            Lookup
-                                        </Button>
+                                        <div className="flex items-end">
+                                            <Button
+                                                onClick={handleLookup}
+                                                disabled={isLoadingUser}
+                                                className="gap-2"
+                                            >
+                                                <Search className="h-4 w-4" />
+                                                Lookup
+                                            </Button>
+                                        </div>
                                     </div>
 
-                                    {isLoadingUser && (
-                                        <div className="text-center py-8">
-                                            <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-                                        </div>
+                                    {lookupPrincipal && userProfile && (
+                                        <Card className="border-accent/20">
+                                            <CardHeader>
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <CardTitle>{userProfile.name}</CardTitle>
+                                                        <CardDescription className="font-mono text-xs">
+                                                            {lookupPrincipal}
+                                                        </CardDescription>
+                                                    </div>
+                                                    <Badge variant={userProfile.isVerified ? 'default' : 'secondary'}>
+                                                        {userProfile.isVerified ? 'Verified' : 'Pending'}
+                                                    </Badge>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label>Trucking License</Label>
+                                                    {userProfile.licenseProof ? (
+                                                        <div className="border rounded-lg p-2">
+                                                            <img
+                                                                src={userProfile.licenseProof.getDirectURL()}
+                                                                alt="License"
+                                                                className="max-w-full h-auto rounded"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-sm text-muted-foreground">No license uploaded</p>
+                                                    )}
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label>ID Proof</Label>
+                                                    {userProfile.idProof ? (
+                                                        <div className="border rounded-lg p-2">
+                                                            <img
+                                                                src={userProfile.idProof.getDirectURL()}
+                                                                alt="ID"
+                                                                className="max-w-full h-auto rounded"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-sm text-muted-foreground">No ID uploaded</p>
+                                                    )}
+                                                </div>
+
+                                                <Separator />
+
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        onClick={() => handleReview(true)}
+                                                        disabled={reviewVerification.isPending || userProfile.isVerified}
+                                                        className="flex-1 gap-2"
+                                                    >
+                                                        <CheckCircle className="h-4 w-4" />
+                                                        Approve
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleReview(false)}
+                                                        disabled={reviewVerification.isPending}
+                                                        variant="destructive"
+                                                        className="flex-1 gap-2"
+                                                    >
+                                                        <XCircle className="h-4 w-4" />
+                                                        Reject
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
                                     )}
 
-                                    {lookupPrincipal && !isLoadingUser && (
-                                        <>
-                                            {userProfile ? (
-                                                <div className="space-y-4">
-                                                    <Separator />
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <div>
-                                                                <p className="font-semibold">{userProfile.name}</p>
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    {lookupPrincipal.slice(0, 16)}...
-                                                                </p>
-                                                            </div>
-                                                            <Badge variant={userProfile.isVerified ? 'default' : 'secondary'}>
-                                                                {userProfile.isVerified ? 'Verified' : 'Pending'}
-                                                            </Badge>
-                                                        </div>
+                                    {lookupPrincipal && !userProfile && !isLoadingUser && (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            No user found with this Principal ID
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
 
-                                                        <Separator />
-
-                                                        <div className="space-y-3">
-                                                            <div>
-                                                                <p className="text-sm font-medium mb-2">Trucking License</p>
-                                                                {userProfile.licenseProof ? (
+                        {/* SOS Locations Tab */}
+                        <TabsContent value="sos-locations" className="space-y-4">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                                        SOS Locations
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Recent SOS snapshots from all users for emergency management
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {isLoadingSOSLocations ? (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            Loading SOS locations...
+                                        </div>
+                                    ) : !sosLocations || sosLocations.length === 0 ? (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            No SOS snapshots found
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-md border">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>User Principal</TableHead>
+                                                        <TableHead>Timestamp</TableHead>
+                                                        <TableHead>Latitude</TableHead>
+                                                        <TableHead>Longitude</TableHead>
+                                                        <TableHead>Map</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {sosLocations.map((snapshot) => (
+                                                        <TableRow key={snapshot.user.toString()}>
+                                                            <TableCell className="font-mono text-sm">
+                                                                {truncatePrincipal(snapshot.user.toString())}
+                                                            </TableCell>
+                                                            <TableCell className="text-sm">
+                                                                {new Date(Number(snapshot.timestamp) / 1000000).toLocaleString()}
+                                                            </TableCell>
+                                                            <TableCell className="font-mono text-sm">
+                                                                {snapshot.latitude.toFixed(6)}
+                                                            </TableCell>
+                                                            <TableCell className="font-mono text-sm">
+                                                                {snapshot.longitude.toFixed(6)}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Button
+                                                                    asChild
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="gap-2"
+                                                                >
                                                                     <a
-                                                                        href={userProfile.licenseProof.getDirectURL()}
+                                                                        href={getMapUrl(snapshot.latitude, snapshot.longitude)}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
-                                                                        className="text-sm text-primary hover:underline"
                                                                     >
-                                                                        View License Document →
+                                                                        <ExternalLink className="h-3 w-3" />
+                                                                        View
                                                                     </a>
-                                                                ) : (
-                                                                    <p className="text-sm text-muted-foreground">Not uploaded</p>
-                                                                )}
-                                                            </div>
-
-                                                            <div>
-                                                                <p className="text-sm font-medium mb-2">ID Proof</p>
-                                                                {userProfile.idProof ? (
-                                                                    <a
-                                                                        href={userProfile.idProof.getDirectURL()}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="text-sm text-primary hover:underline"
-                                                                    >
-                                                                        View ID Document →
-                                                                    </a>
-                                                                ) : (
-                                                                    <p className="text-sm text-muted-foreground">Not uploaded</p>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        {!userProfile.isVerified && (userProfile.licenseProof || userProfile.idProof) && (
-                                                            <>
-                                                                <Separator />
-                                                                <div className="flex gap-2">
-                                                                    <Button
-                                                                        onClick={() => handleReview(true)}
-                                                                        disabled={reviewVerification.isPending}
-                                                                        className="flex-1 gap-2"
-                                                                    >
-                                                                        <CheckCircle className="h-4 w-4" />
-                                                                        {reviewVerification.isPending ? 'Processing...' : 'Approve'}
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="destructive"
-                                                                        onClick={() => handleReview(false)}
-                                                                        disabled={reviewVerification.isPending}
-                                                                        className="flex-1 gap-2"
-                                                                    >
-                                                                        <XCircle className="h-4 w-4" />
-                                                                        {reviewVerification.isPending ? 'Processing...' : 'Reject'}
-                                                                    </Button>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="text-center py-8">
-                                                    <p className="text-sm text-muted-foreground">User not found</p>
-                                                </div>
-                                            )}
-                                        </>
+                                                                </Button>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                     )}
                                 </CardContent>
                             </Card>

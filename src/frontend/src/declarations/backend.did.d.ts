@@ -10,12 +10,30 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface EmergencyLookupResult {
+  'sosSnapshot' : [] | [SOSSnapshot],
+  'userName' : [] | [string],
+  'emergencyProfile' : [] | [EmergencyProfile],
+}
 export interface EmergencyProfile {
   'accessCode' : string,
   'healthConditions' : string,
   'nextOfKin' : string,
 }
 export type ExternalBlob = Uint8Array;
+export interface MeetupLocation {
+  'latitude' : number,
+  'name' : string,
+  'user' : Principal,
+  'isActive' : boolean,
+  'longitude' : number,
+  'timestamp' : Time,
+}
+export interface MeetupLocationInput {
+  'latitude' : number,
+  'name' : string,
+  'longitude' : number,
+}
 export interface Place {
   'name' : string,
   'submittedBy' : Principal,
@@ -92,22 +110,25 @@ export interface _SERVICE {
   >,
   'createSOSSnapshot' : ActorMethod<[number, number], undefined>,
   'createUserProfile' : ActorMethod<[string], undefined>,
-  'emergencyLookup' : ActorMethod<
-    [Principal, string],
-    {
-      'sosSnapshot' : [] | [SOSSnapshot],
-      'emergencyProfile' : [] | [EmergencyProfile],
-    }
-  >,
+  'deactivateMeetupLocation' : ActorMethod<[], undefined>,
+  'emergencyLookup' : ActorMethod<[Principal, string], EmergencyLookupResult>,
+  'getAllActiveMeetupLocations' : ActorMethod<[], Array<MeetupLocation>>,
+  'getAllAvailableMeetupLocations' : ActorMethod<[], Array<MeetupLocation>>,
+  'getAllLatestSOSLocations' : ActorMethod<[], Array<SOSSnapshot>>,
   'getAllUserProfiles' : ActorMethod<[], Array<[Principal, UserProfile]>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getLatestMeetupLocation' : ActorMethod<[Principal], [] | [MeetupLocation]>,
+  'getLatestSOSLocation' : ActorMethod<[Principal], [] | [SOSSnapshot]>,
+  'getMeetupLocation' : ActorMethod<[Principal], [] | [MeetupLocation]>,
   'getRoutes' : ActorMethod<[Principal], Array<Route>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'reviewVerification' : ActorMethod<[Principal, boolean], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchPlaces' : ActorMethod<[[] | [PlaceCategory]], Array<Place>>,
+  'shareMeetupLocation' : ActorMethod<[MeetupLocationInput], undefined>,
+  'updateMeetupLocation' : ActorMethod<[MeetupLocationInput], undefined>,
   'uploadVerification' : ActorMethod<
     [[] | [ExternalBlob], [] | [ExternalBlob]],
     undefined

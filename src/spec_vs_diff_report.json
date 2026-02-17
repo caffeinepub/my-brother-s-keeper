@@ -1,48 +1,60 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T01:33:03.681Z",
-  "summary": "Admin Dashboard page, admin nav label, and backend admin-gated registrations API were added. However, the backend registrations retrieval does not show deterministic ordering, and the Flyer page clarification copy cannot be confirmed from the provided truncated diff. Some additional Flyer auto-export/query-param behavior appears added beyond the request.",
+  "generatedAt": "2026-02-17T22:31:14.517Z",
+  "summary": "Diff adds Principal validation utilities and updates MeetupPage with new sharing state tracking and error-stop behavior for periodic location updates. However, key parts of the requested meetup lookup validation, cache-key behavior, lookup UX/error handling, and the location result panel enhancements are not clearly evidenced in the truncated diff. Some unrelated refactoring in useQueries.ts appears beyond the BuildRequest scope.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "The admin-only backend method for retrieving registrations must return stable, deterministic data for a given state (e.g., consistent ordering such as by name or principal).",
-      "reason": "The new admin-gated method returns `userProfiles.toArray()` with no explicit sorting, so ordering may be non-deterministic.",
+      "id": "REQ-1",
+      "requirement": "Use the entered Meetup Share Code to validate the fetched location (not a locally stored code) and ensure the lookup query cache key varies by both Principal ID and entered code.",
+      "reason": "MeetupPage shows lookup state split into lookupPrincipal/lookupCode and searchPrincipal/searchCode and calls useGetLatestMeetupLocation(searchPrincipal, searchCode), but the diff does not show the actual validation step (e.g., comparing returned location.name to the entered code) nor the react-query queryKey composition for the meetup lookup hook.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/pages/MeetupPage.tsx (truncated)",
+        "frontend/src/hooks/useQueries.ts (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Validate Principal ID format before lookup, require lookupCode for lookup, and show clear inline errors without starting the request when invalid/empty.",
+      "reason": "A Principal validator helper is added and MeetupPage defines principalError state, but the diff does not show UI wiring that prevents lookup when invalid/empty, nor inline error rendering or the exact \"No active location found / code incorrect\" message behavior.",
+      "evidence": [
+        "frontend/src/lib/principal.ts",
+        "frontend/src/pages/MeetupPage.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Enhance the found-location result card to show readable last-updated time and lat/long, provide a one-click Google Maps link, and include a copy-to-clipboard action with success confirmation.",
+      "reason": "MeetupPage imports formatDateTime and copyToClipboard and map/copy icons, but the diff snippet does not show the result panel UI rendering these fields/actions, nor the Google Maps URL generation/open-in-new-tab behavior.",
+      "evidence": [
+        "frontend/src/pages/MeetupPage.tsx (truncated)"
       ]
     },
     {
       "id": "REQ-4",
-      "requirement": "Flyer page includes clarification that recipients can use the shared link and do not need to download a separate app.",
-      "reason": "The diff snippet for `FlyerPage.tsx` is truncated and does not show any added “Sharing Tips” (or equivalent) copy containing the required clarification; only ShareDialog shows the new note.",
+      "requirement": "Sharing status panel: show clear active/inactive indicator, show last successful update time, and show clear error state when periodic updates fail (and stop sharing).",
+      "reason": "Stopping the interval on update error and tracking lastSuccessfulUpdate are shown, but the diff does not include the UI that displays the active/inactive indicator and last successful update time, nor the specific actionable English error-state messaging in the sharing status panel (beyond a toast of error.message).",
       "evidence": [
-        "frontend/src/pages/FlyerPage.tsx",
-        "frontend/src/components/share/ShareDialog.tsx"
+        "frontend/src/pages/MeetupPage.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Flyer page supports an `autoExportFlyer` query parameter to auto-download the flyer and clears the URL param afterward (auto-export workflow).",
-      "reason": "REQ-4 only requested adding user-facing clarification copy in Share dialog and Flyer page; it did not request adding/altering flyer auto-export behavior or URL-parameter driven downloads.",
+      "description": "Refactoring/behavior changes to non-meetup React Query hooks to accept string | null Principal IDs and add internal Principal conversion/error handling.",
+      "reason": "BuildRequest scope is limited to refining the Meetup Location View; the diff summary indicates broader changes across hooks beyond meetup lookup/sharing.",
       "evidence": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/FlyerPage.tsx"
+        "frontend/src/hooks/useQueries.ts (truncated)",
+        "frontend-file-summaries.txt (truncated)"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.64,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/layout/AppNav.tsx",
-    "frontend/src/components/share/ShareDialog.tsx",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/AdminDashboardPage.tsx",
-    "frontend/src/pages/AdminReviewPage.tsx",
-    "frontend/src/pages/FlyerPage.tsx",
+    "frontend/src/lib/principal.ts",
+    "frontend/src/pages/MeetupPage.tsx",
     "project_state.json"
   ]
 }

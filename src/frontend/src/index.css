@@ -94,3 +94,13 @@
         font-feature-settings: "rlig" 1, "calt" 1;
     }
 }
+
+@layer components {
+    .map-card {
+        @apply border-accent/20 bg-accent/5;
+    }
+    
+    .location-badge {
+        @apply bg-accent/10 text-accent-foreground border-accent/30;
+    }
+}

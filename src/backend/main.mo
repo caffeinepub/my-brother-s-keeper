@@ -2,22 +2,25 @@ import Text "mo:core/Text";
 import Time "mo:core/Time";
 import List "mo:core/List";
 import Order "mo:core/Order";
-import Array "mo:core/Array";
 import Map "mo:core/Map";
 import Iter "mo:core/Iter";
+import Float "mo:core/Float";
+import Array "mo:core/Array";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
-import MixinStorage "blob-storage/Mixin";
+
 import Storage "blob-storage/Storage";
+import MixinStorage "blob-storage/Mixin";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+
 
 actor {
   include MixinStorage();
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  // User Profile Type
+  // Types
   public type UserProfile = {
     name : Text;
     licenseProof : ?Storage.ExternalBlob;
@@ -25,7 +28,6 @@ actor {
     isVerified : Bool;
   };
 
-  // Place Type
   public type Place = {
     name : Text;
     category : PlaceCategory;
@@ -42,7 +44,6 @@ actor {
     #mechanic;
   };
 
-  // Route Type
   public type Route = {
     start : Text;
     destination : Text;
@@ -52,19 +53,38 @@ actor {
     creator : Principal;
   };
 
-  // Emergency Profile Type
   public type EmergencyProfile = {
     nextOfKin : Text;
     healthConditions : Text;
     accessCode : Text;
   };
 
-  // SOS Location Snapshot Type
   public type SOSSnapshot = {
     timestamp : Time.Time;
     latitude : Float;
     longitude : Float;
     user : Principal;
+  };
+
+  public type EmergencyLookupResult = {
+    emergencyProfile : ?EmergencyProfile;
+    sosSnapshot : ?SOSSnapshot;
+    userName : ?Text;
+  };
+
+  public type MeetupLocation = {
+    user : Principal;
+    name : Text;
+    latitude : Float;
+    longitude : Float;
+    timestamp : Time.Time;
+    isActive : Bool;
+  };
+
+  public type MeetupLocationInput = {
+    latitude : Float;
+    longitude : Float;
+    name : Text;
   };
 
   // State
@@ -73,10 +93,11 @@ actor {
   let routes = Map.empty<Principal, List.List<Route>>();
   let emergencyProfiles = Map.empty<Principal, EmergencyProfile>();
   let sosSnapshots = Map.empty<Principal, SOSSnapshot>();
+  let meetupLocations = Map.empty<Principal, MeetupLocation>();
 
-  // Required User Profile Functions
+  // System Functions
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can view profiles");
     };
     userProfiles.get(caller);
@@ -90,23 +111,21 @@ actor {
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.add(caller, profile);
   };
 
-  // NEW: Admin-gated function to list all user profiles
   public query ({ caller }) func getAllUserProfiles() : async [(Principal, UserProfile)] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
       Runtime.trap("Unauthorized: Only admins can access all user profiles");
     };
     userProfiles.toArray();
   };
 
-  // User Profile Functions
   public shared ({ caller }) func createUserProfile(name : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can create profiles");
     };
     if (userProfiles.containsKey(caller)) { Runtime.trap("User profile already exists") };
@@ -123,7 +142,7 @@ actor {
     licenseProof : ?Storage.ExternalBlob,
     idProof : ?Storage.ExternalBlob,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can upload verification");
     };
     let profile = switch (userProfiles.get(caller)) {
@@ -141,9 +160,8 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // Only admin function to approve/reject verification
   public shared ({ caller }) func reviewVerification(user : Principal, approved : Bool) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
       Runtime.trap("Unauthorized: Only admins can review verification");
     };
     switch (userProfiles.get(user)) {
@@ -157,14 +175,14 @@ actor {
     };
   };
 
-  // Places Directory Functions
+  // Places Directory
   public shared ({ caller }) func addPlace(
     name : Text,
     category : PlaceCategory,
     description : Text,
     location : Text,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can add places");
     };
     if (places.containsKey(name)) { Runtime.trap("Place already exists") };
@@ -192,7 +210,7 @@ actor {
     );
   };
 
-  // Route Sharing Functions
+  // Route Sharing
   public shared ({ caller }) func createRoute(
     start : Text,
     destination : Text,
@@ -200,7 +218,7 @@ actor {
     dateTime : Time.Time,
     notes : ?Text,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can create routes");
     };
     let route : Route = {
@@ -227,13 +245,13 @@ actor {
     };
   };
 
-  // Emergency Profile Functions
+  // Emergency Profile
   public shared ({ caller }) func createOrUpdateEmergencyProfile(
     nextOfKin : Text,
     healthConditions : Text,
     accessCode : Text,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can create emergency profiles");
     };
     let profile : EmergencyProfile = {
@@ -244,12 +262,12 @@ actor {
     emergencyProfiles.add(caller, profile);
   };
 
-  // SOS Feature Functions
+  // SOS Feature
   public shared ({ caller }) func createSOSSnapshot(
     latitude : Float,
     longitude : Float,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can create SOS snapshots");
     };
     let snapshot : SOSSnapshot = {
@@ -261,24 +279,141 @@ actor {
     sosSnapshots.add(caller, snapshot);
   };
 
-  // Emergency Lookup - Public access with access code verification
-  public query ({ caller }) func emergencyLookup(user : Principal, accessCode : Text) : async {
-    emergencyProfile : ?EmergencyProfile;
-    sosSnapshot : ?SOSSnapshot;
-  } {
+  public query ({ caller }) func emergencyLookup(user : Principal, accessCode : Text) : async EmergencyLookupResult {
     // Public access - anyone with the correct access code can lookup emergency info
-    switch (emergencyProfiles.get(user)) {
-      case (?profile) {
-        if (profile.accessCode == accessCode) {
-          return {
-            emergencyProfile = ?profile;
-            sosSnapshot = sosSnapshots.get(user);
-          };
+    let emergencyProfile = emergencyProfiles.get(user);
+    let sosSnapshot = sosSnapshots.get(user);
+
+    let correctCode = switch (emergencyProfile) {
+      case (?profile) { profile.accessCode == accessCode };
+      case (null) { false };
+    };
+
+    if (correctCode) {
+      let userName = switch (userProfiles.get(user)) {
+        case (?profile) { ?profile.name };
+        case (null) { null };
+      };
+      return {
+        emergencyProfile;
+        sosSnapshot;
+        userName;
+      };
+    };
+    { emergencyProfile = null; sosSnapshot = null; userName = null };
+  };
+
+  // Meetup Location Sharing (New Feature)
+  public shared ({ caller }) func shareMeetupLocation(locationInput : MeetupLocationInput) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can share meetup locations");
+    };
+
+    let location : MeetupLocation = {
+      user = caller;
+      name = locationInput.name;
+      latitude = locationInput.latitude;
+      longitude = locationInput.longitude;
+      timestamp = Time.now();
+      isActive = true;
+    };
+
+    meetupLocations.add(caller, location);
+  };
+
+  public query ({ caller }) func getMeetupLocation(user : Principal) : async ?MeetupLocation {
+    // Allow users to look up meetup locations of other users who have opted in
+    // This is intentionally public for meetup coordination
+    switch (meetupLocations.get(user)) {
+      case (?location) {
+        if (location.isActive) {
+          ?location;
+        } else {
+          null;
         };
       };
-      case (null) {};
+      case (null) { null };
     };
-    { emergencyProfile = null; sosSnapshot = null };
+  };
+
+  public shared ({ caller }) func deactivateMeetupLocation() : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can deactivate meetup locations");
+    };
+    let location = switch (meetupLocations.get(caller)) {
+      case (null) { Runtime.trap("No active meetup location found") };
+      case (?existing) {
+        {
+          existing with
+          isActive = false;
+        };
+      };
+    };
+    meetupLocations.add(caller, location);
+  };
+
+  public shared ({ caller }) func updateMeetupLocation(locationInput : MeetupLocationInput) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can update meetup locations");
+    };
+    let location : MeetupLocation = {
+      user = caller;
+      name = locationInput.name;
+      latitude = locationInput.latitude;
+      longitude = locationInput.longitude;
+      timestamp = Time.now();
+      isActive = true;
+    };
+    meetupLocations.add(caller, location);
+  };
+
+  public query ({ caller }) func getAllActiveMeetupLocations() : async [MeetupLocation] {
+    // Public access - anyone can see all active meetup locations for coordination
+    meetupLocations.values().toArray().filter(
+      func(location) {
+        location.isActive;
+      }
+    );
+  };
+
+  public query ({ caller }) func getLatestSOSLocation(user : Principal) : async ?SOSSnapshot {
+    // Admin-only access to view SOS locations for emergency management
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can view SOS locations");
+    };
+    sosSnapshots.get(user);
+  };
+
+  public query ({ caller }) func getAllLatestSOSLocations() : async [SOSSnapshot] {
+    // Admin-only access for Admin Dashboard SOS Locations view
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can view all SOS locations");
+    };
+    sosSnapshots.values().toArray();
+  };
+
+  public query ({ caller }) func getLatestMeetupLocation(user : Principal) : async ?MeetupLocation {
+    // Allow users to look up meetup locations of other users who have opted in
+    // This is intentionally public for meetup coordination
+    switch (meetupLocations.get(user)) {
+      case (?location) {
+        if (location.isActive) {
+          ?location;
+        } else {
+          null;
+        };
+      };
+      case (null) { null };
+    };
+  };
+
+  public query ({ caller }) func getAllAvailableMeetupLocations() : async [MeetupLocation] {
+    // Public access - anyone can see all active meetup locations for coordination
+    meetupLocations.values().toArray().filter(
+      func(location) {
+        location.isActive;
+      }
+    );
   };
 
   module Place {

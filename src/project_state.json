@@ -1,30 +1,38 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "App with subscriber registration and user-entered sections (e.g., Safe Places, Routes, Profile, SOS Card); user now wants an admin dashboard to view registrations/management.",
+  "summary": "New project",
   "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-add-an-admin-dashboard-page-that-allows-admins-to-view-a-list-of-registered-users-registrations-in-the-app-ui",
-      "title": "Add an admin dashboard page that allows admins to view a list of registered users (registrations) in the app UI.",
+      "id": "feature-fix-the-meetup-location-lookup-flow-so-that-the-entered-meetup-code-is-actually-used-to-validate-the-fetched-location-instead-of-using-the-locally-stored-share-code",
+      "title": "Fix the meetup location lookup flow so that the entered meetup code is actually used to validate the fetched location, instead of using the locally stored share code.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-the-existing-admin-area-ui-so-it-reads-as-a-single-admin-dashboard-experience-with-the-current-admin-review-functionality-still-available-and-update-admin-navigation-labeling-accordingly",
-      "title": "Update the existing admin area UI so it reads as a single “Admin Dashboard” experience (with the current Admin Review functionality still available), and update admin navigation labeling accordingly.",
+      "id": "feature-improve-meetup-lookup-ux-and-error-handling-validate-principal-id-format-before-lookup-show-clear-inline-errors-and-ensure-lookupcode-is-required-for-lookup",
+      "title": "Improve meetup lookup UX and error handling: validate Principal ID format before lookup, show clear inline errors, and ensure lookupCode is required for lookup.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-refine-the-location-result-panel-to-make-the-found-meetup-location-easier-to-use-show-last-updated-time-clearly-provide-a-one-click-google-maps-link-and-provide-a-copy-to-clipboard-action-for-coordinates-and-or-the-maps-url",
+      "title": "Refine the location result panel to make the found meetup location easier to use: show last-updated time clearly, provide a one-click Google Maps link, and provide a copy-to-clipboard action for coordinates and/or the Maps URL.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-user-facing-copy-in-the-share-dialog-and-the-flyer-page-clarifying-that-recipients-subscribers-can-use-the-same-shared-link-and-do-not-need-to-download-a-separate-app-to-access-register",
-      "title": "Add user-facing copy (in the Share dialog and the Flyer page) clarifying that recipients/subscribers can use the same shared link and do not need to download a separate app to access/register.",
+      "id": "feature-refine-the-sharing-status-panel-to-better-communicate-current-state-show-a-clear-active-inactive-indicator-show-last-successful-update-time-and-show-a-clear-error-state-if-periodic-updates-fail-including-stopping-sharing-if-updates-fail",
+      "title": "Refine the sharing status panel to better communicate current state: show a clear active/inactive indicator, show last successful update time, and show a clear error state if periodic updates fail (including stopping sharing if updates fail).",
       "reqIds": [
         "REQ-4"
       ],
@@ -34,20 +42,11 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add an admin dashboard (e.g., to view/manage registrations and related admin info).",
+      "summary": "Refine the meetup location view",
       "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Extend the backend to support admin-gated retrieval of registrations (registered user profiles) needed by the admin dashboard.",
-      "reqIds": [
-        "REQ-2"
-      ],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
   "projectName": "My Brother's Keeper",
   "clarification_mode": "instant",
   "clarification_rounds": 0

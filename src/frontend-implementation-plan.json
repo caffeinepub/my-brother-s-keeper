@@ -1,80 +1,79 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Admin Dashboard (registrations overview) + sharing copy clarification",
+  "title": "Refine Meetup Location View (sharing + lookup UX fixes)",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add an admin-only dashboard view that loads and displays registrations (stored user profiles) from the backend in a table/list with clear error handling.",
+      "summary": "Use the user-entered meetup code for lookup validation and ensure the lookup cache key varies by both Principal ID and entered code.",
       "acceptanceCriteria": [
-        "An admin-only page exists (reachable from the in-app navigation for admins) that displays a table/list of registered users.",
-        "The registrations list includes, at minimum: user principal, user name (if available), and verification status.",
-        "Non-admin users attempting to access the admin dashboard route are shown the existing access denied screen.",
-        "The registrations list loads from the backend via a dedicated admin-gated API, not hardcoded data.",
-        "Errors from the backend are surfaced in the UI with a clear English error message."
+        "On the Meetup page, entering a Member's Principal ID and a Meetup Share Code and clicking “Find Location” uses the entered meetup code to validate the returned location (e.g., compares returned location.name to the entered code).",
+        "Lookup works even when the current user has a different locally stored meetup share code in localStorage.",
+        "The lookup query cache key varies by both Principal ID and entered code so changing either input triggers a new lookup result (no stale results carried over)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add a React Query hook for the admin registrations list that calls the backend capability for retrieving all user profiles (registrations) and exposes loading/error state. Ensure it is enabled only when an actor is available. Verify the component's usage instructions before implementing."
+          "description": "Update the meetup lookup query hook so it accepts both the target Principal text and the user-entered meetup share code; ensure the React Query queryKey includes both values and validate the returned MeetupLocation against the entered code (stop using localStorage for validation)."
         },
         {
-          "path": "frontend/src/pages/AdminDashboardPage.tsx",
-          "operation": "create",
-          "description": "Create an Admin Dashboard page (guarded with AuthenticatedRouteGuard + AdminRouteGuard) with a “Registrations” section that renders a table/list of registrations from the new admin registrations hook, showing principal, name (fallback when missing), and verification status. Surface backend failures as a clear English message (and/or toast) and provide an empty state when no registrations exist. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/pages/MeetupPage.tsx",
           "operation": "modify",
-          "description": "Wire the admin dashboard page into routing by updating the existing /admin route to render the new AdminDashboardPage. Verify the component's usage instructions before implementing."
+          "description": "Wire the lookup form to pass both the entered Principal ID and entered meetup code into the meetup lookup hook, so the entered code (not locally stored share code) determines whether a fetched location is considered a match."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Add input validation and clear, inline lookup errors for invalid/empty Principal ID and missing meetup code; handle no-match states without console errors.",
+      "acceptanceCriteria": [
+        "If the Principal ID is not a valid textual Principal, the UI shows an inline validation message and does not start the lookup request.",
+        "If either Principal ID or Meetup Share Code is empty, the UI prevents lookup and shows a clear user-facing message (toast and/or inline error).",
+        "If no active location is found (or code mismatch), the UI shows a clear “No active location found / code incorrect” message without throwing console errors."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/principal.ts",
+          "operation": "create",
+          "description": "Add a small helper to validate whether a string is a valid textual Principal (e.g., safe wrapper around Principal.fromText with try/catch) for preflight UI validation before starting lookups."
+        },
+        {
+          "path": "frontend/src/pages/MeetupPage.tsx",
+          "operation": "modify",
+          "description": "Add inline validation for the lookup Principal ID and meetup code (required); prevent lookup submission when invalid/empty, show clear inline messages (and optional toast), and render a clean 'No active location found / code incorrect' state when lookup returns null (including code mismatch) without producing console errors."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Unify the admin area into a single Admin Dashboard experience with in-page switching between Registrations and Verification Review, and update admin navigation labeling.",
+      "summary": "Improve the found location card with readable last-updated time, a one-click Google Maps link, and copy-to-clipboard actions with confirmation.",
       "acceptanceCriteria": [
-        "Admin navigation entry text is updated to “Admin Dashboard” (or equivalent) while still linking to the admin area.",
-        "The existing verification review workflow remains accessible for admins (no regression in lookup, approve, reject).",
-        "The admin area provides a clear way to switch between “Registrations” and “Verification Review” (e.g., tabs/sections), without requiring manual URL edits."
+        "When a location is found, the result card displays the last updated timestamp in a readable format and the latitude/longitude values.",
+        "The “View on Google Maps” button opens a new tab with a valid Google Maps URL for the returned coordinates.",
+        "The result card includes at least one copy action (coordinates or Maps URL) and shows a success confirmation when copied."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/AdminReviewPage.tsx",
+          "path": "frontend/src/pages/MeetupPage.tsx",
           "operation": "modify",
-          "description": "Refactor the existing admin review page into a reusable “Verification Review” section component (or exportable child) that can be embedded within the new AdminDashboardPage without duplicating route guards, while preserving lookup + approve + reject behavior. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/AdminDashboardPage.tsx",
-          "operation": "modify",
-          "description": "Add a clear in-page switch between “Registrations” and “Verification Review” (e.g., tabs/segmented controls) and embed the refactored verification review UI as the second section, keeping the overall experience labeled as “Admin Dashboard”. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/layout/AppNav.tsx",
-          "operation": "modify",
-          "description": "Update the admin navigation item label from “Admin Review” to “Admin Dashboard” while keeping it routed to /admin for admins. Verify the component's usage instructions before implementing."
+          "description": "Refine the lookup result panel to use the shared time formatter (frontend/src/lib/time.ts) for the last-updated timestamp; keep/show coordinates; add a one-click Google Maps link based on coordinates; add at least one copy action (coordinates and/or Maps URL) using the existing clipboard utility (frontend/src/lib/clipboard.ts) and show a success toast when copying succeeds and an error toast when it fails."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Add user-facing copy clarifying that recipients can use the shared link and do not need to download a separate app, in both Share dialog and Flyer page.",
+      "summary": "Enhance sharing status UI with clear active/inactive/error states, show last successful update time, and stop sharing if periodic updates fail.",
       "acceptanceCriteria": [
-        "Share dialog includes a short English note stating that recipients can open the shared link and do not need to download another app.",
-        "Flyer page includes the same clarification in its “Sharing Tips” (or equivalent) section.",
-        "The added copy does not mention draft vs production and does not instruct users to install anything."
+        "When sharing is active, the UI shows an obvious “Sharing Active” status and shows the last successful update time.",
+        "If an update fails during periodic sharing, sharing stops and the UI reflects the stopped state (no interval continues running).",
+        "User-facing error messages are in English and are actionable (e.g., mention location permission issues when relevant)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/share/ShareDialog.tsx",
+          "path": "frontend/src/pages/MeetupPage.tsx",
           "operation": "modify",
-          "description": "Update the Share dialog copy to include a short clarification that recipients can open the shared link and do not need to download another app. Keep the wording simple and avoid mentioning draft/production or instructing installs. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/FlyerPage.tsx",
-          "operation": "modify",
-          "description": "Update the Flyer page “Sharing Tips” section to include the same clarification that recipients can use the shared link and do not need to download another app, without mentioning draft/production or installation steps. Verify the component's usage instructions before implementing."
+          "description": "Add explicit sharing state management for Active/Inactive/Error, track last successful update time, and ensure the periodic update interval is always cleared immediately on update failures; on failures, stop sharing without leaving the interval running and surface actionable English error messages (leveraging existing geolocation error messages from frontend/src/lib/geolocation.ts), while keeping manual stop behavior intact."
         }
       ]
     }

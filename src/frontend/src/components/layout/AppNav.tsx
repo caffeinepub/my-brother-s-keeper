@@ -3,7 +3,7 @@ import { useGetCallerUserRole } from '../../hooks/useQueries';
 import { UserRole } from '../../backend';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { MapPin, Route, User, AlertTriangle, Shield, Search } from 'lucide-react';
+import { MapPin, Route, User, AlertTriangle, Shield, Search, Users } from 'lucide-react';
 
 interface AppNavProps {
     onNavigate: () => void;
@@ -18,6 +18,7 @@ export default function AppNav({ onNavigate }: AppNavProps) {
     const navItems = [
         { path: '/places', label: 'Places', icon: MapPin },
         { path: '/routes', label: 'Routes', icon: Route },
+        { path: '/meetup', label: 'Meetup', icon: Users },
         { path: '/profile', label: 'Profile', icon: User },
         { path: '/sos', label: 'SOS', icon: AlertTriangle }
     ];

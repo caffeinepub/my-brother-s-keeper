@@ -13,6 +13,7 @@ import AddRoutePage from './pages/AddRoutePage';
 import ProfilePage from './pages/ProfilePage';
 import SOSPage from './pages/SOSPage';
 import SOSCardPage from './pages/SOSCardPage';
+import MeetupPage from './pages/MeetupPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import EmergencyLookupPage from './pages/EmergencyLookupPage';
 import LandingPage from './pages/LandingPage';
@@ -89,6 +90,12 @@ const sosCardRoute = createRoute({
     component: SOSCardPage
 });
 
+const meetupRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/meetup',
+    component: MeetupPage
+});
+
 const adminRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/admin',
@@ -123,6 +130,7 @@ const routeTree = rootRoute.addChildren([
     profileRoute,
     sosRoute,
     sosCardRoute,
+    meetupRoute,
     adminRoute,
     emergencyLookupRoute,
     flyerRoute

@@ -43,6 +43,19 @@ export const EmergencyProfile = IDL.Record({
   'healthConditions' : IDL.Text,
   'nextOfKin' : IDL.Text,
 });
+export const EmergencyLookupResult = IDL.Record({
+  'sosSnapshot' : IDL.Opt(SOSSnapshot),
+  'userName' : IDL.Opt(IDL.Text),
+  'emergencyProfile' : IDL.Opt(EmergencyProfile),
+});
+export const MeetupLocation = IDL.Record({
+  'latitude' : IDL.Float64,
+  'name' : IDL.Text,
+  'user' : IDL.Principal,
+  'isActive' : IDL.Bool,
+  'longitude' : IDL.Float64,
+  'timestamp' : Time,
+});
 export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const UserProfile = IDL.Record({
   'licenseProof' : IDL.Opt(ExternalBlob),
@@ -64,6 +77,11 @@ export const Place = IDL.Record({
   'description' : IDL.Text,
   'category' : PlaceCategory,
   'location' : IDL.Text,
+});
+export const MeetupLocationInput = IDL.Record({
+  'latitude' : IDL.Float64,
+  'name' : IDL.Text,
+  'longitude' : IDL.Float64,
 });
 
 export const idlService = IDL.Service({
@@ -108,16 +126,23 @@ export const idlService = IDL.Service({
     ),
   'createSOSSnapshot' : IDL.Func([IDL.Float64, IDL.Float64], [], []),
   'createUserProfile' : IDL.Func([IDL.Text], [], []),
+  'deactivateMeetupLocation' : IDL.Func([], [], []),
   'emergencyLookup' : IDL.Func(
       [IDL.Principal, IDL.Text],
-      [
-        IDL.Record({
-          'sosSnapshot' : IDL.Opt(SOSSnapshot),
-          'emergencyProfile' : IDL.Opt(EmergencyProfile),
-        }),
-      ],
+      [EmergencyLookupResult],
       ['query'],
     ),
+  'getAllActiveMeetupLocations' : IDL.Func(
+      [],
+      [IDL.Vec(MeetupLocation)],
+      ['query'],
+    ),
+  'getAllAvailableMeetupLocations' : IDL.Func(
+      [],
+      [IDL.Vec(MeetupLocation)],
+      ['query'],
+    ),
+  'getAllLatestSOSLocations' : IDL.Func([], [IDL.Vec(SOSSnapshot)], ['query']),
   'getAllUserProfiles' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
@@ -125,6 +150,21 @@ export const idlService = IDL.Service({
     ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getLatestMeetupLocation' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(MeetupLocation)],
+      ['query'],
+    ),
+  'getLatestSOSLocation' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(SOSSnapshot)],
+      ['query'],
+    ),
+  'getMeetupLocation' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(MeetupLocation)],
+      ['query'],
+    ),
   'getRoutes' : IDL.Func([IDL.Principal], [IDL.Vec(Route)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
@@ -139,6 +179,8 @@ export const idlService = IDL.Service({
       [IDL.Vec(Place)],
       ['query'],
     ),
+  'shareMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
+  'updateMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
   'uploadVerification' : IDL.Func(
       [IDL.Opt(ExternalBlob), IDL.Opt(ExternalBlob)],
       [],
@@ -184,6 +226,19 @@ export const idlFactory = ({ IDL }) => {
     'healthConditions' : IDL.Text,
     'nextOfKin' : IDL.Text,
   });
+  const EmergencyLookupResult = IDL.Record({
+    'sosSnapshot' : IDL.Opt(SOSSnapshot),
+    'userName' : IDL.Opt(IDL.Text),
+    'emergencyProfile' : IDL.Opt(EmergencyProfile),
+  });
+  const MeetupLocation = IDL.Record({
+    'latitude' : IDL.Float64,
+    'name' : IDL.Text,
+    'user' : IDL.Principal,
+    'isActive' : IDL.Bool,
+    'longitude' : IDL.Float64,
+    'timestamp' : Time,
+  });
   const ExternalBlob = IDL.Vec(IDL.Nat8);
   const UserProfile = IDL.Record({
     'licenseProof' : IDL.Opt(ExternalBlob),
@@ -205,6 +260,11 @@ export const idlFactory = ({ IDL }) => {
     'description' : IDL.Text,
     'category' : PlaceCategory,
     'location' : IDL.Text,
+  });
+  const MeetupLocationInput = IDL.Record({
+    'latitude' : IDL.Float64,
+    'name' : IDL.Text,
+    'longitude' : IDL.Float64,
   });
   
   return IDL.Service({
@@ -253,14 +313,25 @@ export const idlFactory = ({ IDL }) => {
       ),
     'createSOSSnapshot' : IDL.Func([IDL.Float64, IDL.Float64], [], []),
     'createUserProfile' : IDL.Func([IDL.Text], [], []),
+    'deactivateMeetupLocation' : IDL.Func([], [], []),
     'emergencyLookup' : IDL.Func(
         [IDL.Principal, IDL.Text],
-        [
-          IDL.Record({
-            'sosSnapshot' : IDL.Opt(SOSSnapshot),
-            'emergencyProfile' : IDL.Opt(EmergencyProfile),
-          }),
-        ],
+        [EmergencyLookupResult],
+        ['query'],
+      ),
+    'getAllActiveMeetupLocations' : IDL.Func(
+        [],
+        [IDL.Vec(MeetupLocation)],
+        ['query'],
+      ),
+    'getAllAvailableMeetupLocations' : IDL.Func(
+        [],
+        [IDL.Vec(MeetupLocation)],
+        ['query'],
+      ),
+    'getAllLatestSOSLocations' : IDL.Func(
+        [],
+        [IDL.Vec(SOSSnapshot)],
         ['query'],
       ),
     'getAllUserProfiles' : IDL.Func(
@@ -270,6 +341,21 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getLatestMeetupLocation' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(MeetupLocation)],
+        ['query'],
+      ),
+    'getLatestSOSLocation' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(SOSSnapshot)],
+        ['query'],
+      ),
+    'getMeetupLocation' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(MeetupLocation)],
+        ['query'],
+      ),
     'getRoutes' : IDL.Func([IDL.Principal], [IDL.Vec(Route)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
@@ -284,6 +370,8 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(Place)],
         ['query'],
       ),
+    'shareMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
+    'updateMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
     'uploadVerification' : IDL.Func(
         [IDL.Opt(ExternalBlob), IDL.Opt(ExternalBlob)],
         [],

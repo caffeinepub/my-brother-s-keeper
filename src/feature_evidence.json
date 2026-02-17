@@ -2,12 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-an-admin-dashboard-page-that-allows-admins-to-view-a-list-of-registered-users-registrations-in-the-app-ui",
-      "featureTitle": "Add an admin dashboard page that allows admins to view a list of registered users (registrations) in the app UI.",
+      "featureId": "feature-fix-the-meetup-location-lookup-flow-so-that-the-entered-meetup-code-is-actually-used-to-validate-the-fetched-location-instead-of-using-the-locally-stored-share-code",
+      "featureTitle": "Fix the meetup location lookup flow so that the entered meetup code is actually used to validate the fetched location, instead of using the locally stored share code.",
       "files": [
-        "frontend/src/App.tsx",
         "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/AdminDashboardPage.tsx"
+        "frontend/src/pages/MeetupPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -24,12 +23,31 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-existing-admin-area-ui-so-it-reads-as-a-single-admin-dashboard-experience-with-the-current-admin-review-functionality-still-available-and-update-admin-navigation-labeling-accordingly",
-      "featureTitle": "Update the existing admin area UI so it reads as a single “Admin Dashboard” experience (with the current Admin Review functionality still available), and update admin navigation labeling accordingly.",
+      "featureId": "feature-improve-meetup-lookup-ux-and-error-handling-validate-principal-id-format-before-lookup-show-clear-inline-errors-and-ensure-lookupcode-is-required-for-lookup",
+      "featureTitle": "Improve meetup lookup UX and error handling: validate Principal ID format before lookup, show clear inline errors, and ensure lookupCode is required for lookup.",
       "files": [
-        "frontend/src/components/layout/AppNav.tsx",
-        "frontend/src/pages/AdminDashboardPage.tsx",
-        "frontend/src/pages/AdminReviewPage.tsx"
+        "frontend/src/lib/principal.ts",
+        "frontend/src/pages/MeetupPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-refine-the-location-result-panel-to-make-the-found-meetup-location-easier-to-use-show-last-updated-time-clearly-provide-a-one-click-google-maps-link-and-provide-a-copy-to-clipboard-action-for-coordinates-and-or-the-maps-url",
+      "featureTitle": "Refine the location result panel to make the found meetup location easier to use: show last-updated time clearly, provide a one-click Google Maps link, and provide a copy-to-clipboard action for coordinates and/or the Maps URL.",
+      "files": [
+        "frontend/src/pages/MeetupPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -46,11 +64,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-user-facing-copy-in-the-share-dialog-and-the-flyer-page-clarifying-that-recipients-subscribers-can-use-the-same-shared-link-and-do-not-need-to-download-a-separate-app-to-access-register",
-      "featureTitle": "Add user-facing copy (in the Share dialog and the Flyer page) clarifying that recipients/subscribers can use the same shared link and do not need to download a separate app to access/register.",
+      "featureId": "feature-refine-the-sharing-status-panel-to-better-communicate-current-state-show-a-clear-active-inactive-indicator-show-last-successful-update-time-and-show-a-clear-error-state-if-periodic-updates-fail-including-stopping-sharing-if-updates-fail",
+      "featureTitle": "Refine the sharing status panel to better communicate current state: show a clear active/inactive indicator, show last successful update time, and show a clear error state if periodic updates fail (including stopping sharing if updates fail).",
       "files": [
-        "frontend/src/components/share/ShareDialog.tsx",
-        "frontend/src/pages/FlyerPage.tsx"
+        "frontend/src/pages/MeetupPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",

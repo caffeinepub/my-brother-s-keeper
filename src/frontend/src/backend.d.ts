@@ -14,13 +14,27 @@ export class ExternalBlob {
     static fromBytes(blob: Uint8Array<ArrayBuffer>): ExternalBlob;
     withUploadProgress(onProgress: (percentage: number) => void): ExternalBlob;
 }
-export interface Route {
-    creator: Principal;
-    destination: string;
-    waypoints: Array<string>;
-    start: string;
-    notes?: string;
-    dateTime: Time;
+export interface MeetupLocationInput {
+    latitude: number;
+    name: string;
+    longitude: number;
+}
+export interface EmergencyProfile {
+    accessCode: string;
+    healthConditions: string;
+    nextOfKin: string;
+}
+export type Time = bigint;
+export interface EmergencyLookupResult {
+    sosSnapshot?: SOSSnapshot;
+    userName?: string;
+    emergencyProfile?: EmergencyProfile;
+}
+export interface SOSSnapshot {
+    latitude: number;
+    user: Principal;
+    longitude: number;
+    timestamp: Time;
 }
 export interface Place {
     name: string;
@@ -29,15 +43,11 @@ export interface Place {
     category: PlaceCategory;
     location: string;
 }
-export interface EmergencyProfile {
-    accessCode: string;
-    healthConditions: string;
-    nextOfKin: string;
-}
-export type Time = bigint;
-export interface SOSSnapshot {
+export interface MeetupLocation {
     latitude: number;
+    name: string;
     user: Principal;
+    isActive: boolean;
     longitude: number;
     timestamp: Time;
 }
@@ -46,6 +56,14 @@ export interface UserProfile {
     name: string;
     idProof?: ExternalBlob;
     isVerified: boolean;
+}
+export interface Route {
+    creator: Principal;
+    destination: string;
+    waypoints: Array<string>;
+    start: string;
+    notes?: string;
+    dateTime: Time;
 }
 export enum PlaceCategory {
     gasStation = "gasStation",
@@ -66,18 +84,24 @@ export interface backendInterface {
     createRoute(start: string, destination: string, waypoints: Array<string>, dateTime: Time, notes: string | null): Promise<void>;
     createSOSSnapshot(latitude: number, longitude: number): Promise<void>;
     createUserProfile(name: string): Promise<void>;
-    emergencyLookup(user: Principal, accessCode: string): Promise<{
-        sosSnapshot?: SOSSnapshot;
-        emergencyProfile?: EmergencyProfile;
-    }>;
+    deactivateMeetupLocation(): Promise<void>;
+    emergencyLookup(user: Principal, accessCode: string): Promise<EmergencyLookupResult>;
+    getAllActiveMeetupLocations(): Promise<Array<MeetupLocation>>;
+    getAllAvailableMeetupLocations(): Promise<Array<MeetupLocation>>;
+    getAllLatestSOSLocations(): Promise<Array<SOSSnapshot>>;
     getAllUserProfiles(): Promise<Array<[Principal, UserProfile]>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getLatestMeetupLocation(user: Principal): Promise<MeetupLocation | null>;
+    getLatestSOSLocation(user: Principal): Promise<SOSSnapshot | null>;
+    getMeetupLocation(user: Principal): Promise<MeetupLocation | null>;
     getRoutes(user: Principal): Promise<Array<Route>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     reviewVerification(user: Principal, approved: boolean): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchPlaces(category: PlaceCategory | null): Promise<Array<Place>>;
+    shareMeetupLocation(locationInput: MeetupLocationInput): Promise<void>;
+    updateMeetupLocation(locationInput: MeetupLocationInput): Promise<void>;
     uploadVerification(licenseProof: ExternalBlob | null, idProof: ExternalBlob | null): Promise<void>;
 }

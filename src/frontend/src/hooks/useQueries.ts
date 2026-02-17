@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { PlaceCategory, type Place, type Route, type UserProfile, UserRole, ExternalBlob } from '../backend';
+import { PlaceCategory, type Place, type Route, type UserProfile, UserRole, ExternalBlob, type MeetupLocation, type SOSSnapshot } from '../backend';
 import { Principal } from '@dfinity/principal';
 
 // User Profile Queries
@@ -67,16 +67,36 @@ export function useUploadVerification() {
     });
 }
 
-export function useGetUserProfile(userPrincipal: string | null) {
+// Admin Queries
+export function useGetAllUserProfiles() {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<[Principal, UserProfile][]>({
+        queryKey: ['allUserProfiles'],
+        queryFn: async () => {
+            if (!actor) throw new Error('Actor not available');
+            return actor.getAllUserProfiles();
+        },
+        enabled: !!actor && !actorFetching
+    });
+}
+
+export function useGetUserProfile(userPrincipalText: string | null) {
     const { actor, isFetching: actorFetching } = useActor();
 
     return useQuery<UserProfile | null>({
-        queryKey: ['userProfile', userPrincipal],
+        queryKey: ['userProfile', userPrincipalText],
         queryFn: async () => {
-            if (!actor || !userPrincipal) return null;
-            return actor.getUserProfile(Principal.fromText(userPrincipal));
+            if (!actor || !userPrincipalText) return null;
+            try {
+                const principal = Principal.fromText(userPrincipalText.trim());
+                return actor.getUserProfile(principal);
+            } catch (error) {
+                console.error('Invalid principal:', error);
+                return null;
+            }
         },
-        enabled: !!actor && !actorFetching && !!userPrincipal
+        enabled: !!actor && !actorFetching && !!userPrincipalText
     });
 }
 
@@ -87,26 +107,13 @@ export function useReviewVerification() {
     return useMutation({
         mutationFn: async ({ user, approved }: { user: string; approved: boolean }) => {
             if (!actor) throw new Error('Actor not available');
-            return actor.reviewVerification(Principal.fromText(user), approved);
+            const principal = Principal.fromText(user.trim());
+            return actor.reviewVerification(principal, approved);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['userProfile'] });
             queryClient.invalidateQueries({ queryKey: ['allUserProfiles'] });
+            queryClient.invalidateQueries({ queryKey: ['userProfile'] });
         }
-    });
-}
-
-// Admin Queries
-export function useGetAllUserProfiles() {
-    const { actor, isFetching: actorFetching } = useActor();
-
-    return useQuery<Array<[Principal, UserProfile]>>({
-        queryKey: ['allUserProfiles'],
-        queryFn: async () => {
-            if (!actor) return [];
-            return actor.getAllUserProfiles();
-        },
-        enabled: !!actor && !actorFetching
     });
 }
 
@@ -129,9 +136,9 @@ export function useAddPlace() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (place: { name: string; category: PlaceCategory; description: string; location: string }) => {
+        mutationFn: async ({ name, category, description, location }: { name: string; category: PlaceCategory; description: string; location: string }) => {
             if (!actor) throw new Error('Actor not available');
-            return actor.addPlace(place.name, place.category, place.description, place.location);
+            return actor.addPlace(name, category, description, location);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['places'] });
@@ -140,16 +147,22 @@ export function useAddPlace() {
 }
 
 // Routes Queries
-export function useGetRoutes(userPrincipal: string | null) {
+export function useGetRoutes(userPrincipalText: string | null) {
     const { actor, isFetching: actorFetching } = useActor();
 
     return useQuery<Route[]>({
-        queryKey: ['routes', userPrincipal],
+        queryKey: ['routes', userPrincipalText],
         queryFn: async () => {
-            if (!actor || !userPrincipal) return [];
-            return actor.getRoutes(Principal.fromText(userPrincipal));
+            if (!actor || !userPrincipalText) return [];
+            try {
+                const principal = Principal.fromText(userPrincipalText.trim());
+                return actor.getRoutes(principal);
+            } catch (error) {
+                console.error('Invalid principal:', error);
+                return [];
+            }
         },
-        enabled: !!actor && !actorFetching && !!userPrincipal
+        enabled: !!actor && !actorFetching && !!userPrincipalText
     });
 }
 
@@ -158,15 +171,9 @@ export function useCreateRoute() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (route: {
-            start: string;
-            destination: string;
-            waypoints: string[];
-            dateTime: bigint;
-            notes: string | null;
-        }) => {
+        mutationFn: async ({ start, destination, waypoints, dateTime, notes }: { start: string; destination: string; waypoints: string[]; dateTime: bigint; notes: string | null }) => {
             if (!actor) throw new Error('Actor not available');
-            return actor.createRoute(route.start, route.destination, route.waypoints, route.dateTime, route.notes);
+            return actor.createRoute(start, destination, waypoints, dateTime, notes);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['routes'] });
@@ -180,12 +187,12 @@ export function useCreateOrUpdateEmergencyProfile() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (profile: { nextOfKin: string; healthConditions: string; accessCode: string }) => {
+        mutationFn: async ({ nextOfKin, healthConditions, accessCode }: { nextOfKin: string; healthConditions: string; accessCode: string }) => {
             if (!actor) throw new Error('Actor not available');
-            return actor.createOrUpdateEmergencyProfile(profile.nextOfKin, profile.healthConditions, profile.accessCode);
+            return actor.createOrUpdateEmergencyProfile(nextOfKin, healthConditions, accessCode);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['emergencyProfile'] });
+            queryClient.invalidateQueries({ queryKey: ['emergencyLookup'] });
         }
     });
 }
@@ -201,21 +208,106 @@ export function useCreateSOSSnapshot() {
             return actor.createSOSSnapshot(latitude, longitude);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['sosSnapshot'] });
+            queryClient.invalidateQueries({ queryKey: ['emergencyLookup'] });
+            queryClient.invalidateQueries({ queryKey: ['allSOSLocations'] });
         }
     });
 }
 
-export function useEmergencyLookup(userPrincipal: string | null, accessCode: string | null) {
+export function useEmergencyLookup(userPrincipalText: string | null, accessCode: string | null) {
     const { actor, isFetching: actorFetching } = useActor();
 
     return useQuery({
-        queryKey: ['emergencyLookup', userPrincipal, accessCode],
+        queryKey: ['emergencyLookup', userPrincipalText, accessCode],
         queryFn: async () => {
-            if (!actor || !userPrincipal || !accessCode) return null;
-            return actor.emergencyLookup(Principal.fromText(userPrincipal), accessCode);
+            if (!actor || !userPrincipalText || !accessCode) return null;
+            try {
+                const principal = Principal.fromText(userPrincipalText.trim());
+                return actor.emergencyLookup(principal, accessCode);
+            } catch (error) {
+                console.error('Invalid principal:', error);
+                return null;
+            }
         },
-        enabled: !!actor && !actorFetching && !!userPrincipal && !!accessCode,
+        enabled: !!actor && !actorFetching && !!userPrincipalText && !!accessCode,
+        retry: false
+    });
+}
+
+// Admin SOS Queries
+export function useGetAllLatestSOSLocations() {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<SOSSnapshot[]>({
+        queryKey: ['allSOSLocations'],
+        queryFn: async () => {
+            if (!actor) throw new Error('Actor not available');
+            return actor.getAllLatestSOSLocations();
+        },
+        enabled: !!actor && !actorFetching
+    });
+}
+
+// Meetup Location Queries
+export function useShareMeetupLocation() {
+    const { actor } = useActor();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ latitude, longitude, name }: { latitude: number; longitude: number; name: string }) => {
+            if (!actor) throw new Error('Actor not available');
+            return actor.shareMeetupLocation({ latitude, longitude, name });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['meetupLocation'] });
+        }
+    });
+}
+
+export function useDeactivateMeetupLocation() {
+    const { actor } = useActor();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async () => {
+            if (!actor) throw new Error('Actor not available');
+            return actor.deactivateMeetupLocation();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['meetupLocation'] });
+        }
+    });
+}
+
+/**
+ * Lookup a meetup location by Principal ID and validate against the provided share code.
+ * The query key includes both the principal and the entered code to ensure fresh lookups.
+ */
+export function useGetLatestMeetupLocation(userPrincipalText: string | null, enteredCode: string) {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<MeetupLocation | null>({
+        queryKey: ['meetupLocation', userPrincipalText, enteredCode],
+        queryFn: async () => {
+            if (!actor || !userPrincipalText) return null;
+            
+            try {
+                const principal = Principal.fromText(userPrincipalText.trim());
+                const location = await actor.getLatestMeetupLocation(principal);
+                
+                // Validate the returned location against the entered code
+                if (location && location.name === enteredCode.trim()) {
+                    return location;
+                }
+                
+                // Code mismatch or no location - return null
+                return null;
+            } catch (error) {
+                console.error('Meetup lookup error:', error);
+                return null;
+            }
+        },
+        enabled: !!actor && !actorFetching && !!userPrincipalText && !!enteredCode,
         retry: false
     });
 }

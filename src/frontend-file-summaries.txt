@@ -25,7 +25,7 @@
   "frontend/src/pages/RoutesListPage.tsx": "Routes page with tabs for viewing user's own routes and searching other drivers' routes by principal ID.",
   "frontend/src/pages/RouteDetailPage.tsx": "Route detail page placeholder (routes displayed inline in list view).",
   "frontend/src/pages/AddRoutePage.tsx": "Authenticated form page for creating and sharing new routes with waypoints, date/time, and notes.",
-  "frontend/src/pages/ProfilePage.tsx": "User profile page displaying name, verification status, cards for document uploads, emergency access code, emergency profile, and a new login credentials section showing the user's Principal ID with copy functionality and authentication status.",
+  "frontend/src/pages/ProfilePage.tsx": "User profile page displaying name, verification status, document uploads, emergency access code, emergency profile, login credentials with Principal ID, and a new Admin Access section with a \"Request Admin Access\" button for non-admin users that triggers the mutation and refetches the user role on success.",
   "frontend/src/pages/SOSPage.tsx": "Authenticated SOS page with emergency button to capture one-time location snapshot, updated copy clarifying that anyone with Principal ID + Emergency Access Code can view the snapshot via Emergency Lookup (not real-time tracking).",
   "frontend/src/pages/SOSCardPage.tsx": "Authenticated page displaying user's own emergency SOS card with emergency profile and latest location snapshot.",
   "frontend/src/pages/AdminReviewPage.tsx": "Admin-only page for looking up users by principal ID and reviewing/approving verification documents.",

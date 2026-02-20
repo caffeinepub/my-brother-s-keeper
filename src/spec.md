@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Make the "Request Admin Access" button immediately grant admin privileges to the authenticated user.
+**Goal:** Allow users to request admin access directly from the Profile page and immediately gain access without re-logging in.
 
 **Planned changes:**
-- Create a backend function that allows an authenticated user to self-grant admin privileges
-- Wire the "Request Admin Access" button to call the backend function and refresh user role on success
-- Add loading, success, and error states to the button with appropriate toast messages
+- Add a "Request Admin Access" button to the Profile page for non-admin users
+- Display loading state while the request is being processed
+- Show success/error toasts after the request completes
+- Automatically refresh the user's role after successful admin access request
 
-**User-visible outcome:** Users can click "Request Admin Access" on the Access Denied screen and immediately gain admin privileges without manual approval, allowing them to access admin routes.
+**User-visible outcome:** Users can request admin access from their Profile page and immediately access admin features upon approval without needing to log out and back in.

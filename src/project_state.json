@@ -1,41 +1,31 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Admin access management system with automatic admin privilege granting",
-  "architectural_notes": [
-    "User authentication system with admin role management",
-    "Admin access can be granted via 'Request Admin Access' button in the UI"
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [
+    "Missing 'Request Admin Access' prompt/button in the UI"
   ],
-  "known_issues": [],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-request-admin-access-button-on-the-access-denied-screen-to-immediately-grant-admin-privileges-to-the-authenticated-user-when-clicked",
-      "title": "Update the 'Request Admin Access' button on the Access Denied screen to immediately grant admin privileges to the authenticated user when clicked",
+      "id": "feature-display-a-request-admin-access-button-prominently-on-the-profile-page-for-users-who-do-not-have-admin-privileges-the-button-should-be-visible-below-the-user-s-profile-information",
+      "title": "Display a 'Request Admin Access' button prominently on the Profile page for users who do not have admin privileges. The button should be visible below the user's profile information.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-wire-the-request-admin-access-button-in-accessdeniedscreen-tsx-to-call-the-new-backend-admin-grant-function-and-refresh-user-role-on-success",
-      "title": "Wire the Request Admin Access button in AccessDeniedScreen.tsx to call the new backend admin grant function and refresh user role on success",
+      "id": "feature-after-successfully-requesting-admin-access-refresh-the-user-s-role-so-they-can-immediately-access-admin-features-without-logging-out-and-back-in",
+      "title": "After successfully requesting admin access, refresh the user's role so they can immediately access admin features without logging out and back in.",
       "reqIds": [
-        "REQ-3"
+        "REQ-2"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-2",
-      "summary": "Create a backend function that allows an authenticated user to self-grant admin privileges",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    }
-  ],
+  "new_feature_requests": [],
   "projectName": "My Brother's Keeper",
   "clarification_mode": "instant",
   "clarification_rounds": 0

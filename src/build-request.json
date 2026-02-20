@@ -1,78 +1,54 @@
 {
   "kind": "build_request",
-  "title": "Make Request Admin Access button grant admin privileges immediately",
+  "title": "Add Request Admin Access prompt to UI",
   "projectName": "My Brother's Keeper",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the 'Request Admin Access' button on the Access Denied screen to immediately grant admin privileges to the authenticated user when clicked",
-      "target": "both",
+      "text": "Display a 'Request Admin Access' button prominently on the Profile page for users who do not have admin privileges. The button should be visible below the user's profile information.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-assistant-analysis",
-          "msg-user-choice"
+          "msg-user-1"
         ],
         "quotes": [
-          "I choose option 1",
-          "Automatically make you an admin when you click 'Request Admin Access'"
+          "There is no prompt to request admin access."
         ]
       },
       "acceptanceCriteria": [
-        "Clicking 'Request Admin Access' triggers a backend call to grant admin role to the current user",
-        "After successful grant, the user can access admin routes without re-authentication",
-        "The button shows loading state during the grant operation",
-        "Success and error states are displayed to the user with appropriate toast messages"
+        "Button is visible on the Profile page for non-admin users",
+        "Button is labeled 'Request Admin Access'",
+        "Button triggers the existing useRequestAdminAccess mutation when clicked",
+        "Button shows loading state during the request",
+        "Success/error toasts are displayed after the request completes"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Create a backend function that allows an authenticated user to self-grant admin privileges",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-assistant-analysis"
-        ],
-        "quotes": [
-          "make the 'Request Admin Access' button actually grant you admin rights immediately"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend exposes a public function to grant admin role to the caller's Principal ID",
-        "Function updates the user's admin status in the backend state",
-        "Function returns success/failure response"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Wire the Request Admin Access button in AccessDeniedScreen.tsx to call the new backend admin grant function and refresh user role on success",
+      "text": "After successfully requesting admin access, refresh the user's role so they can immediately access admin features without logging out and back in.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-assistant-analysis"
-        ],
-        "quotes": [
-          "make the 'Request Admin Access' button actually grant you admin rights immediately, rather than just being a placeholder"
+          "msg-user-1"
         ]
       },
       "acceptanceCriteria": [
-        "Button invokes the backend admin grant mutation when clicked",
-        "On success, triggers role refetch to update UI state",
-        "Shows success toast confirming admin access granted",
-        "Shows error toast if grant fails",
-        "Button is disabled during the grant operation"
+        "User role is refetched after successful admin access request",
+        "User can navigate to admin dashboard immediately after request succeeds",
+        "No logout/login cycle is required to see admin privileges"
       ]
     }
   ],
   "constraints": [
-    "Do not modify the Internet Identity authentication flow",
-    "Preserve the existing admin route guard structure in App.tsx",
-    "Keep the AdminRouteGuard component's retry mechanism functional"
+    "Use the existing useRequestAdminAccess hook from useQueries.ts",
+    "Do not modify the backend main.mo file",
+    "Follow existing patterns in ProfilePage.tsx for button placement and styling"
   ],
   "nonGoals": [
-    "Implementing a manual admin promotion system for multiple users",
-    "Adding admin user management UI for reviewing admin requests",
-    "Creating role-based permission levels beyond admin/non-admin"
+    "Changing the admin access approval workflow",
+    "Adding admin access requests to pages other than Profile",
+    "Modifying the backend grantAdminToSelf function"
   ],
   "imageRequirements": {
     "required": [],

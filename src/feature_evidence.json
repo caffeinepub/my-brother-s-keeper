@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-request-admin-access-button-on-the-access-denied-screen-to-immediately-grant-admin-privileges-to-the-authenticated-user-when-clicked",
-      "featureTitle": "Update the 'Request Admin Access' button on the Access Denied screen to immediately grant admin privileges to the authenticated user when clicked",
+      "featureId": "feature-display-a-request-admin-access-button-prominently-on-the-profile-page-for-users-who-do-not-have-admin-privileges-the-button-should-be-visible-below-the-user-s-profile-information",
+      "featureTitle": "Display a 'Request Admin Access' button prominently on the Profile page for users who do not have admin privileges. The button should be visible below the user's profile information.",
       "files": [
-        "frontend/src/components/auth/AccessDeniedScreen.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/pages/ProfilePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -23,10 +22,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-wire-the-request-admin-access-button-in-accessdeniedscreen-tsx-to-call-the-new-backend-admin-grant-function-and-refresh-user-role-on-success",
-      "featureTitle": "Wire the Request Admin Access button in AccessDeniedScreen.tsx to call the new backend admin grant function and refresh user role on success",
+      "featureId": "feature-after-successfully-requesting-admin-access-refresh-the-user-s-role-so-they-can-immediately-access-admin-features-without-logging-out-and-back-in",
+      "featureTitle": "After successfully requesting admin access, refresh the user's role so they can immediately access admin features without logging out and back in.",
       "files": [
-        "frontend/src/components/auth/AccessDeniedScreen.tsx"
+        "frontend/src/pages/ProfilePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -38,7 +37,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-3"
+        "REQ-2"
       ],
       "confidence": "high"
     }

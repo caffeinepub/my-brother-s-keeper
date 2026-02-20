@@ -1,45 +1,39 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Make Request Admin Access button grant admin privileges immediately",
+  "title": "Add Request Admin Access prompt to UI",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Update the 'Request Admin Access' button to immediately grant admin privileges to the authenticated user when clicked",
+      "summary": "Display a 'Request Admin Access' button prominently on the Profile page for users who do not have admin privileges",
       "acceptanceCriteria": [
-        "Clicking 'Request Admin Access' triggers a backend call to grant admin role to the current user",
-        "After successful grant, the user can access admin routes without re-authentication",
-        "The button shows loading state during the grant operation",
-        "Success and error states are displayed to the user with appropriate toast messages"
+        "Button is visible on the Profile page for non-admin users",
+        "Button is labeled 'Request Admin Access'",
+        "Button triggers the existing useRequestAdminAccess mutation when clicked",
+        "Button shows loading state during the request",
+        "Success/error toasts are displayed after the request completes"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/auth/AccessDeniedScreen.tsx",
+          "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "Wire the 'Request Admin Access' button to call the backend requestAdminAccess function via useRequestAdminAccess mutation hook. Add loading state to disable the button during the operation. On success, trigger role refetch and show a success toast message confirming admin access was granted. On error, show an error toast with the failure reason. Ensure the button invokes the mutation's mutate function when clicked."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Add a new mutation hook useRequestAdminAccess that calls actor.requestAdminAccess(). On successful mutation, invalidate the 'userRole' query key to trigger a refetch of the user's role, ensuring the UI updates immediately to reflect the new admin status. Return the mutation object with loading, error, and success states for UI integration."
+          "description": "Add a 'Request Admin Access' button below the user's profile information that is visible only to non-admin users. The button should use the existing useRequestAdminAccess mutation from useQueries.ts, display a loading state during the request, show success/error toasts after completion, and trigger a role refetch on success. Follow the existing styling patterns in ProfilePage.tsx for button placement and visual consistency."
         }
       ]
     },
     {
-      "id": "REQ-3",
-      "summary": "Wire the Request Admin Access button in AccessDeniedScreen.tsx to call the new backend admin grant function and refresh user role on success",
+      "id": "REQ-2",
+      "summary": "After successfully requesting admin access, refresh the user's role so they can immediately access admin features without logging out and back in",
       "acceptanceCriteria": [
-        "Button invokes the backend admin grant mutation when clicked",
-        "On success, triggers role refetch to update UI state",
-        "Shows success toast confirming admin access granted",
-        "Shows error toast if grant fails",
-        "Button is disabled during the grant operation"
+        "User role is refetched after successful admin access request",
+        "User can navigate to admin dashboard immediately after request succeeds",
+        "No logout/login cycle is required to see admin privileges"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/auth/AccessDeniedScreen.tsx",
+          "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "Import and use the useRequestAdminAccess mutation hook. Replace the current button onClick handler to call the mutation's mutate function. Add conditional rendering to show loading text ('Requesting...') while isPending is true, and disable the button during this state. Use toast.success to display 'Admin access granted!' on successful mutation and toast.error to display error messages on failure. Ensure the onSuccess callback in the mutation hook triggers a role refetch so the AdminRouteGuard re-evaluates access."
+          "description": "Integrate the useGetCallerUserRole query hook to fetch the current user's role. After a successful admin access request, invalidate the 'currentUserRole' query key using the queryClient to trigger an automatic role refetch. This ensures the user can immediately navigate to admin features without requiring a logout/login cycle."
         }
       ]
     }

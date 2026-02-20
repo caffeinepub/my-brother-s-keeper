@@ -124,6 +124,7 @@ export interface _SERVICE {
   'getRoutes' : ActorMethod<[Principal], Array<Route>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'requestAdminAccess' : ActorMethod<[], undefined>,
   'reviewVerification' : ActorMethod<[Principal, boolean], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchPlaces' : ActorMethod<[[] | [PlaceCategory]], Array<Place>>,

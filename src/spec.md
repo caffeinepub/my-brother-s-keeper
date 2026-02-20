@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Let users fine-tune how Google Maps links open by choosing a preferred zoom level that is reused across sessions.
+**Goal:** Make the "Request Admin Access" button immediately grant admin privileges to the authenticated user.
 
 **Planned changes:**
-- Add a user-facing zoom control alongside map links (at minimum on the Meetup location result panel), with a sensible default and English UI text.
-- Persist the selected zoom level locally in the browser (e.g., localStorage) and apply it after reloads.
-- Update all coordinate-based Google Maps links (including MeetupPage and the SOS last-known-location view) to include and reflect the preferred zoom parameter.
-- Refactor Google Maps URL creation into a shared frontend utility used by all updated map-link locations.
+- Create a backend function that allows an authenticated user to self-grant admin privileges
+- Wire the "Request Admin Access" button to call the backend function and refresh user role on success
+- Add loading, success, and error states to the button with appropriate toast messages
 
-**User-visible outcome:** Users can set a preferred map zoom once and all “View on Google Maps” links open at that zoom across the app, even after refreshing or returning later.
+**User-visible outcome:** Users can click "Request Admin Access" on the Access Denied screen and immediately gain admin privileges without manual approval, allowing them to access admin routes.

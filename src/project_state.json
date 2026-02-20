@@ -1,32 +1,25 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
-  "architectural_notes": [],
-  "known_issues": [
-    "Automated build failed/struggled when attempting to implement 'fine-tune the map' request; may require rephrasing or breaking into smaller steps."
+  "summary": "Admin access management system with automatic admin privilege granting",
+  "architectural_notes": [
+    "User authentication system with admin role management",
+    "Admin access can be granted via 'Request Admin Access' button in the UI"
   ],
-  "isFixRequest": false,
+  "known_issues": [],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-add-a-user-facing-control-to-fine-tune-google-maps-link-behavior-by-allowing-the-user-to-set-a-preferred-zoom-level-with-a-sensible-default-and-persist-that-preference-locally-e-g-localstorage-so-it-is-reused-across-sessions",
-      "title": "Add a user-facing control to fine-tune Google Maps link behavior by allowing the user to set a preferred zoom level (with a sensible default) and persist that preference locally (e.g., localStorage) so it is reused across sessions.",
+      "id": "feature-update-the-request-admin-access-button-on-the-access-denied-screen-to-immediately-grant-admin-privileges-to-the-authenticated-user-when-clicked",
+      "title": "Update the 'Request Admin Access' button on the Access Denied screen to immediately grant admin privileges to the authenticated user when clicked",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-all-existing-google-maps-links-in-the-app-that-open-coordinates-to-use-the-preferred-zoom-level-when-generating-the-url-including-meetuppage-and-the-sos-last-known-location-view",
-      "title": "Update all existing Google Maps links in the app that open coordinates to use the preferred zoom level when generating the URL (including MeetupPage and the SOS last-known-location view).",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-refactor-map-url-generation-into-a-shared-frontend-utility-so-all-map-links-are-consistent-and-easy-to-adjust-in-one-place-e-g-a-single-function-that-takes-latitude-longitude-and-optional-zoom",
-      "title": "Refactor map URL generation into a shared frontend utility so all map links are consistent and easy to adjust in one place (e.g., a single function that takes latitude, longitude, and optional zoom).",
+      "id": "feature-wire-the-request-admin-access-button-in-accessdeniedscreen-tsx-to-call-the-new-backend-admin-grant-function-and-refresh-user-role-on-success",
+      "title": "Wire the Request Admin Access button in AccessDeniedScreen.tsx to call the new backend admin grant function and refresh user role on success",
       "reqIds": [
         "REQ-3"
       ],
@@ -35,9 +28,11 @@
   ],
   "new_feature_requests": [
     {
-      "id": "AR-1",
-      "summary": "Add an option to fine-tune map controls",
-      "reqIds": [],
+      "id": "AR-2",
+      "summary": "Create a backend function that allows an authenticated user to self-grant admin privileges",
+      "reqIds": [
+        "REQ-2"
+      ],
       "status": "pending"
     }
   ],

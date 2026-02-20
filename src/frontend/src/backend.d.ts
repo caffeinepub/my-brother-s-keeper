@@ -98,6 +98,7 @@ export interface backendInterface {
     getRoutes(user: Principal): Promise<Array<Route>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    requestAdminAccess(): Promise<void>;
     reviewVerification(user: Principal, approved: boolean): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchPlaces(category: PlaceCategory | null): Promise<Array<Place>>;

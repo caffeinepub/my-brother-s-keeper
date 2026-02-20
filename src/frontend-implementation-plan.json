@@ -1,78 +1,45 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "User-adjustable Google Maps link zoom preference (local persistence) and shared URL utility",
+  "title": "Make Request Admin Access button grant admin privileges immediately",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add a user-facing zoom preference control for Google Maps links and persist the setting locally with a sensible default.",
+      "summary": "Update the 'Request Admin Access' button to immediately grant admin privileges to the authenticated user when clicked",
       "acceptanceCriteria": [
-        "A zoom control is available in the UI where map links are shown (at minimum on the Meetup location result panel).",
-        "The selected zoom value persists across page reloads (stored locally in the browser).",
-        "A default zoom is used when the user has not set a preference.",
-        "User-facing text is in English."
+        "Clicking 'Request Admin Access' triggers a backend call to grant admin role to the current user",
+        "After successful grant, the user can access admin routes without re-authentication",
+        "The button shows loading state during the grant operation",
+        "Success and error states are displayed to the user with appropriate toast messages"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/mapZoomPreference.ts",
-          "operation": "create",
-          "description": "Implement a small localStorage-backed preference helper for a Google Maps zoom setting, including: a constant storage key, a default zoom value, safe get/set/clear functions, and basic validation/clamping to an allowed numeric range."
+          "path": "frontend/src/components/auth/AccessDeniedScreen.tsx",
+          "operation": "modify",
+          "description": "Wire the 'Request Admin Access' button to call the backend requestAdminAccess function via useRequestAdminAccess mutation hook. Add loading state to disable the button during the operation. On success, trigger role refetch and show a success toast message confirming admin access was granted. On error, show an error toast with the failure reason. Ensure the button invokes the mutation's mutate function when clicked."
         },
         {
-          "path": "frontend/src/components/maps/MapZoomControl.tsx",
-          "operation": "create",
-          "description": "Create a reusable MapZoomControl component that reads the stored zoom preference on mount, allows adjusting it via a simple UI control (e.g., select or number input), and persists updates via the mapZoomPreference helper. Keep all user-facing labels/help text in English."
-        },
-        {
-          "path": "frontend/src/pages/MeetupPage.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add the MapZoomControl to the Meetup location result panel (where the map link is shown) so users can fine-tune the map zoom from that context; initialize it with the default if unset and ensure changes persist locally."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Update coordinate-based Google Maps links in MeetupPage and the SOS last-known-location view to include the preferred zoom parameter (or default when unset).",
-      "acceptanceCriteria": [
-        "MeetupPage map link(s) include the zoom parameter and reflect the user-selected zoom value.",
-        "LastKnownLocationCard “View on Google Maps” link includes the zoom parameter and reflects the user-selected zoom value.",
-        "If the preference is unset, links use the app’s default zoom."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/MeetupPage.tsx",
-          "operation": "modify",
-          "description": "Replace the current hard-coded Google Maps URL generation for coordinate links so it always includes the zoom parameter driven by the stored preference (falling back to the default when unset). Ensure both open-in-new-tab links and any 'copy map URL' functionality use the same preferred zoom."
-        },
-        {
-          "path": "frontend/src/components/sos/LastKnownLocationCard.tsx",
-          "operation": "modify",
-          "description": "Update the 'View on Google Maps' coordinate link to include the zoom parameter using the stored preferred zoom (defaulting when unset), keeping the existing behavior of opening Google Maps in a new tab."
+          "description": "Add a new mutation hook useRequestAdminAccess that calls actor.requestAdminAccess(). On successful mutation, invalidate the 'userRole' query key to trigger a refetch of the user's role, ensuring the UI updates immediately to reflect the new admin status. Return the mutation object with loading, error, and success states for UI integration."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Centralize Google Maps URL generation into a shared frontend utility used by both MeetupPage and LastKnownLocationCard.",
+      "summary": "Wire the Request Admin Access button in AccessDeniedScreen.tsx to call the new backend admin grant function and refresh user role on success",
       "acceptanceCriteria": [
-        "There is a single shared utility used by both MeetupPage and LastKnownLocationCard to build Google Maps URLs.",
-        "No duplicate ad-hoc string templates for Google Maps URLs remain in the updated areas."
+        "Button invokes the backend admin grant mutation when clicked",
+        "On success, triggers role refetch to update UI state",
+        "Shows success toast confirming admin access granted",
+        "Shows error toast if grant fails",
+        "Button is disabled during the grant operation"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/googleMapsUrl.ts",
-          "operation": "create",
-          "description": "Create a shared utility for building Google Maps URLs from latitude/longitude and an optional zoom (e.g., a single function that takes latitude, longitude, and optional zoom). Ensure the generated URL consistently applies zoom when provided and remains compatible with current 'open in new tab' behavior."
-        },
-        {
-          "path": "frontend/src/pages/MeetupPage.tsx",
+          "path": "frontend/src/components/auth/AccessDeniedScreen.tsx",
           "operation": "modify",
-          "description": "Refactor MeetupPage to use the shared googleMapsUrl utility (and the stored zoom preference) instead of any inline/ad-hoc Google Maps string templates."
-        },
-        {
-          "path": "frontend/src/components/sos/LastKnownLocationCard.tsx",
-          "operation": "modify",
-          "description": "Refactor LastKnownLocationCard to use the shared googleMapsUrl utility (and the stored zoom preference) instead of inline/ad-hoc Google Maps string templates."
+          "description": "Import and use the useRequestAdminAccess mutation hook. Replace the current button onClick handler to call the mutation's mutate function. Add conditional rendering to show loading text ('Requesting...') while isPending is true, and disable the button during this state. Use toast.success to display 'Admin access granted!' on successful mutation and toast.error to display error messages on failure. Ensure the onSuccess callback in the mutation hook triggers a role refetch so the AdminRouteGuard re-evaluates access."
         }
       ]
     }

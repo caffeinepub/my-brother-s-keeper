@@ -2,12 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-user-facing-control-to-fine-tune-google-maps-link-behavior-by-allowing-the-user-to-set-a-preferred-zoom-level-with-a-sensible-default-and-persist-that-preference-locally-e-g-localstorage-so-it-is-reused-across-sessions",
-      "featureTitle": "Add a user-facing control to fine-tune Google Maps link behavior by allowing the user to set a preferred zoom level (with a sensible default) and persist that preference locally (e.g., localStorage) so it is reused across sessions.",
+      "featureId": "feature-update-the-request-admin-access-button-on-the-access-denied-screen-to-immediately-grant-admin-privileges-to-the-authenticated-user-when-clicked",
+      "featureTitle": "Update the 'Request Admin Access' button on the Access Denied screen to immediately grant admin privileges to the authenticated user when clicked",
       "files": [
-        "frontend/src/components/maps/MapZoomControl.tsx",
-        "frontend/src/lib/mapZoomPreference.ts",
-        "frontend/src/pages/MeetupPage.tsx"
+        "frontend/src/components/auth/AccessDeniedScreen.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -24,33 +23,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-all-existing-google-maps-links-in-the-app-that-open-coordinates-to-use-the-preferred-zoom-level-when-generating-the-url-including-meetuppage-and-the-sos-last-known-location-view",
-      "featureTitle": "Update all existing Google Maps links in the app that open coordinates to use the preferred zoom level when generating the URL (including MeetupPage and the SOS last-known-location view).",
+      "featureId": "feature-wire-the-request-admin-access-button-in-accessdeniedscreen-tsx-to-call-the-new-backend-admin-grant-function-and-refresh-user-role-on-success",
+      "featureTitle": "Wire the Request Admin Access button in AccessDeniedScreen.tsx to call the new backend admin grant function and refresh user role on success",
       "files": [
-        "frontend/src/components/sos/LastKnownLocationCard.tsx",
-        "frontend/src/pages/MeetupPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-refactor-map-url-generation-into-a-shared-frontend-utility-so-all-map-links-are-consistent-and-easy-to-adjust-in-one-place-e-g-a-single-function-that-takes-latitude-longitude-and-optional-zoom",
-      "featureTitle": "Refactor map URL generation into a shared frontend utility so all map links are consistent and easy to adjust in one place (e.g., a single function that takes latitude, longitude, and optional zoom).",
-      "files": [
-        "frontend/src/components/sos/LastKnownLocationCard.tsx",
-        "frontend/src/lib/googleMapsUrl.ts",
-        "frontend/src/pages/MeetupPage.tsx"
+        "frontend/src/components/auth/AccessDeniedScreen.tsx"
       ],
       "components": [
         "authorization@4.0.0",

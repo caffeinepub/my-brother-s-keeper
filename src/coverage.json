@@ -1,70 +1,60 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T23:16:12.035Z",
+  "generatedAt": "2026-02-20T01:02:21.302Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 3,
-    "implemented": 3,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a user-facing control to fine-tune Google Maps link behavior by allowing the user to set a preferred zoom level (with a sensible default) and persist that preference locally (e.g., localStorage) so it is reused across sessions.",
+        "summary": "Update the 'Request Admin Access' button on the Access Denied screen to immediately grant admin privileges to the authenticated user when clicked",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/mapZoomPreference.ts",
-          "frontend/src/components/maps/MapZoomControl.tsx",
-          "frontend/src/pages/MeetupPage.tsx"
+          "frontend/src/components/auth/AccessDeniedScreen.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/lib/mapZoomPreference.ts",
-          "frontend/src/components/maps/MapZoomControl.tsx",
-          "frontend/src/pages/MeetupPage.tsx"
+          "frontend/src/components/auth/AccessDeniedScreen.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Update all existing Google Maps links in the app that open coordinates to use the preferred zoom level when generating the URL (including MeetupPage and the SOS last-known-location view).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/MeetupPage.tsx",
-          "frontend/src/components/sos/LastKnownLocationCard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/MeetupPage.tsx",
-          "frontend/src/components/sos/LastKnownLocationCard.tsx"
-        ]
+        "summary": "Create a backend function that allows an authenticated user to self-grant admin privileges",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Refactor map URL generation into a shared frontend utility so all map links are consistent and easy to adjust in one place (e.g., a single function that takes latitude, longitude, and optional zoom).",
+        "summary": "Wire the Request Admin Access button in AccessDeniedScreen.tsx to call the new backend admin grant function and refresh user role on success",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/googleMapsUrl.ts",
-          "frontend/src/pages/MeetupPage.tsx",
-          "frontend/src/components/sos/LastKnownLocationCard.tsx"
+          "frontend/src/components/auth/AccessDeniedScreen.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/googleMapsUrl.ts",
-          "frontend/src/pages/MeetupPage.tsx",
-          "frontend/src/components/sos/LastKnownLocationCard.tsx"
+          "frontend/src/components/auth/AccessDeniedScreen.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/maps/MapZoomControl.tsx",
-    "frontend/src/components/sos/LastKnownLocationCard.tsx",
-    "frontend/src/lib/googleMapsUrl.ts",
-    "frontend/src/lib/mapZoomPreference.ts",
-    "frontend/src/pages/MeetupPage.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/auth/AccessDeniedScreen.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

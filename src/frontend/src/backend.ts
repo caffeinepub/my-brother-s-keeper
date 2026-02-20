@@ -191,6 +191,7 @@ export interface backendInterface {
     getRoutes(user: Principal): Promise<Array<Route>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    requestAdminAccess(): Promise<void>;
     reviewVerification(user: Principal, approved: boolean): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchPlaces(category: PlaceCategory | null): Promise<Array<Place>>;
@@ -576,6 +577,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async requestAdminAccess(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.requestAdminAccess();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.requestAdminAccess();
             return result;
         }
     }

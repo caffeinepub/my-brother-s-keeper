@@ -4,6 +4,8 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from './components/layout/AppLayout';
 import ProfileSetupDialog from './components/profile/ProfileSetupDialog';
+import AuthenticatedRouteGuard from './components/auth/AuthenticatedRouteGuard';
+import AdminRouteGuard from './components/auth/AdminRouteGuard';
 import PlacesListPage from './pages/PlacesListPage';
 import PlaceDetailPage from './pages/PlaceDetailPage';
 import AddPlacePage from './pages/AddPlacePage';
@@ -99,7 +101,13 @@ const meetupRoute = createRoute({
 const adminRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/admin',
-    component: AdminDashboardPage
+    component: () => (
+        <AuthenticatedRouteGuard>
+            <AdminRouteGuard>
+                <AdminDashboardPage />
+            </AdminRouteGuard>
+        </AuthenticatedRouteGuard>
+    )
 });
 
 const emergencyLookupRoute = createRoute({

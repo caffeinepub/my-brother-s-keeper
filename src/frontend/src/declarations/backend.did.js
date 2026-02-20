@@ -172,6 +172,7 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'requestAdminAccess' : IDL.Func([], [], []),
   'reviewVerification' : IDL.Func([IDL.Principal, IDL.Bool], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'searchPlaces' : IDL.Func(
@@ -363,6 +364,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'requestAdminAccess' : IDL.Func([], [], []),
     'reviewVerification' : IDL.Func([IDL.Principal, IDL.Bool], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'searchPlaces' : IDL.Func(

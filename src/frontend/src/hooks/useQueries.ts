@@ -27,14 +27,40 @@ export function useGetCallerUserProfile() {
 export function useGetCallerUserRole() {
     const { actor, isFetching: actorFetching } = useActor();
 
-    return useQuery<UserRole>({
+    const query = useQuery<UserRole>({
         queryKey: ['currentUserRole'],
         queryFn: async () => {
-            if (!actor) return UserRole.guest;
-            return actor.getCallerUserRole();
+            console.log('[useGetCallerUserRole] Fetching user role...');
+            if (!actor) {
+                console.log('[useGetCallerUserRole] No actor available, returning guest');
+                return UserRole.guest;
+            }
+            try {
+                const role = await actor.getCallerUserRole();
+                console.log('[useGetCallerUserRole] Fetched role:', role);
+                return role;
+            } catch (error) {
+                console.error('[useGetCallerUserRole] Error fetching role:', error);
+                throw error;
+            }
         },
-        enabled: !!actor && !actorFetching
+        enabled: !!actor && !actorFetching,
+        retry: false
     });
+
+    console.log('[useGetCallerUserRole] Hook state:', {
+        actorFetching,
+        queryLoading: query.isLoading,
+        queryFetching: query.isFetching,
+        data: query.data,
+        error: query.error
+    });
+
+    return {
+        ...query,
+        isLoading: actorFetching || query.isLoading,
+        isFetched: !!actor && query.isFetched
+    };
 }
 
 export function useCreateUserProfile() {
@@ -113,6 +139,21 @@ export function useReviewVerification() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['allUserProfiles'] });
             queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+        }
+    });
+}
+
+export function useRequestAdminAccess() {
+    const { actor } = useActor();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async () => {
+            if (!actor) throw new Error('Actor not available');
+            return actor.requestAdminAccess();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['currentUserRole'] });
         }
     });
 }

@@ -1,72 +1,78 @@
 {
   "kind": "build_request",
-  "title": "Add user-adjustable map link controls (zoom) for Google Maps links",
+  "title": "Make Request Admin Access button grant admin privileges immediately",
   "projectName": "My Brother's Keeper",
-  "priority": "normal",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a user-facing control to fine-tune Google Maps link behavior by allowing the user to set a preferred zoom level (with a sensible default) and persist that preference locally (e.g., localStorage) so it is reused across sessions.",
-      "target": "frontend",
+      "text": "Update the 'Request Admin Access' button on the Access Denied screen to immediately grant admin privileges to the authenticated user when clicked",
+      "target": "both",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-assistant-analysis",
+          "msg-user-choice"
         ],
         "quotes": [
-          "Fine tune the map please",
-          "Finne tune it"
+          "I choose option 1",
+          "Automatically make you an admin when you click 'Request Admin Access'"
         ]
       },
       "acceptanceCriteria": [
-        "A zoom control is available in the UI where map links are shown (at minimum on the Meetup location result panel).",
-        "The selected zoom value persists across page reloads (stored locally in the browser).",
-        "A default zoom is used when the user has not set a preference.",
-        "User-facing text is in English."
+        "Clicking 'Request Admin Access' triggers a backend call to grant admin role to the current user",
+        "After successful grant, the user can access admin routes without re-authentication",
+        "The button shows loading state during the grant operation",
+        "Success and error states are displayed to the user with appropriate toast messages"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update all existing Google Maps links in the app that open coordinates to use the preferred zoom level when generating the URL (including MeetupPage and the SOS last-known-location view).",
-      "target": "frontend",
+      "text": "Create a backend function that allows an authenticated user to self-grant admin privileges",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-assistant-analysis"
         ],
         "quotes": [
-          "Fine tune the map please"
+          "make the 'Request Admin Access' button actually grant you admin rights immediately"
         ]
       },
       "acceptanceCriteria": [
-        "MeetupPage map link(s) include the zoom parameter and reflect the user-selected zoom value.",
-        "LastKnownLocationCard “View on Google Maps” link includes the zoom parameter and reflects the user-selected zoom value.",
-        "If the preference is unset, links use the app’s default zoom."
+        "Backend exposes a public function to grant admin role to the caller's Principal ID",
+        "Function updates the user's admin status in the backend state",
+        "Function returns success/failure response"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Refactor map URL generation into a shared frontend utility so all map links are consistent and easy to adjust in one place (e.g., a single function that takes latitude, longitude, and optional zoom).",
+      "text": "Wire the Request Admin Access button in AccessDeniedScreen.tsx to call the new backend admin grant function and refresh user role on success",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-assistant-analysis"
         ],
         "quotes": [
-          "Fine tune the map please"
+          "make the 'Request Admin Access' button actually grant you admin rights immediately, rather than just being a placeholder"
         ]
       },
       "acceptanceCriteria": [
-        "There is a single shared utility used by both MeetupPage and LastKnownLocationCard to build Google Maps URLs.",
-        "No duplicate ad-hoc string templates for Google Maps URLs remain in the updated areas."
+        "Button invokes the backend admin grant mutation when clicked",
+        "On success, triggers role refetch to update UI state",
+        "Shows success toast confirming admin access granted",
+        "Shows error toast if grant fails",
+        "Button is disabled during the grant operation"
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (Shadcn components are read-only).",
-    "Do not edit immutable hook files: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx."
+    "Do not modify the Internet Identity authentication flow",
+    "Preserve the existing admin route guard structure in App.tsx",
+    "Keep the AdminRouteGuard component's retry mechanism functional"
   ],
   "nonGoals": [
-    "Do not embed an interactive map widget (e.g., Google Maps iframe/SDK); keep the existing behavior of opening Google Maps in a new tab.",
-    "Do not add any backend changes or persist map preferences on-chain."
+    "Implementing a manual admin promotion system for multiple users",
+    "Adding admin user management UI for reviewing admin requests",
+    "Creating role-based permission levels beyond admin/non-admin"
   ],
   "imageRequirements": {
     "required": [],

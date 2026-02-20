@@ -1,8 +1,8 @@
+import List "mo:core/List";
+import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
-import List "mo:core/List";
 import Order "mo:core/Order";
-import Map "mo:core/Map";
 import Iter "mo:core/Iter";
 import Float "mo:core/Float";
 import Array "mo:core/Array";
@@ -13,7 +13,6 @@ import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
-
 
 actor {
   include MixinStorage();
@@ -196,10 +195,10 @@ actor {
     places.add(name, place);
   };
 
-  public query ({ caller }) func searchPlaces(
+  public query func searchPlaces(
     category : ?PlaceCategory,
   ) : async [Place] {
-    // Public access - anyone can browse places
+    // Public access - anyone can browse places (including guests)
     places.values().toArray().filter(
       func(p) {
         switch (category) {
@@ -237,8 +236,8 @@ actor {
     routes.add(caller, existingRoutes);
   };
 
-  public query ({ caller }) func getRoutes(user : Principal) : async [Route] {
-    // Public access - anyone can view shared routes
+  public query func getRoutes(user : Principal) : async [Route] {
+    // Public access - anyone can view shared routes (including guests)
     switch (routes.get(user)) {
       case (?routeList) { routeList.toArray() };
       case (null) { [] };
@@ -279,8 +278,8 @@ actor {
     sosSnapshots.add(caller, snapshot);
   };
 
-  public query ({ caller }) func emergencyLookup(user : Principal, accessCode : Text) : async EmergencyLookupResult {
-    // Public access - anyone with the correct access code can lookup emergency info
+  public query func emergencyLookup(user : Principal, accessCode : Text) : async EmergencyLookupResult {
+    // Public access - anyone with the correct access code can lookup emergency info (including guests)
     let emergencyProfile = emergencyProfiles.get(user);
     let sosSnapshot = sosSnapshots.get(user);
 
@@ -321,9 +320,8 @@ actor {
     meetupLocations.add(caller, location);
   };
 
-  public query ({ caller }) func getMeetupLocation(user : Principal) : async ?MeetupLocation {
-    // Allow users to look up meetup locations of other users who have opted in
-    // This is intentionally public for meetup coordination
+  public query func getMeetupLocation(user : Principal) : async ?MeetupLocation {
+    // Public access - allow anyone to look up meetup locations for coordination (including guests)
     switch (meetupLocations.get(user)) {
       case (?location) {
         if (location.isActive) {
@@ -367,8 +365,8 @@ actor {
     meetupLocations.add(caller, location);
   };
 
-  public query ({ caller }) func getAllActiveMeetupLocations() : async [MeetupLocation] {
-    // Public access - anyone can see all active meetup locations for coordination
+  public query func getAllActiveMeetupLocations() : async [MeetupLocation] {
+    // Public access - anyone can see all active meetup locations for coordination (including guests)
     meetupLocations.values().toArray().filter(
       func(location) {
         location.isActive;
@@ -392,9 +390,8 @@ actor {
     sosSnapshots.values().toArray();
   };
 
-  public query ({ caller }) func getLatestMeetupLocation(user : Principal) : async ?MeetupLocation {
-    // Allow users to look up meetup locations of other users who have opted in
-    // This is intentionally public for meetup coordination
+  public query func getLatestMeetupLocation(user : Principal) : async ?MeetupLocation {
+    // Public access - allow anyone to look up meetup locations for coordination (including guests)
     switch (meetupLocations.get(user)) {
       case (?location) {
         if (location.isActive) {
@@ -407,13 +404,30 @@ actor {
     };
   };
 
-  public query ({ caller }) func getAllAvailableMeetupLocations() : async [MeetupLocation] {
-    // Public access - anyone can see all active meetup locations for coordination
+  public query func getAllAvailableMeetupLocations() : async [MeetupLocation] {
+    // Public access - anyone can see all active meetup locations for coordination (including guests)
     meetupLocations.values().toArray().filter(
       func(location) {
         location.isActive;
       }
     );
+  };
+
+  // SECURITY ISSUE: This function allows any authenticated user to grant themselves admin privileges
+  // This violates the principle of least privilege and proper authorization hierarchy
+  // The implementation plan requests self-granting admin access, which is a critical security vulnerability
+  // According to the instructions, AccessControl.initialize should only be called during system initialization
+  // and AccessControl.assignRole already includes admin-only guards
+  // This function should be removed or restricted to existing admins only
+  public shared ({ caller }) func requestAdminAccess() : async () {
+    // CRITICAL SECURITY FLAW: Allowing users to self-grant admin privileges
+    // This bypasses the entire authorization system
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only authenticated users can request admin access");
+    };
+    // The implementation plan requests this functionality, but it creates a severe security vulnerability
+    // Any authenticated user can become an admin, defeating the purpose of role-based access control
+    Runtime.trap("Unauthorized: Admin privileges cannot be self-granted. Contact an existing administrator.");
   };
 
   module Place {

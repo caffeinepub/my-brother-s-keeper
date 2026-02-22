@@ -1,39 +1,32 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add Request Admin Access prompt to UI",
+  "title": "Grant admin access to specific Principal ID",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Display a 'Request Admin Access' button prominently on the Profile page for users who do not have admin privileges",
+      "id": "REQ-4",
+      "summary": "Ensure the admin authorization check correctly identifies the hardcoded Principal ID as an admin and grants access to the Admin Dashboard",
       "acceptanceCriteria": [
-        "Button is visible on the Profile page for non-admin users",
-        "Button is labeled 'Request Admin Access'",
-        "Button triggers the existing useRequestAdminAccess mutation when clicked",
-        "Button shows loading state during the request",
-        "Success/error toasts are displayed after the request completes"
+        "The useIsCallerAdmin hook returns true for the hardcoded Principal ID",
+        "The Access Denied screen no longer appears for this Principal ID when accessing admin routes",
+        "The Admin Dashboard page loads successfully for this Principal ID",
+        "All admin features (user registrations, verification reviews, SOS locations, member directory, activity logs) are accessible"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/ProfilePage.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add a 'Request Admin Access' button below the user's profile information that is visible only to non-admin users. The button should use the existing useRequestAdminAccess mutation from useQueries.ts, display a loading state during the request, show success/error toasts after completion, and trigger a role refetch on success. Follow the existing styling patterns in ProfilePage.tsx for button placement and visual consistency."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "After successfully requesting admin access, refresh the user's role so they can immediately access admin features without logging out and back in",
-      "acceptanceCriteria": [
-        "User role is refetched after successful admin access request",
-        "User can navigate to admin dashboard immediately after request succeeds",
-        "No logout/login cycle is required to see admin privileges"
-      ],
-      "file_operations": [
+          "description": "Update the useIsCallerAdmin hook to call the backend isCallerAdmin() method and properly handle the response. Ensure proper error handling and loading states are returned. The backend has already been configured with the hardcoded admin Principal ID '2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae', so the frontend hook must correctly invoke the backend capability and return the authorization status."
+        },
         {
-          "path": "frontend/src/pages/ProfilePage.tsx",
+          "path": "frontend/src/components/auth/AdminRouteGuard.tsx",
           "operation": "modify",
-          "description": "Integrate the useGetCallerUserRole query hook to fetch the current user's role. After a successful admin access request, invalidate the 'currentUserRole' query key using the queryClient to trigger an automatic role refetch. This ensures the user can immediately navigate to admin features without requiring a logout/login cycle."
+          "description": "Review and verify that AdminRouteGuard correctly uses the useIsCallerAdmin hook to determine admin status. Ensure the loading state properly waits for both actor initialization and the admin check to complete before rendering AccessDeniedScreen. Add comprehensive console logging to debug authorization flow for the hardcoded Principal ID. The guard must allow access to /admin/* routes when isCallerAdmin returns true."
+        },
+        {
+          "path": "frontend/src/components/layout/AppNav.tsx",
+          "operation": "modify",
+          "description": "Verify that the Admin Dashboard navigation link correctly uses the useIsCallerAdmin hook and displays for users with admin privileges. Ensure the navigation item appears immediately when the hardcoded Principal ID is detected as an admin."
         }
       ]
     }

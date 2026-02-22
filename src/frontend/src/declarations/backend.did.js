@@ -48,6 +48,24 @@ export const EmergencyLookupResult = IDL.Record({
   'userName' : IDL.Opt(IDL.Text),
   'emergencyProfile' : IDL.Opt(EmergencyProfile),
 });
+export const EventType = IDL.Variant({
+  'sosSnapshot' : IDL.Null,
+  'routeCreated' : IDL.Null,
+  'meetupLocationUpdated' : IDL.Null,
+  'verificationSubmitted' : IDL.Null,
+  'meetupLocationShared' : IDL.Null,
+  'adminAction' : IDL.Null,
+  'emergencyProfileUpdated' : IDL.Null,
+  'verificationReviewed' : IDL.Null,
+  'userRegistration' : IDL.Null,
+  'placeAdded' : IDL.Null,
+});
+export const ActivityLogEntry = IDL.Record({
+  'description' : IDL.Text,
+  'timestamp' : Time,
+  'initiatedBy' : IDL.Principal,
+  'eventType' : EventType,
+});
 export const MeetupLocation = IDL.Record({
   'latitude' : IDL.Float64,
   'name' : IDL.Text,
@@ -62,6 +80,7 @@ export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'idProof' : IDL.Opt(ExternalBlob),
   'isVerified' : IDL.Bool,
+  'registrationTime' : Time,
 });
 export const Route = IDL.Record({
   'creator' : IDL.Principal,
@@ -125,13 +144,13 @@ export const idlService = IDL.Service({
       [],
     ),
   'createSOSSnapshot' : IDL.Func([IDL.Float64, IDL.Float64], [], []),
-  'createUserProfile' : IDL.Func([IDL.Text], [], []),
   'deactivateMeetupLocation' : IDL.Func([], [], []),
   'emergencyLookup' : IDL.Func(
       [IDL.Principal, IDL.Text],
       [EmergencyLookupResult],
       ['query'],
     ),
+  'getActivityLogs' : IDL.Func([], [IDL.Vec(ActivityLogEntry)], ['query']),
   'getAllActiveMeetupLocations' : IDL.Func(
       [],
       [IDL.Vec(MeetupLocation)],
@@ -143,6 +162,11 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getAllLatestSOSLocations' : IDL.Func([], [IDL.Vec(SOSSnapshot)], ['query']),
+  'getAllMembers' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
+      ['query'],
+    ),
   'getAllUserProfiles' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
@@ -172,7 +196,6 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'requestAdminAccess' : IDL.Func([], [], []),
   'reviewVerification' : IDL.Func([IDL.Principal, IDL.Bool], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'searchPlaces' : IDL.Func(
@@ -180,6 +203,7 @@ export const idlService = IDL.Service({
       [IDL.Vec(Place)],
       ['query'],
     ),
+  'setupHardcodedAdmin' : IDL.Func([], [IDL.Text], []),
   'shareMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
   'updateMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
   'uploadVerification' : IDL.Func(
@@ -232,6 +256,24 @@ export const idlFactory = ({ IDL }) => {
     'userName' : IDL.Opt(IDL.Text),
     'emergencyProfile' : IDL.Opt(EmergencyProfile),
   });
+  const EventType = IDL.Variant({
+    'sosSnapshot' : IDL.Null,
+    'routeCreated' : IDL.Null,
+    'meetupLocationUpdated' : IDL.Null,
+    'verificationSubmitted' : IDL.Null,
+    'meetupLocationShared' : IDL.Null,
+    'adminAction' : IDL.Null,
+    'emergencyProfileUpdated' : IDL.Null,
+    'verificationReviewed' : IDL.Null,
+    'userRegistration' : IDL.Null,
+    'placeAdded' : IDL.Null,
+  });
+  const ActivityLogEntry = IDL.Record({
+    'description' : IDL.Text,
+    'timestamp' : Time,
+    'initiatedBy' : IDL.Principal,
+    'eventType' : EventType,
+  });
   const MeetupLocation = IDL.Record({
     'latitude' : IDL.Float64,
     'name' : IDL.Text,
@@ -246,6 +288,7 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'idProof' : IDL.Opt(ExternalBlob),
     'isVerified' : IDL.Bool,
+    'registrationTime' : Time,
   });
   const Route = IDL.Record({
     'creator' : IDL.Principal,
@@ -313,13 +356,13 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'createSOSSnapshot' : IDL.Func([IDL.Float64, IDL.Float64], [], []),
-    'createUserProfile' : IDL.Func([IDL.Text], [], []),
     'deactivateMeetupLocation' : IDL.Func([], [], []),
     'emergencyLookup' : IDL.Func(
         [IDL.Principal, IDL.Text],
         [EmergencyLookupResult],
         ['query'],
       ),
+    'getActivityLogs' : IDL.Func([], [IDL.Vec(ActivityLogEntry)], ['query']),
     'getAllActiveMeetupLocations' : IDL.Func(
         [],
         [IDL.Vec(MeetupLocation)],
@@ -333,6 +376,11 @@ export const idlFactory = ({ IDL }) => {
     'getAllLatestSOSLocations' : IDL.Func(
         [],
         [IDL.Vec(SOSSnapshot)],
+        ['query'],
+      ),
+    'getAllMembers' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
         ['query'],
       ),
     'getAllUserProfiles' : IDL.Func(
@@ -364,7 +412,6 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'requestAdminAccess' : IDL.Func([], [], []),
     'reviewVerification' : IDL.Func([IDL.Principal, IDL.Bool], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'searchPlaces' : IDL.Func(
@@ -372,6 +419,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(Place)],
         ['query'],
       ),
+    'setupHardcodedAdmin' : IDL.Func([], [IDL.Text], []),
     'shareMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
     'updateMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
     'uploadVerification' : IDL.Func(

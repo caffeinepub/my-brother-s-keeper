@@ -19,7 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {identity && (
                     <aside className="hidden lg:block w-64 border-r border-border bg-card">
                         <div className="sticky top-0 p-4">
-                            <AppNav onNavigate={() => {}} />
+                            <AppNav />
                         </div>
                     </aside>
                 )}
@@ -37,7 +37,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" className="w-64 p-4">
-                            <AppNav onNavigate={() => setMobileMenuOpen(false)} />
+                            <div onClick={() => setMobileMenuOpen(false)}>
+                                <AppNav />
+                            </div>
                         </SheetContent>
                     </Sheet>
                 )}

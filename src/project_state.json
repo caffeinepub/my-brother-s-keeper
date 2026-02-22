@@ -1,32 +1,58 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "New project",
-  "architectural_notes": [],
+  "projectStateVersion": 5,
+  "summary": "Membership management system with admin access for monitoring",
+  "architectural_notes": [
+    "Admin authentication system with manual user management",
+    "Membership monitoring dashboard for admin users"
+  ],
   "known_issues": [
-    "Missing 'Request Admin Access' prompt/button in the UI"
+    "Admin access not working in version 29"
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-display-a-request-admin-access-button-prominently-on-the-profile-page-for-users-who-do-not-have-admin-privileges-the-button-should-be-visible-below-the-user-s-profile-information",
-      "title": "Display a 'Request Admin Access' button prominently on the Profile page for users who do not have admin privileges. The button should be visible below the user's profile information.",
+      "id": "feature-ensure-the-admin-authorization-check-useiscalleradmin-hook-correctly-identifies-the-hardcoded-principal-id-2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae-as-an-admin-and-grants-access-to-the-admin-dashboard",
+      "title": "Ensure the admin authorization check (useIsCallerAdmin hook) correctly identifies the hardcoded Principal ID '2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae' as an admin and grants access to the Admin Dashboard",
       "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-after-successfully-requesting-admin-access-refresh-the-user-s-role-so-they-can-immediately-access-admin-features-without-logging-out-and-back-in",
-      "title": "After successfully requesting admin access, refresh the user's role so they can immediately access admin features without logging out and back in.",
-      "reqIds": [
-        "REQ-2"
+        "REQ-4"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "My Brother's Keeper",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Create specific admin login ID with access to monitor memberships",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Add a hardcoded admin Principal ID to the backend that grants admin access for monitoring memberships. The Principal ID should be permanently authorized as an admin without requiring promotion from another admin.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Provide clear instructions or logging output that displays the exact Principal ID string that should be used for admin login, so it can be communicated to the user for authentication.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Add the Principal ID '2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae' as a hardcoded admin in the backend main.mo file, granting immediate admin access without requiring promotion from another administrator",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Add hardcoded admin Principal ID for membership monitoring",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

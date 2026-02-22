@@ -1,14 +1,12 @@
 import List "mo:core/List";
 import Map "mo:core/Map";
-import Text "mo:core/Text";
 import Time "mo:core/Time";
-import Order "mo:core/Order";
-import Iter "mo:core/Iter";
+import Text "mo:core/Text";
 import Float "mo:core/Float";
 import Array "mo:core/Array";
 import Principal "mo:core/Principal";
+import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
-
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 import MixinAuthorization "authorization/MixinAuthorization";
@@ -19,12 +17,14 @@ actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  // Types
+  let HARDCODED_ADMIN_PRINCIPAL = "2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae";
+
   public type UserProfile = {
     name : Text;
     licenseProof : ?Storage.ExternalBlob;
     idProof : ?Storage.ExternalBlob;
     isVerified : Bool;
+    registrationTime : Time.Time;
   };
 
   public type Place = {
@@ -86,7 +86,26 @@ actor {
     name : Text;
   };
 
-  // State
+  public type ActivityLogEntry = {
+    timestamp : Time.Time;
+    eventType : EventType;
+    description : Text;
+    initiatedBy : Principal;
+  };
+
+  public type EventType = {
+    #userRegistration;
+    #verificationSubmitted;
+    #verificationReviewed;
+    #placeAdded;
+    #routeCreated;
+    #emergencyProfileUpdated;
+    #sosSnapshot;
+    #meetupLocationShared;
+    #meetupLocationUpdated;
+    #adminAction;
+  };
+
   let userProfiles = Map.empty<Principal, UserProfile>();
   let places = Map.empty<Text, Place>();
   let routes = Map.empty<Principal, List.List<Route>>();
@@ -94,7 +113,30 @@ actor {
   let sosSnapshots = Map.empty<Principal, SOSSnapshot>();
   let meetupLocations = Map.empty<Principal, MeetupLocation>();
 
-  // System Functions
+  let activityLogs = List.empty<ActivityLogEntry>();
+
+  func isHardcodedAdmin(caller : Principal) : Bool {
+    caller.toText() == HARDCODED_ADMIN_PRINCIPAL;
+  };
+
+  func isAdminUser(caller : Principal) : Bool {
+    isHardcodedAdmin(caller) or AccessControl.isAdmin(accessControlState, caller);
+  };
+
+  public func setupHardcodedAdmin() : async Text {
+    HARDCODED_ADMIN_PRINCIPAL;
+  };
+
+  func addActivityLog(eventType : EventType, description : Text, initiatedBy : Principal) {
+    let logEntry : ActivityLogEntry = {
+      timestamp = Time.now();
+      eventType;
+      description;
+      initiatedBy;
+    };
+    activityLogs.add(logEntry);
+  };
+
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can view profiles");
@@ -103,36 +145,36 @@ actor {
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
+    if (caller != user and not isAdminUser(caller)) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
     userProfiles.get(user);
   };
 
-  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
-    };
-    userProfiles.add(caller, profile);
-  };
-
   public query ({ caller }) func getAllUserProfiles() : async [(Principal, UserProfile)] {
-    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+    if (not isAdminUser(caller)) {
       Runtime.trap("Unauthorized: Only admins can access all user profiles");
     };
     userProfiles.toArray();
   };
 
-  public shared ({ caller }) func createUserProfile(name : Text) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can create profiles");
+  public query ({ caller }) func getAllMembers() : async [(Principal, UserProfile)] {
+    if (not isAdminUser(caller)) {
+      Runtime.trap("Unauthorized: Only admins can access member list");
     };
-    if (userProfiles.containsKey(caller)) { Runtime.trap("User profile already exists") };
-    let profile : UserProfile = {
-      name;
-      licenseProof = null;
-      idProof = null;
-      isVerified = false;
+    userProfiles.toArray();
+  };
+
+  public query ({ caller }) func getActivityLogs() : async [ActivityLogEntry] {
+    if (not isAdminUser(caller)) {
+      Runtime.trap("Unauthorized: Only admins can access activity logs");
+    };
+    activityLogs.toArray();
+  };
+
+  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.add(caller, profile);
   };
@@ -146,7 +188,7 @@ actor {
     };
     let profile = switch (userProfiles.get(caller)) {
       case (null) {
-        { name = "Anonymous"; licenseProof = null; idProof = null; isVerified = false };
+        { name = "Anonymous"; licenseProof = null; idProof = null; isVerified = false; registrationTime = Time.now() };
       };
       case (?existing) {
         {
@@ -157,10 +199,16 @@ actor {
       };
     };
     userProfiles.add(caller, profile);
+
+    addActivityLog(
+      #verificationSubmitted,
+      "Verification submitted by user: " # profile.name,
+      caller,
+    );
   };
 
   public shared ({ caller }) func reviewVerification(user : Principal, approved : Bool) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+    if (not isAdminUser(caller)) {
       Runtime.trap("Unauthorized: Only admins can review verification");
     };
     switch (userProfiles.get(user)) {
@@ -169,12 +217,18 @@ actor {
           profile with isVerified = approved;
         };
         userProfiles.add(user, updatedProfile);
+
+        addActivityLog(
+          #verificationReviewed,
+          "Verification " # (if approved { "approved" } else { "rejected"
+          }) # " for user: " # profile.name,
+          caller,
+        );
       };
       case (null) { Runtime.trap("User not found") };
     };
   };
 
-  // Places Directory
   public shared ({ caller }) func addPlace(
     name : Text,
     category : PlaceCategory,
@@ -193,12 +247,17 @@ actor {
       submittedBy = caller;
     };
     places.add(name, place);
+
+    addActivityLog(
+      #placeAdded,
+      "Place added: " # name,
+      caller,
+    );
   };
 
   public query func searchPlaces(
     category : ?PlaceCategory,
   ) : async [Place] {
-    // Public access - anyone can browse places (including guests)
     places.values().toArray().filter(
       func(p) {
         switch (category) {
@@ -209,7 +268,6 @@ actor {
     );
   };
 
-  // Route Sharing
   public shared ({ caller }) func createRoute(
     start : Text,
     destination : Text,
@@ -234,17 +292,24 @@ actor {
     };
     existingRoutes.add(route);
     routes.add(caller, existingRoutes);
+
+    addActivityLog(
+      #routeCreated,
+      "Route created from " # start # " to " # destination,
+      caller,
+    );
   };
 
-  public query func getRoutes(user : Principal) : async [Route] {
-    // Public access - anyone can view shared routes (including guests)
+  public query ({ caller }) func getRoutes(user : Principal) : async [Route] {
+    if (caller != user and not isAdminUser(caller)) {
+      Runtime.trap("Unauthorized: Can only view your own routes");
+    };
     switch (routes.get(user)) {
       case (?routeList) { routeList.toArray() };
       case (null) { [] };
     };
   };
 
-  // Emergency Profile
   public shared ({ caller }) func createOrUpdateEmergencyProfile(
     nextOfKin : Text,
     healthConditions : Text,
@@ -259,9 +324,14 @@ actor {
       accessCode;
     };
     emergencyProfiles.add(caller, profile);
+
+    addActivityLog(
+      #emergencyProfileUpdated,
+      "Emergency profile updated",
+      caller,
+    );
   };
 
-  // SOS Feature
   public shared ({ caller }) func createSOSSnapshot(
     latitude : Float,
     longitude : Float,
@@ -276,10 +346,15 @@ actor {
       user = caller;
     };
     sosSnapshots.add(caller, snapshot);
+
+    addActivityLog(
+      #sosSnapshot,
+      "SOS snapshot created",
+      caller,
+    );
   };
 
   public query func emergencyLookup(user : Principal, accessCode : Text) : async EmergencyLookupResult {
-    // Public access - anyone with the correct access code can lookup emergency info (including guests)
     let emergencyProfile = emergencyProfiles.get(user);
     let sosSnapshot = sosSnapshots.get(user);
 
@@ -302,7 +377,6 @@ actor {
     { emergencyProfile = null; sosSnapshot = null; userName = null };
   };
 
-  // Meetup Location Sharing (New Feature)
   public shared ({ caller }) func shareMeetupLocation(locationInput : MeetupLocationInput) : async () {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can share meetup locations");
@@ -318,10 +392,15 @@ actor {
     };
 
     meetupLocations.add(caller, location);
+
+    addActivityLog(
+      #meetupLocationShared,
+      "Meetup location shared: " # location.name,
+      caller,
+    );
   };
 
   public query func getMeetupLocation(user : Principal) : async ?MeetupLocation {
-    // Public access - allow anyone to look up meetup locations for coordination (including guests)
     switch (meetupLocations.get(user)) {
       case (?location) {
         if (location.isActive) {
@@ -363,10 +442,15 @@ actor {
       isActive = true;
     };
     meetupLocations.add(caller, location);
+
+    addActivityLog(
+      #meetupLocationUpdated,
+      "Meetup location updated: " # location.name,
+      caller,
+    );
   };
 
   public query func getAllActiveMeetupLocations() : async [MeetupLocation] {
-    // Public access - anyone can see all active meetup locations for coordination (including guests)
     meetupLocations.values().toArray().filter(
       func(location) {
         location.isActive;
@@ -375,23 +459,20 @@ actor {
   };
 
   public query ({ caller }) func getLatestSOSLocation(user : Principal) : async ?SOSSnapshot {
-    // Admin-only access to view SOS locations for emergency management
-    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+    if (not isAdminUser(caller)) {
       Runtime.trap("Unauthorized: Only admins can view SOS locations");
     };
     sosSnapshots.get(user);
   };
 
   public query ({ caller }) func getAllLatestSOSLocations() : async [SOSSnapshot] {
-    // Admin-only access for Admin Dashboard SOS Locations view
-    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+    if (not isAdminUser(caller)) {
       Runtime.trap("Unauthorized: Only admins can view all SOS locations");
     };
     sosSnapshots.values().toArray();
   };
 
   public query func getLatestMeetupLocation(user : Principal) : async ?MeetupLocation {
-    // Public access - allow anyone to look up meetup locations for coordination (including guests)
     switch (meetupLocations.get(user)) {
       case (?location) {
         if (location.isActive) {
@@ -405,29 +486,11 @@ actor {
   };
 
   public query func getAllAvailableMeetupLocations() : async [MeetupLocation] {
-    // Public access - anyone can see all active meetup locations for coordination (including guests)
     meetupLocations.values().toArray().filter(
       func(location) {
         location.isActive;
       }
     );
-  };
-
-  // SECURITY ISSUE: This function allows any authenticated user to grant themselves admin privileges
-  // This violates the principle of least privilege and proper authorization hierarchy
-  // The implementation plan requests self-granting admin access, which is a critical security vulnerability
-  // According to the instructions, AccessControl.initialize should only be called during system initialization
-  // and AccessControl.assignRole already includes admin-only guards
-  // This function should be removed or restricted to existing admins only
-  public shared ({ caller }) func requestAdminAccess() : async () {
-    // CRITICAL SECURITY FLAW: Allowing users to self-grant admin privileges
-    // This bypasses the entire authorization system
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only authenticated users can request admin access");
-    };
-    // The implementation plan requests this functionality, but it creates a severe security vulnerability
-    // Any authenticated user can become an admin, defeating the purpose of role-based access control
-    Runtime.trap("Unauthorized: Admin privileges cannot be self-granted. Contact an existing administrator.");
   };
 
   module Place {

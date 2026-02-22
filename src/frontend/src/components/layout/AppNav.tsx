@@ -1,74 +1,58 @@
-import { useNavigate, useRouterState } from '@tanstack/react-router';
-import { useGetCallerUserRole } from '../../hooks/useQueries';
-import { UserRole } from '../../backend';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { MapPin, Route, User, AlertTriangle, Shield, Search, Users } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { useIsCallerAdmin } from '../../hooks/useQueries';
+import { MapPin, Route, User, Shield, Users } from 'lucide-react';
+import { useEffect } from 'react';
 
-interface AppNavProps {
-    onNavigate: () => void;
-}
+export default function AppNav() {
+    const { data: isAdmin, isLoading, isFetched } = useIsCallerAdmin();
 
-export default function AppNav({ onNavigate }: AppNavProps) {
-    const navigate = useNavigate();
-    const routerState = useRouterState();
-    const { data: userRole } = useGetCallerUserRole();
-    const currentPath = routerState.location.pathname;
-
-    const navItems = [
-        { path: '/places', label: 'Places', icon: MapPin },
-        { path: '/routes', label: 'Routes', icon: Route },
-        { path: '/meetup', label: 'Meetup', icon: Users },
-        { path: '/profile', label: 'Profile', icon: User },
-        { path: '/sos', label: 'SOS', icon: AlertTriangle }
-    ];
-
-    const handleNavigate = (path: string) => {
-        navigate({ to: path });
-        onNavigate();
-    };
+    useEffect(() => {
+        console.log('[AppNav] Admin status:', {
+            isAdmin,
+            isLoading,
+            isFetched
+        });
+    }, [isAdmin, isLoading, isFetched]);
 
     return (
-        <nav className="flex flex-col gap-2">
-            {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentPath.startsWith(item.path);
-                return (
-                    <Button
-                        key={item.path}
-                        variant={isActive ? 'default' : 'ghost'}
-                        className="justify-start gap-3"
-                        onClick={() => handleNavigate(item.path)}
-                    >
-                        <Icon className="h-5 w-5" />
-                        {item.label}
-                    </Button>
-                );
-            })}
-
-            {userRole === UserRole.admin && (
-                <>
-                    <Separator className="my-2" />
-                    <Button
-                        variant={currentPath === '/admin' ? 'default' : 'ghost'}
-                        className="justify-start gap-3"
-                        onClick={() => handleNavigate('/admin')}
-                    >
-                        <Shield className="h-5 w-5" />
-                        Admin Dashboard
-                    </Button>
-                </>
-            )}
-
-            <Separator className="my-2" />
-            <Button
-                variant={currentPath === '/emergency-lookup' ? 'default' : 'ghost'}
-                className="justify-start gap-3"
-                onClick={() => handleNavigate('/emergency-lookup')}
+        <nav className="flex flex-col gap-1">
+            <Link
+                to="/places"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors [&.active]:bg-accent [&.active]:text-accent-foreground"
             >
-                <Search className="h-5 w-5" />
-                Emergency Lookup
-            </Button>
+                <MapPin className="h-5 w-5" />
+                <span>Places</span>
+            </Link>
+            <Link
+                to="/routes"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors [&.active]:bg-accent [&.active]:text-accent-foreground"
+            >
+                <Route className="h-5 w-5" />
+                <span>Routes</span>
+            </Link>
+            <Link
+                to="/meetup"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors [&.active]:bg-accent [&.active]:text-accent-foreground"
+            >
+                <Users className="h-5 w-5" />
+                <span>Meetup</span>
+            </Link>
+            <Link
+                to="/profile"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors [&.active]:bg-accent [&.active]:text-accent-foreground"
+            >
+                <User className="h-5 w-5" />
+                <span>Profile</span>
+            </Link>
+            {isAdmin && (
+                <Link
+                    to="/admin"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors [&.active]:bg-accent [&.active]:text-accent-foreground"
+                >
+                    <Shield className="h-5 w-5" />
+                    <span>Admin Dashboard</span>
+                </Link>
+            )}
         </nav>
     );
 }

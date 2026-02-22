@@ -2,10 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-display-a-request-admin-access-button-prominently-on-the-profile-page-for-users-who-do-not-have-admin-privileges-the-button-should-be-visible-below-the-user-s-profile-information",
-      "featureTitle": "Display a 'Request Admin Access' button prominently on the Profile page for users who do not have admin privileges. The button should be visible below the user's profile information.",
+      "featureId": "feature-ensure-the-admin-authorization-check-useiscalleradmin-hook-correctly-identifies-the-hardcoded-principal-id-2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae-as-an-admin-and-grants-access-to-the-admin-dashboard",
+      "featureTitle": "Ensure the admin authorization check (useIsCallerAdmin hook) correctly identifies the hardcoded Principal ID '2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae' as an admin and grants access to the Admin Dashboard",
       "files": [
-        "frontend/src/pages/ProfilePage.tsx"
+        "frontend/src/components/auth/AdminRouteGuard.tsx",
+        "frontend/src/components/layout/AppNav.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,27 +19,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-after-successfully-requesting-admin-access-refresh-the-user-s-role-so-they-can-immediately-access-admin-features-without-logging-out-and-back-in",
-      "featureTitle": "After successfully requesting admin access, refresh the user's role so they can immediately access admin features without logging out and back in.",
-      "files": [
-        "frontend/src/pages/ProfilePage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
+        "REQ-4"
       ],
       "confidence": "high"
     }

@@ -33,12 +33,12 @@ export default function MeetupPage() {
     const [lookupPrincipal, setLookupPrincipal] = useState('');
     const [lookupCode, setLookupCode] = useState('');
     const [searchPrincipal, setSearchPrincipal] = useState<string | null>(null);
-    const [searchCode, setSearchCode] = useState<string>('');
+    const [expectedCode, setExpectedCode] = useState<string>('');
     const [principalError, setPrincipalError] = useState<string>('');
 
     const shareMutation = useShareMeetupLocation();
     const deactivateMutation = useDeactivateMeetupLocation();
-    const { data: lookupLocation, isLoading: isLoadingLookup } = useGetLatestMeetupLocation(searchPrincipal, searchCode);
+    const { data: lookupLocation, isLoading: isLoadingLookup } = useGetLatestMeetupLocation(searchPrincipal);
 
     // Load stored share code on mount
     useEffect(() => {
@@ -187,9 +187,9 @@ export default function MeetupPage() {
             return;
         }
 
-        // Trigger lookup with both principal and code
+        // Trigger lookup with principal and store expected code for verification
         setSearchPrincipal(lookupPrincipal.trim());
-        setSearchCode(lookupCode.trim());
+        setExpectedCode(lookupCode.trim());
     };
 
     const getMapUrl = (lat: number, lng: number) => {
@@ -208,6 +208,12 @@ export default function MeetupPage() {
 
     const isSharing = sharingState === 'active';
     const hasError = sharingState === 'error';
+
+    // Check if the lookup result matches the expected code
+    const isCodeMatch = lookupLocation && lookupLocation.name === expectedCode;
+    const showLocationResult = searchPrincipal && lookupLocation && isCodeMatch;
+    const showCodeMismatch = searchPrincipal && lookupLocation && !isCodeMatch;
+    const showNotFound = searchPrincipal && !lookupLocation && !isLoadingLookup;
 
     return (
         <AuthenticatedRouteGuard>
@@ -398,7 +404,7 @@ export default function MeetupPage() {
                             {isLoadingLookup ? 'Looking up...' : 'Find Location'}
                         </Button>
 
-                        {searchPrincipal && lookupLocation && (
+                        {showLocationResult && (
                             <Card className="bg-accent/5 border-accent/20">
                                 <CardHeader>
                                     <CardTitle className="text-lg">Location Found</CardTitle>
@@ -418,48 +424,65 @@ export default function MeetupPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2">
+                                    <Separator />
+
+                                    <div className="space-y-2">
+                                        <MapZoomControl />
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
                                         <Button
-                                            onClick={() => handleCopyCoordinates(lookupLocation.latitude, lookupLocation.longitude)}
                                             variant="outline"
                                             size="sm"
+                                            onClick={() => handleCopyCoordinates(lookupLocation.latitude, lookupLocation.longitude)}
                                             className="gap-2"
                                         >
-                                            <Copy className="h-3 w-3" />
+                                            <Copy className="h-4 w-4" />
                                             Copy Coordinates
                                         </Button>
                                         <Button
-                                            onClick={() => handleCopyMapUrl(lookupLocation.latitude, lookupLocation.longitude)}
                                             variant="outline"
                                             size="sm"
+                                            onClick={() => handleCopyMapUrl(lookupLocation.latitude, lookupLocation.longitude)}
                                             className="gap-2"
                                         >
-                                            <Copy className="h-3 w-3" />
+                                            <Copy className="h-4 w-4" />
                                             Copy Map URL
                                         </Button>
+                                        <Button
+                                            variant="default"
+                                            size="sm"
+                                            asChild
+                                        >
+                                            <a
+                                                href={getMapUrl(lookupLocation.latitude, lookupLocation.longitude)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="gap-2"
+                                            >
+                                                <ExternalLink className="h-4 w-4" />
+                                                Open in Maps
+                                            </a>
+                                        </Button>
                                     </div>
-
-                                    <a
-                                        href={getMapUrl(lookupLocation.latitude, lookupLocation.longitude)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-                                    >
-                                        <ExternalLink className="h-4 w-4" />
-                                        Open in Google Maps
-                                    </a>
-
-                                    <Separator />
-
-                                    <MapZoomControl />
                                 </CardContent>
                             </Card>
                         )}
 
-                        {searchPrincipal && !lookupLocation && !isLoadingLookup && (
-                            <Alert>
+                        {showCodeMismatch && (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
                                 <AlertDescription>
-                                    No active location found. The member may not be sharing their location or the code may be incorrect.
+                                    The meetup code doesn't match. Please verify you have the correct code from this member.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        {showNotFound && (
+                            <Alert>
+                                <Info className="h-4 w-4" />
+                                <AlertDescription>
+                                    No active location found for this member. They may not be sharing their location currently.
                                 </AlertDescription>
                             </Alert>
                         )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useInternetIdentity } from '../../hooks/useInternetIdentity';
 import { useGetCallerUserProfile, useCreateUserProfile } from '../../hooks/useQueries';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -24,7 +24,14 @@ export default function ProfileSetupDialog() {
         }
 
         try {
-            await createProfile.mutateAsync(name.trim());
+            const newProfile = {
+                name: name.trim(),
+                licenseProof: undefined,
+                idProof: undefined,
+                isVerified: false,
+                registrationTime: BigInt(Date.now()) * BigInt(1000000)
+            };
+            await createProfile.mutateAsync(newProfile);
             toast.success('Profile created successfully');
         } catch (error: any) {
             toast.error(error.message || 'Failed to create profile');

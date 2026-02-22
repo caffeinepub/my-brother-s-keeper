@@ -1,54 +1,60 @@
 {
   "kind": "build_request",
-  "title": "Add Request Admin Access prompt to UI",
+  "title": "Grant admin access to specific Principal ID",
   "projectName": "My Brother's Keeper",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Display a 'Request Admin Access' button prominently on the Profile page for users who do not have admin privileges. The button should be visible below the user's profile information.",
-      "target": "frontend",
+      "id": "REQ-3",
+      "text": "Add the Principal ID '2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae' as a hardcoded admin in the backend main.mo file, granting immediate admin access without requiring promotion from another administrator",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-user-1"
+          "msg-latest"
         ],
         "quotes": [
-          "There is no prompt to request admin access."
+          "2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae"
         ]
       },
       "acceptanceCriteria": [
-        "Button is visible on the Profile page for non-admin users",
-        "Button is labeled 'Request Admin Access'",
-        "Button triggers the existing useRequestAdminAccess mutation when clicked",
-        "Button shows loading state during the request",
-        "Success/error toasts are displayed after the request completes"
+        "The Principal ID '2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae' is permanently authorized as an admin in the backend",
+        "The user with this Principal ID can access all admin features immediately upon login",
+        "The admin access bypasses the normal promotion system that requires an existing administrator",
+        "The AdminRouteGuard component allows access to /admin/* routes for this Principal ID"
       ]
     },
     {
-      "id": "REQ-2",
-      "text": "After successfully requesting admin access, refresh the user's role so they can immediately access admin features without logging out and back in.",
-      "target": "frontend",
+      "id": "REQ-4",
+      "text": "Ensure the admin authorization check (useIsCallerAdmin hook) correctly identifies the hardcoded Principal ID '2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae' as an admin and grants access to the Admin Dashboard",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-user-1"
+          "msg-latest"
+        ],
+        "quotes": [
+          "Access Denied",
+          "Admin access must be granted by an existing administrator"
         ]
       },
       "acceptanceCriteria": [
-        "User role is refetched after successful admin access request",
-        "User can navigate to admin dashboard immediately after request succeeds",
-        "No logout/login cycle is required to see admin privileges"
+        "The useIsCallerAdmin hook returns true for the hardcoded Principal ID",
+        "The Access Denied screen no longer appears for this Principal ID when accessing admin routes",
+        "The Admin Dashboard page loads successfully for this Principal ID",
+        "All admin features (user registrations, verification reviews, SOS locations, member directory, activity logs) are accessible"
       ]
     }
   ],
   "constraints": [
-    "Use the existing useRequestAdminAccess hook from useQueries.ts",
-    "Do not modify the backend main.mo file",
-    "Follow existing patterns in ProfilePage.tsx for button placement and styling"
+    "Maintain single-actor architecture in backend/main.mo",
+    "Do not modify immutable frontend paths: useInternetIdentity.ts, useInternetIdentity.tsx, useActor.ts, main.tsx, components/ui/*",
+    "Preserve existing admin promotion system for future administrators",
+    "Do not break existing user profile, place, route, meetup, or SOS functionality"
   ],
   "nonGoals": [
-    "Changing the admin access approval workflow",
-    "Adding admin access requests to pages other than Profile",
-    "Modifying the backend grantAdminToSelf function"
+    "Creating a separate admin application",
+    "Implementing backdoor or bypass mechanisms beyond the explicit hardcoded Principal ID",
+    "Modifying the authentication flow or Internet Identity integration",
+    "Changing the UI design or layout of admin pages"
   ],
   "imageRequirements": {
     "required": [],

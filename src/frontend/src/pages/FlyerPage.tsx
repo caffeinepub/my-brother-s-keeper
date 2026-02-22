@@ -17,7 +17,7 @@ export default function FlyerPage() {
   const flyerRef = useRef<HTMLDivElement>(null);
   const autoExportAttemptedRef = useRef(false);
   const navigate = useNavigate();
-  const search = useSearch({ from: '/flyer' });
+  const search = useSearch({ from: '/flyer' }) as { autoExportFlyer?: string };
 
   // Set share URL on mount
   useEffect(() => {

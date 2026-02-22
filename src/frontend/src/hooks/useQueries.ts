@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { PlaceCategory, type Place, type Route, type UserProfile, UserRole, ExternalBlob, type MeetupLocation, type SOSSnapshot } from '../backend';
+import { PlaceCategory, type Place, type Route, type UserProfile, UserRole, ExternalBlob, type MeetupLocation, type SOSSnapshot, type ActivityLogEntry, EventType } from '../backend';
 import { Principal } from '@dfinity/principal';
 
 // User Profile Queries
@@ -24,6 +24,71 @@ export function useGetCallerUserProfile() {
     };
 }
 
+export function useIsCallerAdmin() {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    const query = useQuery<boolean>({
+        queryKey: ['isCallerAdmin'],
+        queryFn: async () => {
+            console.log('[useIsCallerAdmin] Starting admin check...');
+            if (!actor) {
+                console.log('[useIsCallerAdmin] No actor available, returning false');
+                return false;
+            }
+            try {
+                console.log('[useIsCallerAdmin] Calling actor.isCallerAdmin()...');
+                const isAdmin = await actor.isCallerAdmin();
+                console.log('[useIsCallerAdmin] ✅ Admin status received:', isAdmin);
+                return isAdmin;
+            } catch (error: any) {
+                console.error('[useIsCallerAdmin] ❌ Error fetching admin status:', error);
+                console.error('[useIsCallerAdmin] Error details:', {
+                    message: error?.message,
+                    name: error?.name,
+                    stack: error?.stack
+                });
+                // Return false instead of throwing to prevent access denial on errors
+                return false;
+            }
+        },
+        enabled: !!actor && !actorFetching,
+        retry: 3,
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+        staleTime: 30000 // Cache for 30 seconds
+    });
+
+    console.log('[useIsCallerAdmin] Hook state:', {
+        actorAvailable: !!actor,
+        actorFetching,
+        queryLoading: query.isLoading,
+        queryFetching: query.isFetching,
+        queryStatus: query.status,
+        data: query.data,
+        error: query.error,
+        isFetched: query.isFetched
+    });
+
+    return {
+        ...query,
+        isLoading: actorFetching || query.isLoading,
+        isFetched: !!actor && query.isFetched
+    };
+}
+
+export function useGetHardcodedAdminPrincipal() {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<string>({
+        queryKey: ['hardcodedAdminPrincipal'],
+        queryFn: async () => {
+            if (!actor) throw new Error('Actor not available');
+            return actor.setupHardcodedAdmin();
+        },
+        enabled: !!actor && !actorFetching,
+        retry: 1
+    });
+}
+
 export function useGetCallerUserRole() {
     const { actor, isFetching: actorFetching } = useActor();
 
@@ -45,7 +110,8 @@ export function useGetCallerUserRole() {
             }
         },
         enabled: !!actor && !actorFetching,
-        retry: false
+        retry: 1,
+        retryDelay: 500
     });
 
     console.log('[useGetCallerUserRole] Hook state:', {
@@ -68,9 +134,9 @@ export function useCreateUserProfile() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (name: string) => {
+        mutationFn: async (profile: UserProfile) => {
             if (!actor) throw new Error('Actor not available');
-            return actor.createUserProfile(name);
+            return actor.saveCallerUserProfile(profile);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
@@ -103,7 +169,44 @@ export function useGetAllUserProfiles() {
             if (!actor) throw new Error('Actor not available');
             return actor.getAllUserProfiles();
         },
-        enabled: !!actor && !actorFetching
+        enabled: !!actor && !actorFetching,
+        retry: 1
+    });
+}
+
+export function useGetAllMembers() {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<[Principal, UserProfile][]>({
+        queryKey: ['allMembers'],
+        queryFn: async () => {
+            console.log('[useGetAllMembers] Fetching all members...');
+            if (!actor) throw new Error('Actor not available');
+            try {
+                const members = await actor.getAllMembers();
+                console.log('[useGetAllMembers] Fetched members:', members.length);
+                return members;
+            } catch (error) {
+                console.error('[useGetAllMembers] Error fetching members:', error);
+                throw error;
+            }
+        },
+        enabled: !!actor && !actorFetching,
+        retry: 1
+    });
+}
+
+export function useGetActivityLogs() {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<ActivityLogEntry[]>({
+        queryKey: ['activityLogs'],
+        queryFn: async () => {
+            if (!actor) throw new Error('Actor not available');
+            return actor.getActivityLogs();
+        },
+        enabled: !!actor && !actorFetching,
+        retry: 1
     });
 }
 
@@ -138,22 +241,9 @@ export function useReviewVerification() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['allUserProfiles'] });
+            queryClient.invalidateQueries({ queryKey: ['allMembers'] });
             queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-        }
-    });
-}
-
-export function useRequestAdminAccess() {
-    const { actor } = useActor();
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async () => {
-            if (!actor) throw new Error('Actor not available');
-            return actor.requestAdminAccess();
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['currentUserRole'] });
+            queryClient.invalidateQueries({ queryKey: ['activityLogs'] });
         }
     });
 }
@@ -183,6 +273,7 @@ export function useAddPlace() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['places'] });
+            queryClient.invalidateQueries({ queryKey: ['activityLogs'] });
         }
     });
 }
@@ -218,6 +309,7 @@ export function useCreateRoute() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['routes'] });
+            queryClient.invalidateQueries({ queryKey: ['activityLogs'] });
         }
     });
 }
@@ -234,6 +326,7 @@ export function useCreateOrUpdateEmergencyProfile() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['emergencyLookup'] });
+            queryClient.invalidateQueries({ queryKey: ['activityLogs'] });
         }
     });
 }
@@ -250,7 +343,7 @@ export function useCreateSOSSnapshot() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['emergencyLookup'] });
-            queryClient.invalidateQueries({ queryKey: ['allSOSLocations'] });
+            queryClient.invalidateQueries({ queryKey: ['activityLogs'] });
         }
     });
 }
@@ -266,26 +359,11 @@ export function useEmergencyLookup(userPrincipalText: string | null, accessCode:
                 const principal = Principal.fromText(userPrincipalText.trim());
                 return actor.emergencyLookup(principal, accessCode);
             } catch (error) {
-                console.error('Invalid principal:', error);
+                console.error('Emergency lookup error:', error);
                 return null;
             }
         },
-        enabled: !!actor && !actorFetching && !!userPrincipalText && !!accessCode,
-        retry: false
-    });
-}
-
-// Admin SOS Queries
-export function useGetAllLatestSOSLocations() {
-    const { actor, isFetching: actorFetching } = useActor();
-
-    return useQuery<SOSSnapshot[]>({
-        queryKey: ['allSOSLocations'],
-        queryFn: async () => {
-            if (!actor) throw new Error('Actor not available');
-            return actor.getAllLatestSOSLocations();
-        },
-        enabled: !!actor && !actorFetching
+        enabled: !!actor && !actorFetching && !!userPrincipalText && !!accessCode
     });
 }
 
@@ -301,6 +379,23 @@ export function useShareMeetupLocation() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['meetupLocation'] });
+            queryClient.invalidateQueries({ queryKey: ['activityLogs'] });
+        }
+    });
+}
+
+export function useUpdateMeetupLocation() {
+    const { actor } = useActor();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ latitude, longitude, name }: { latitude: number; longitude: number; name: string }) => {
+            if (!actor) throw new Error('Actor not available');
+            return actor.updateMeetupLocation({ latitude, longitude, name });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['meetupLocation'] });
+            queryClient.invalidateQueries({ queryKey: ['activityLogs'] });
         }
     });
 }
@@ -320,35 +415,99 @@ export function useDeactivateMeetupLocation() {
     });
 }
 
-/**
- * Lookup a meetup location by Principal ID and validate against the provided share code.
- * The query key includes both the principal and the entered code to ensure fresh lookups.
- */
-export function useGetLatestMeetupLocation(userPrincipalText: string | null, enteredCode: string) {
+export function useGetMeetupLocation(userPrincipalText: string | null) {
     const { actor, isFetching: actorFetching } = useActor();
 
     return useQuery<MeetupLocation | null>({
-        queryKey: ['meetupLocation', userPrincipalText, enteredCode],
+        queryKey: ['meetupLocation', userPrincipalText],
         queryFn: async () => {
             if (!actor || !userPrincipalText) return null;
-            
             try {
                 const principal = Principal.fromText(userPrincipalText.trim());
-                const location = await actor.getLatestMeetupLocation(principal);
-                
-                // Validate the returned location against the entered code
-                if (location && location.name === enteredCode.trim()) {
-                    return location;
-                }
-                
-                // Code mismatch or no location - return null
-                return null;
+                return actor.getMeetupLocation(principal);
             } catch (error) {
-                console.error('Meetup lookup error:', error);
+                console.error('Invalid principal:', error);
                 return null;
             }
         },
-        enabled: !!actor && !actorFetching && !!userPrincipalText && !!enteredCode,
-        retry: false
+        enabled: !!actor && !actorFetching && !!userPrincipalText
+    });
+}
+
+export function useGetLatestMeetupLocation(userPrincipalText: string | null) {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<MeetupLocation | null>({
+        queryKey: ['latestMeetupLocation', userPrincipalText],
+        queryFn: async () => {
+            if (!actor || !userPrincipalText) return null;
+            try {
+                const principal = Principal.fromText(userPrincipalText.trim());
+                return actor.getLatestMeetupLocation(principal);
+            } catch (error) {
+                console.error('Invalid principal:', error);
+                return null;
+            }
+        },
+        enabled: !!actor && !actorFetching && !!userPrincipalText
+    });
+}
+
+export function useGetAllActiveMeetupLocations() {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<MeetupLocation[]>({
+        queryKey: ['allActiveMeetupLocations'],
+        queryFn: async () => {
+            if (!actor) return [];
+            return actor.getAllActiveMeetupLocations();
+        },
+        enabled: !!actor && !actorFetching
+    });
+}
+
+export function useGetAllAvailableMeetupLocations() {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<MeetupLocation[]>({
+        queryKey: ['allAvailableMeetupLocations'],
+        queryFn: async () => {
+            if (!actor) return [];
+            return actor.getAllAvailableMeetupLocations();
+        },
+        enabled: !!actor && !actorFetching
+    });
+}
+
+export function useGetAllLatestSOSLocations() {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<SOSSnapshot[]>({
+        queryKey: ['allLatestSOSLocations'],
+        queryFn: async () => {
+            if (!actor) throw new Error('Actor not available');
+            return actor.getAllLatestSOSLocations();
+        },
+        enabled: !!actor && !actorFetching,
+        retry: 1
+    });
+}
+
+export function useGetLatestSOSLocation(userPrincipalText: string | null) {
+    const { actor, isFetching: actorFetching } = useActor();
+
+    return useQuery<SOSSnapshot | null>({
+        queryKey: ['latestSOSLocation', userPrincipalText],
+        queryFn: async () => {
+            if (!actor || !userPrincipalText) return null;
+            try {
+                const principal = Principal.fromText(userPrincipalText.trim());
+                return actor.getLatestSOSLocation(principal);
+            } catch (error) {
+                console.error('Invalid principal:', error);
+                return null;
+            }
+        },
+        enabled: !!actor && !actorFetching && !!userPrincipalText
     });
 }

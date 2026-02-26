@@ -1,0 +1,64 @@
+{
+  "kind": "build_request",
+  "title": "Allow first admin token user to become admin automatically",
+  "projectName": "My Brother's Keeper",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-7",
+      "text": "Modify the backend admin authorization logic so that if no admin has been set yet (i.e., the admin list is empty), the first authenticated user who presents a valid admin token is automatically granted admin privileges and stored as the admin principal. This removes the requirement for a pre-configured hardcoded admin Principal ID and allows the app owner to gain admin access simply by signing in with any Internet Identity while the admin token is in the URL.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "I can modify the app so that the first person to sign in with the admin token becomes the admin (instead of requiring a pre-set Principal ID). This would let you sign in with your Unruly Balloons identity and gain admin access immediately.",
+          "Would you like me to make that change?",
+          "Yes"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When no admin principal is currently stored in the backend, calling the admin promotion endpoint with a valid admin token assigns the calling principal as admin.",
+        "Once an admin principal is stored, subsequent calls with the admin token do NOT override or replace the existing admin.",
+        "After promotion, the newly assigned admin principal passes all existing admin authorization checks (e.g., isAdmin returns true for that principal).",
+        "A non-authenticated (anonymous) caller cannot be promoted to admin even with a valid token."
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Update the frontend admin token handling flow so that after a user authenticates via Internet Identity and a caffeineAdminToken is present in the URL hash, the app automatically calls the backend admin promotion endpoint with that token. If the backend grants admin status (first-time claim), the app should reflect the admin role immediately (e.g., show the Admin Dashboard link in navigation) without requiring a page reload.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "The admin token in your URL is correct — the issue is purely on the Internet Identity login side.",
+          "I can modify the app so that the first person to sign in with the admin token becomes the admin"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When a user visits the app with #caffeineAdminToken=<token> in the URL and completes Internet Identity sign-in, the frontend detects the token and calls the backend promotion endpoint.",
+        "If the backend responds with a successful promotion, the Admin Dashboard navigation link becomes visible without a manual page reload.",
+        "If the backend rejects the promotion (admin already set or invalid token), the app continues normally without showing an error to the user.",
+        "The admin token is removed from the URL hash after the promotion attempt to avoid repeated calls on subsequent navigations."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not allow the admin to be overwritten once one has been set — first claimant only.",
+    "Anonymous principals must never be eligible for admin promotion.",
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts or frontend/src/hooks/useActor.ts."
+  ],
+  "nonGoals": [
+    "Supporting multiple admins or an admin management UI.",
+    "Resetting or revoking existing admin status.",
+    "Changing the Internet Identity authentication flow itself.",
+    "Modifying the admin token generation or rotation mechanism."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.5rem;
+        
+        /* Light mode - Asphalt & High-Visibility Safety Theme */
+        --background: 0.98 0 0;
+        --foreground: 0.15 0 0;
+        --card: 1 0 0;
+        --card-foreground: 0.15 0 0;
+        --popover: 1 0 0;
+        --popover-foreground: 0.15 0 0;
+        
+        /* Primary: Dark Asphalt */
+        --primary: 0.25 0 0;
+        --primary-foreground: 0.98 0 0;
+        
+        /* Secondary: Light Gray */
+        --secondary: 0.92 0 0;
+        --secondary-foreground: 0.25 0 0;
+        
+        /* Muted */
+        --muted: 0.95 0 0;
+        --muted-foreground: 0.50 0 0;
+        
+        /* Accent: High-Visibility Yellow-Orange */
+        --accent: 0.75 0.18 75;
+        --accent-foreground: 0.15 0 0;
+        
+        /* Destructive: Safety Red */
+        --destructive: 0.55 0.22 25;
+        --destructive-foreground: 0.98 0 0;
+        
+        --border: 0.90 0 0;
+        --input: 0.90 0 0;
+        --ring: 0.75 0.18 75;
+        
+        --chart-1: 0.75 0.18 75;
+        --chart-2: 0.55 0.22 25;
+        --chart-3: 0.45 0.15 200;
+        --chart-4: 0.65 0.20 140;
+        --chart-5: 0.70 0.16 50;
+    }
+
+    .dark {
+        /* Dark mode - Night Highway Theme */
+        --background: 0.12 0 0;
+        --foreground: 0.95 0 0;
+        --card: 0.18 0 0;
+        --card-foreground: 0.95 0 0;
+        --popover: 0.15 0 0;
+        --popover-foreground: 0.95 0 0;
+        
+        /* Primary: High-Visibility Yellow-Orange */
+        --primary: 0.75 0.18 75;
+        --primary-foreground: 0.12 0 0;
+        
+        /* Secondary: Medium Gray */
+        --secondary: 0.30 0 0;
+        --secondary-foreground: 0.95 0 0;
+        
+        /* Muted */
+        --muted: 0.25 0 0;
+        --muted-foreground: 0.65 0 0;
+        
+        /* Accent: Lighter Safety Yellow */
+        --accent: 0.80 0.20 80;
+        --accent-foreground: 0.12 0 0;
+        
+        /* Destructive: Bright Safety Red */
+        --destructive: 0.60 0.24 25;
+        --destructive-foreground: 0.95 0 0;
+        
+        --border: 0.25 0 0;
+        --input: 0.25 0 0;
+        --ring: 0.75 0.18 75;
+        
+        --chart-1: 0.75 0.18 75;
+        --chart-2: 0.60 0.24 25;
+        --chart-3: 0.55 0.18 200;
+        --chart-4: 0.70 0.22 140;
+        --chart-5: 0.75 0.18 50;
+    }
+
+    * {
+        @apply border-border;
+    }
+    
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+}
+
+@layer components {
+    .map-card {
+        @apply border-accent/20 bg-accent/5;
+    }
+    
+    .location-badge {
+        @apply bg-accent/10 text-accent-foreground border-accent/30;
+    }
+}

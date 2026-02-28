@@ -81,7 +81,7 @@ export default function SOSPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button onClick={() => navigate({ to: '/sos-card' })} variant="outline" className="w-full">
+                        <Button onClick={() => navigate({ to: '/sos/card' })} variant="outline" className="w-full">
                             View SOS Card
                         </Button>
                     </CardContent>

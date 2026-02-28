@@ -1,90 +1,24 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 7,
-  "summary": "Project focused on fixing Principal ID character limit issues and admin access. User cannot access admin features - admin token is not granting access with their 'Unruly Balloons' Internet Identity login. Implementing change to allow the first person to sign in with the admin token to become the admin.",
-  "architectural_notes": [
-    "Admin access should be bootstrapped: first user to present a valid admin token should be granted admin privileges and stored as the admin Principal ID"
-  ],
+  "projectStateVersion": 3,
+  "summary": "Web application with admin access functionality. User is satisfied with the visual design and graphics, but admin access is still not working correctly.",
+  "architectural_notes": [],
   "known_issues": [
-    "Principal ID authentication failing due to 32 character limit validation",
-    "Admin token not granting admin access when signing in with existing Internet Identity (Unruly Balloons account)"
+    "Admin access is not working — user cannot gain admin privileges despite multiple fix attempts (reported at v38)"
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-remove-any-maximum-length-restriction-e-g-maxlength-32-from-the-principal-id-input-field-in-the-emergency-lookup-page-frontend-src-pages-emergencylookuppage-tsx-so-that-users-can-enter-a-full-valid-principal-id-of-up-to-63-characters-e-g-2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae",
-      "title": "Remove any maximum length restriction (e.g. maxLength={32}) from the Principal ID input field in the Emergency Lookup page (frontend/src/pages/EmergencyLookupPage.tsx) so that users can enter a full valid Principal ID of up to 63 characters (e.g. 2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae).",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-remove-any-maximum-length-restriction-from-the-principal-id-input-field-in-the-routes-search-page-frontend-src-pages-routeslistpage-tsx-so-that-users-can-enter-a-full-valid-principal-id-when-searching-another-user-s-routes",
-      "title": "Remove any maximum length restriction from the Principal ID input field in the Routes search page (frontend/src/pages/RoutesListPage.tsx) so that users can enter a full valid Principal ID when searching another user's routes.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-remove-any-maximum-length-restriction-from-the-principal-id-input-field-in-the-meetup-page-frontend-src-pages-meetuppage-tsx-so-that-users-can-enter-a-full-valid-principal-id-when-looking-up-another-driver-s-meetup-location",
-      "title": "Remove any maximum length restriction from the Principal ID input field in the Meetup page (frontend/src/pages/MeetupPage.tsx) so that users can enter a full valid Principal ID when looking up another driver's meetup location.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-remove-any-maximum-length-restriction-from-the-principal-id-input-field-in-the-admin-dashboard-page-frontend-src-pages-admindashboardpage-tsx-used-to-navigate-to-user-account-details-so-that-admins-can-enter-a-full-valid-principal-id",
-      "title": "Remove any maximum length restriction from the Principal ID input field in the Admin Dashboard page (frontend/src/pages/AdminDashboardPage.tsx) used to navigate to user account details, so that admins can enter a full valid Principal ID.",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-frontend-admin-token-handling-flow-so-that-after-a-user-authenticates-via-internet-identity-and-a-caffeineadmintoken-is-present-in-the-url-hash-the-app-automatically-calls-the-backend-admin-promotion-endpoint-with-that-token-if-the-backend-grants-admin-status-first-time-claim-the-app-should-reflect-the-admin-role-immediately-e-g-show-the-admin-dashboard-link-in-navigation-without-requiring-a-page-reload",
-      "title": "Update the frontend admin token handling flow so that after a user authenticates via Internet Identity and a caffeineAdminToken is present in the URL hash, the app automatically calls the backend admin promotion endpoint with that token. If the backend grants admin status (first-time claim), the app should reflect the admin role immediately (e.g., show the Admin Dashboard link in navigation) without requiring a page reload.",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
-    }
-  ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Remove the 32-character maximum length validation from the Principal ID input field in the Internet Identity account editing interface so that users can enter their full Principal ID (2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae) which is 49 characters with hyphens",
+      "id": "feature-diagnose-and-fix-the-end-to-end-admin-promotion-flow-so-that-a-user-who-enters-a-valid-admin-token-gains-admin-privileges-this-includes-1-the-token-is-correctly-persisted-to-localstorage-before-the-internet-identity-login-redirect-2-adminpromotionhandler-reliably-reads-and-submits-the-token-after-login-3-the-backend-promotetoadmin-call-succeeds-and-returns-an-admin-status-and-4-adminrouteguard-correctly-reflects-the-updated-admin-status-and-grants-access-to-protected-routes",
+      "title": "Diagnose and fix the end-to-end admin promotion flow so that a user who enters a valid admin token gains admin privileges. This includes: (1) the token is correctly persisted to localStorage before the Internet Identity login redirect, (2) AdminPromotionHandler reliably reads and submits the token after login, (3) the backend promoteToAdmin call succeeds and returns an admin status, and (4) AdminRouteGuard correctly reflects the updated admin status and grants access to protected routes.",
       "reqIds": [
         "REQ-1"
       ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Review and update all other Principal ID input fields throughout the application (emergency lookup page, route search, meetup lookup, admin user details) to ensure they do not have artificial character limits that would prevent valid Principal IDs from being entered",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Modify admin access so that the first person to sign in with the admin token becomes the admin, instead of requiring a pre-set Principal ID match",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Modify the backend admin authorization logic so that if no admin has been set yet (i.e., the admin list is empty), the first authenticated user who presents a valid admin token is automatically granted admin privileges and stored as the admin principal. This removes the requirement for a pre-configured hardcoded admin Principal ID and allows the app owner to gain admin access simply by signing in with any Internet Identity while the admin token is in the URL.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "status": "pending"
+      "version": 1
     }
   ],
-  "projectName": "Remove 32-character limit on Principal ID input fields",
+  "new_feature_requests": [],
+  "projectName": "Fix admin access/promotion flow",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

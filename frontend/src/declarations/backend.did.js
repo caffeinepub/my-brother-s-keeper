@@ -112,6 +112,12 @@ export const UserAccountDetails = IDL.Record({
   'lastLocations' : IDL.Vec(MeetupLocation),
   'profile' : UserProfile,
 });
+export const PromoteToAdminResult = IDL.Variant({
+  'accountAlreadyAdmin' : IDL.Null,
+  'success' : IDL.Text,
+  'invalidToken' : IDL.Null,
+  'tokenExpired' : IDL.Null,
+});
 export const MeetupLocationInput = IDL.Record({
   'latitude' : IDL.Float64,
   'name' : IDL.Text,
@@ -165,6 +171,7 @@ export const idlService = IDL.Service({
       [EmergencyLookupResult],
       ['query'],
     ),
+  'generateAdminToken' : IDL.Func([], [IDL.Text], []),
   'getActivityLogs' : IDL.Func([], [IDL.Vec(ActivityLogEntry)], ['query']),
   'getAllActiveMeetupLocations' : IDL.Func(
       [],
@@ -212,6 +219,7 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'promoteToAdmin' : IDL.Func([IDL.Text], [PromoteToAdminResult], []),
   'reviewVerification' : IDL.Func([IDL.Principal, IDL.Bool], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'searchPlaces' : IDL.Func(
@@ -335,6 +343,12 @@ export const idlFactory = ({ IDL }) => {
     'lastLocations' : IDL.Vec(MeetupLocation),
     'profile' : UserProfile,
   });
+  const PromoteToAdminResult = IDL.Variant({
+    'accountAlreadyAdmin' : IDL.Null,
+    'success' : IDL.Text,
+    'invalidToken' : IDL.Null,
+    'tokenExpired' : IDL.Null,
+  });
   const MeetupLocationInput = IDL.Record({
     'latitude' : IDL.Float64,
     'name' : IDL.Text,
@@ -392,6 +406,7 @@ export const idlFactory = ({ IDL }) => {
         [EmergencyLookupResult],
         ['query'],
       ),
+    'generateAdminToken' : IDL.Func([], [IDL.Text], []),
     'getActivityLogs' : IDL.Func([], [IDL.Vec(ActivityLogEntry)], ['query']),
     'getAllActiveMeetupLocations' : IDL.Func(
         [],
@@ -443,6 +458,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'promoteToAdmin' : IDL.Func([IDL.Text], [PromoteToAdminResult], []),
     'reviewVerification' : IDL.Func([IDL.Principal, IDL.Bool], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'searchPlaces' : IDL.Func(

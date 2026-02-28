@@ -1,81 +1,74 @@
-/**
- * Admin promotion utilities.
- * 
- * The caffeineAdminToken may be lost when Internet Identity redirects back
- * to the app (sessionStorage is tab-scoped and may not survive the redirect).
- * We persist the token to localStorage before the login redirect so it can
- * be retrieved and used for admin promotion after authentication completes.
- */
-
-const ADMIN_TOKEN_STORAGE_KEY = 'pendingCaffeineAdminToken';
+const ADMIN_TOKEN_KEY = 'caffeineAdminToken';
 
 /**
- * Read the caffeineAdminToken from the URL hash (if present) and persist it
- * to localStorage so it survives the Internet Identity redirect.
- * Call this before initiating the login flow.
+ * Save the admin token to localStorage before the Internet Identity login redirect.
+ * This ensures the token survives the redirect and can be retrieved after login.
  */
-export function saveAdminTokenBeforeLogin(): void {
-  const token = extractAdminTokenFromHash();
-  if (token) {
-    localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, token);
+export function saveAdminTokenBeforeLogin(token: string): void {
+  if (token && token.trim()) {
+    localStorage.setItem(ADMIN_TOKEN_KEY, token.trim());
   }
 }
 
 /**
- * Retrieve the pending admin token from localStorage.
- * Returns null if none is stored.
+ * Retrieve the stored admin token from localStorage.
+ * Returns null if no token is stored.
  */
-export function getPendingAdminToken(): string | null {
-  // Also check the current URL hash in case the user hasn't logged in yet
-  const fromHash = extractAdminTokenFromHash();
-  if (fromHash) {
-    localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, fromHash);
-    return fromHash;
+export function getAdminToken(): string | null {
+  return localStorage.getItem(ADMIN_TOKEN_KEY);
+}
+
+/**
+ * Clear the admin token from localStorage and remove any hash parameter from the URL.
+ * Does not cause a page reload.
+ */
+export function clearAdminToken(): void {
+  localStorage.removeItem(ADMIN_TOKEN_KEY);
+
+  // Also clear any hash-based token from the URL
+  if (window.location.hash && window.location.hash.includes('adminToken')) {
+    try {
+      const url = new URL(window.location.href);
+      url.hash = '';
+      window.history.replaceState(null, '', url.toString());
+    } catch {
+      // Ignore URL manipulation errors
+    }
   }
-  return localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
 }
 
 /**
- * Clear the pending admin token from localStorage after use.
+ * Extract an admin token from the URL hash parameter.
+ * Supports formats like: #adminToken=TOKEN_VALUE
  */
-export function clearPendingAdminToken(): void {
-  localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
-}
+export function extractAdminTokenFromHash(): string | null {
+  const hash = window.location.hash;
+  if (!hash) return null;
 
-/**
- * Extract the caffeineAdminToken from the current URL hash parameters.
- * Returns null if not present.
- */
-function extractAdminTokenFromHash(): string | null {
   try {
-    const hash = window.location.hash;
-    if (!hash || !hash.includes('caffeineAdminToken')) return null;
-
-    // Parse hash as query string (strip leading #)
-    const hashContent = hash.startsWith('#') ? hash.slice(1) : hash;
-    const params = new URLSearchParams(hashContent);
-    return params.get('caffeineAdminToken');
+    // Remove the leading '#' and parse as query string
+    const params = new URLSearchParams(hash.slice(1));
+    return params.get('adminToken');
   } catch {
     return null;
   }
 }
 
 /**
- * Remove the caffeineAdminToken from the URL hash without triggering a page reload.
+ * Check for an admin token in the URL hash and save it to localStorage.
+ * Call this on app initialization before any redirects.
  */
-export function clearAdminTokenFromUrl(): void {
-  try {
-    const hash = window.location.hash;
-    if (!hash || !hash.includes('caffeineAdminToken')) return;
-
-    const hashContent = hash.startsWith('#') ? hash.slice(1) : hash;
-    const params = new URLSearchParams(hashContent);
-    params.delete('caffeineAdminToken');
-
-    const remaining = params.toString();
-    const newHash = remaining ? '#' + remaining : '';
-    window.history.replaceState(null, '', window.location.pathname + window.location.search + newHash);
-  } catch {
-    // ignore
+export function captureAdminTokenFromUrl(): void {
+  const token = extractAdminTokenFromHash();
+  if (token) {
+    saveAdminTokenBeforeLogin(token);
+    // Clear the hash from the URL
+    try {
+      const url = new URL(window.location.href);
+      url.hash = '';
+      window.history.replaceState(null, '', url.toString());
+    } catch {
+      // Ignore URL manipulation errors
+    }
   }
 }

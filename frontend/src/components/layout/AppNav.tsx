@@ -1,48 +1,69 @@
-import { Link } from '@tanstack/react-router';
+import { useNavigate, useLocation } from '@tanstack/react-router';
+import { MapPin, Route, Users, AlertTriangle, User, LayoutDashboard, Navigation } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useIsCallerAdmin } from '../../hooks/useQueries';
-import { MapPin, Route, User, Shield, Users } from 'lucide-react';
+import { useInternetIdentity } from '../../hooks/useInternetIdentity';
 
-export default function AppNav() {
+const navItems = [
+  { to: '/places', label: 'Safe Places', icon: MapPin },
+  { to: '/routes', label: 'Routes', icon: Route },
+  { to: '/meetup', label: 'Meetup', icon: Navigation },
+  { to: '/sos', label: 'SOS', icon: AlertTriangle },
+  { to: '/profile', label: 'Profile', icon: User },
+];
+
+interface AppNavProps {
+  onNavigate?: () => void;
+}
+
+export default function AppNav({ onNavigate }: AppNavProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { identity } = useInternetIdentity();
   const { data: isAdmin } = useIsCallerAdmin();
 
+  const handleNav = (to: string) => {
+    navigate({ to });
+    onNavigate?.();
+  };
+
   return (
-    <nav className="flex flex-col gap-1">
-      <Link
-        to="/places"
-        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors [&.active]:bg-accent [&.active]:text-accent-foreground"
-      >
-        <MapPin className="h-5 w-5" />
-        <span>Places</span>
-      </Link>
-      <Link
-        to="/routes"
-        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors [&.active]:bg-accent [&.active]:text-accent-foreground"
-      >
-        <Route className="h-5 w-5" />
-        <span>Routes</span>
-      </Link>
-      <Link
-        to="/meetup"
-        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors [&.active]:bg-accent [&.active]:text-accent-foreground"
-      >
-        <Users className="h-5 w-5" />
-        <span>Meetup</span>
-      </Link>
-      <Link
-        to="/profile"
-        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors [&.active]:bg-accent [&.active]:text-accent-foreground"
-      >
-        <User className="h-5 w-5" />
-        <span>Profile</span>
-      </Link>
-      {isAdmin && (
-        <Link
-          to="/admin/dashboard"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors [&.active]:bg-accent [&.active]:text-accent-foreground"
-        >
-          <Shield className="h-5 w-5" />
-          <span>Admin Dashboard</span>
-        </Link>
+    <nav className="flex flex-col gap-1 p-2">
+      {navItems.map(({ to, label, icon: Icon }) => {
+        const isActive = location.pathname === to || location.pathname.startsWith(to + '/');
+        return (
+          <button
+            key={to}
+            onClick={() => handleNav(to)}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full text-left',
+              isActive
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            )}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            {label}
+          </button>
+        );
+      })}
+
+      {identity && isAdmin && (
+        <>
+          <div className="my-1 h-px bg-border" />
+          <button
+            onClick={() => handleNav('/admin/dashboard')}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full text-left',
+              location.pathname.startsWith('/admin')
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            )}
+          >
+            <LayoutDashboard className="h-4 w-4 shrink-0" />
+            Admin Dashboard
+          </button>
+        </>
       )}
     </nav>
   );

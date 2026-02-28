@@ -1,12 +1,11 @@
-import React, { useEffect, useRef } from 'react';
 import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
-import { useInternetIdentity } from './hooks/useInternetIdentity';
-import { usePromoteToAdmin } from './hooks/useQueries';
-import { getPendingAdminToken, clearPendingAdminToken, clearAdminTokenFromUrl } from './lib/adminPromotion';
-import { UserRole } from './backend';
+import { Toaster } from '@/components/ui/sonner';
 
 import AppLayout from './components/layout/AppLayout';
+import AdminPromotionHandler from './components/AdminPromotionHandler';
+
 import LandingPage from './pages/LandingPage';
 import PlacesListPage from './pages/PlacesListPage';
 import PlaceDetailPage from './pages/PlaceDetailPage';
@@ -17,54 +16,25 @@ import AddRoutePage from './pages/AddRoutePage';
 import ProfilePage from './pages/ProfilePage';
 import SOSPage from './pages/SOSPage';
 import SOSCardPage from './pages/SOSCardPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
 import EmergencyLookupPage from './pages/EmergencyLookupPage';
 import MeetupPage from './pages/MeetupPage';
 import FlyerPage from './pages/FlyerPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import UserAccountDetailsPage from './pages/UserAccountDetailsPage';
 
-// ─── Admin Promotion Handler ──────────────────────────────────────────────────
-// Runs after authentication to attempt admin promotion using a saved token.
-function AdminPromotionHandler() {
-  const { identity } = useInternetIdentity();
-  const promoteMutation = usePromoteToAdmin();
-  const hasAttempted = useRef(false);
+import AuthenticatedRouteGuard from './components/auth/AuthenticatedRouteGuard';
+import AdminRouteGuard from './components/auth/AdminRouteGuard';
 
-  useEffect(() => {
-    if (!identity || hasAttempted.current) return;
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      retry: 1,
+    },
+  },
+});
 
-    const token = getPendingAdminToken();
-    if (!token) return;
-
-    hasAttempted.current = true;
-
-    // Clear the token from URL immediately
-    clearAdminTokenFromUrl();
-
-    const principal = identity.getPrincipal();
-
-    // Don't attempt for anonymous principals
-    if (principal.isAnonymous()) {
-      clearPendingAdminToken();
-      return;
-    }
-
-    promoteMutation.mutate(
-      { principal, role: UserRole.admin },
-      {
-        onSettled: () => {
-          clearPendingAdminToken();
-        },
-      }
-    );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [identity]);
-
-  return null;
-}
-
-// ─── Routes ──────────────────────────────────────────────────────────────────
-
+// Root layout with AppLayout wrapper
 const rootRoute = createRootRoute({
   component: () => (
     <AppLayout>
@@ -74,6 +44,7 @@ const rootRoute = createRootRoute({
   ),
 });
 
+// Public routes
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
@@ -92,70 +63,10 @@ const placeDetailRoute = createRoute({
   component: PlaceDetailPage,
 });
 
-const addPlaceRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/places/add',
-  component: AddPlacePage,
-});
-
-const routesRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/routes',
-  component: RoutesListPage,
-});
-
-const routeDetailRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/routes/$routeId',
-  component: RouteDetailPage,
-});
-
-const addRouteRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/routes/add',
-  component: AddRoutePage,
-});
-
-const profileRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/profile',
-  component: ProfilePage,
-});
-
-const sosRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/sos',
-  component: SOSPage,
-});
-
-const sosCardRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/sos-card',
-  component: SOSCardPage,
-});
-
-const adminDashboardRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/admin/dashboard',
-  component: AdminDashboardPage,
-});
-
-const adminUserDetailsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/admin/users/$userId',
-  component: UserAccountDetailsPage,
-});
-
 const emergencyLookupRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/emergency-lookup',
   component: EmergencyLookupPage,
-});
-
-const meetupRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/meetup',
-  component: MeetupPage,
 });
 
 const flyerRoute = createRoute({
@@ -164,22 +75,128 @@ const flyerRoute = createRoute({
   component: FlyerPage,
 });
 
+// Authenticated routes
+const addPlaceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/places/add',
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <AddPlacePage />
+    </AuthenticatedRouteGuard>
+  ),
+});
+
+const routesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/routes',
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <RoutesListPage />
+    </AuthenticatedRouteGuard>
+  ),
+});
+
+const routeDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/routes/$routeId',
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <RouteDetailPage />
+    </AuthenticatedRouteGuard>
+  ),
+});
+
+const addRouteRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/routes/add',
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <AddRoutePage />
+    </AuthenticatedRouteGuard>
+  ),
+});
+
+const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/profile',
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <ProfilePage />
+    </AuthenticatedRouteGuard>
+  ),
+});
+
+const sosRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/sos',
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <SOSPage />
+    </AuthenticatedRouteGuard>
+  ),
+});
+
+const sosCardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/sos/card',
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <SOSCardPage />
+    </AuthenticatedRouteGuard>
+  ),
+});
+
+const meetupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/meetup',
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <MeetupPage />
+    </AuthenticatedRouteGuard>
+  ),
+});
+
+// Admin routes
+const adminDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/dashboard',
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <AdminRouteGuard>
+        <AdminDashboardPage />
+      </AdminRouteGuard>
+    </AuthenticatedRouteGuard>
+  ),
+});
+
+const userAccountDetailsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/users/$userId',
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <AdminRouteGuard>
+        <UserAccountDetailsPage />
+      </AdminRouteGuard>
+    </AuthenticatedRouteGuard>
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   placesRoute,
   placeDetailRoute,
   addPlaceRoute,
+  emergencyLookupRoute,
+  flyerRoute,
   routesRoute,
   routeDetailRoute,
   addRouteRoute,
   profileRoute,
   sosRoute,
   sosCardRoute,
-  adminDashboardRoute,
-  adminUserDetailsRoute,
-  emergencyLookupRoute,
   meetupRoute,
-  flyerRoute,
+  adminDashboardRoute,
+  userAccountDetailsRoute,
 ]);
 
 const router = createRouter({ routeTree });
@@ -190,12 +207,13 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// ─── App ─────────────────────────────────────────────────────────────────────
-
 export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <RouterProvider router={router} />
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Toaster richColors position="top-right" />
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }

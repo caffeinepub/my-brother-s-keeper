@@ -68,6 +68,10 @@ export type PlaceCategory = { 'gasStation' : null } |
   { 'shop' : null } |
   { 'mechanic' : null } |
   { 'restaurant' : null };
+export type PromoteToAdminResult = { 'accountAlreadyAdmin' : null } |
+  { 'success' : string } |
+  { 'invalidToken' : null } |
+  { 'tokenExpired' : null };
 export interface Route {
   'creator' : Principal,
   'destination' : string,
@@ -143,6 +147,7 @@ export interface _SERVICE {
   'createSOSSnapshot' : ActorMethod<[number, number], undefined>,
   'deactivateMeetupLocation' : ActorMethod<[], undefined>,
   'emergencyLookup' : ActorMethod<[Principal, string], EmergencyLookupResult>,
+  'generateAdminToken' : ActorMethod<[], string>,
   'getActivityLogs' : ActorMethod<[], Array<ActivityLogEntry>>,
   'getAllActiveMeetupLocations' : ActorMethod<[], Array<MeetupLocation>>,
   'getAllAvailableMeetupLocations' : ActorMethod<[], Array<MeetupLocation>>,
@@ -158,6 +163,7 @@ export interface _SERVICE {
   'getUserAccountDetails' : ActorMethod<[Principal], UserAccountDetails>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'promoteToAdmin' : ActorMethod<[string], PromoteToAdminResult>,
   'reviewVerification' : ActorMethod<[Principal, boolean], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchPlaces' : ActorMethod<[[] | [PlaceCategory]], Array<Place>>,

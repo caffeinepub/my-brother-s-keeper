@@ -1,61 +1,44 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T23:13:06.639Z",
+  "generatedAt": "2026-02-28T16:54:20.279Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
+    "total": 1,
     "implemented": 1,
     "items": [
       {
-        "id": "REQ-7",
-        "summary": "Modify the backend admin authorization logic so that if no admin has been set yet (i.e., the admin list is empty), the first authenticated user who presents a valid admin token is automatically granted admin privileges and stored as the admin principal. This removes the requirement for a pre-configured hardcoded admin Principal ID and allows the app owner to gain admin access simply by signing in with any Internet Identity while the admin token is in the URL.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-8",
-        "summary": "Update the frontend admin token handling flow so that after a user authenticates via Internet Identity and a caffeineAdminToken is present in the URL hash, the app automatically calls the backend admin promotion endpoint with that token. If the backend grants admin status (first-time claim), the app should reflect the admin role immediately (e.g., show the Admin Dashboard link in navigation) without requiring a page reload.",
+        "id": "REQ-1",
+        "summary": "Diagnose and fix the end-to-end admin promotion flow so that a user who enters a valid admin token gains admin privileges. This includes: (1) the token is correctly persisted to localStorage before the Internet Identity login redirect, (2) AdminPromotionHandler reliably reads and submits the token after login, (3) the backend promoteToAdmin call succeeds and returns an admin status, and (4) AdminRouteGuard correctly reflects the updated admin status and grants access to protected routes.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/lib/adminPromotion.ts",
+          "frontend/src/components/auth/AdminAccessDialog.tsx",
+          "frontend/src/components/AdminPromotionHandler.tsx",
+          "frontend/src/components/auth/AdminRouteGuard.tsx",
           "frontend/src/hooks/useQueries.ts",
-          "frontend/src/main.tsx",
-          "frontend/src/components/layout/AppNav.tsx"
+          "frontend/src/pages/AdminDashboardPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/adminPromotion.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/layout/AppNav.tsx"
+          "frontend/src/components/AdminPromotionHandler.tsx",
+          "frontend/src/components/auth/AdminRouteGuard.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
-    "build-template/README.md",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/auth/LoginButton.tsx",
-    "frontend/src/components/layout/AppNav.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
+    "frontend/src/components/AdminPromotionHandler.tsx",
+    "frontend/src/components/auth/AdminRouteGuard.tsx",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/lib/adminPromotion.ts",
-    "frontend/src/pages/AdminDashboardPage.tsx",
-    "frontend/src/pages/SOSCardPage.tsx",
-    "frontend/src/pages/UserAccountDetailsPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

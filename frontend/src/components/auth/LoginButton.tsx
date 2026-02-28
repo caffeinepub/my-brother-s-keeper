@@ -1,7 +1,6 @@
 import React from 'react';
 import { useInternetIdentity } from '../../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
-import { saveAdminTokenBeforeLogin } from '../../lib/adminPromotion';
 
 export default function LoginButton() {
   const { login, clear, loginStatus, identity } = useInternetIdentity();
@@ -16,10 +15,6 @@ export default function LoginButton() {
       await clear();
       queryClient.clear();
     } else {
-      // Save admin token to localStorage BEFORE the login redirect
-      // so it survives the Internet Identity redirect back to the app
-      saveAdminTokenBeforeLogin();
-
       try {
         await login();
       } catch (error: any) {

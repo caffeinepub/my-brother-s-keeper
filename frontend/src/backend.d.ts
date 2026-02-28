@@ -25,22 +25,35 @@ export interface EmergencyProfile {
     nextOfKin: string;
 }
 export type Time = bigint;
+export type PromoteToAdminResult = {
+    __kind__: "accountAlreadyAdmin";
+    accountAlreadyAdmin: null;
+} | {
+    __kind__: "success";
+    success: string;
+} | {
+    __kind__: "invalidToken";
+    invalidToken: null;
+} | {
+    __kind__: "tokenExpired";
+    tokenExpired: null;
+};
 export interface MemberSummary {
     userId: Principal;
     name: string;
     isVerified: boolean;
     registrationTime: Time;
 }
-export interface EmergencyLookupResult {
-    sosSnapshot?: SOSSnapshot;
-    userName?: string;
-    emergencyProfile?: EmergencyProfile;
-}
 export interface SOSSnapshot {
     latitude: number;
     user: Principal;
     longitude: number;
     timestamp: Time;
+}
+export interface EmergencyLookupResult {
+    sosSnapshot?: SOSSnapshot;
+    userName?: string;
+    emergencyProfile?: EmergencyProfile;
 }
 export interface ActivityLogEntry {
     description: string;
@@ -119,6 +132,7 @@ export interface backendInterface {
     createSOSSnapshot(latitude: number, longitude: number): Promise<void>;
     deactivateMeetupLocation(): Promise<void>;
     emergencyLookup(user: Principal, accessCode: string): Promise<EmergencyLookupResult>;
+    generateAdminToken(): Promise<string>;
     getActivityLogs(): Promise<Array<ActivityLogEntry>>;
     getAllActiveMeetupLocations(): Promise<Array<MeetupLocation>>;
     getAllAvailableMeetupLocations(): Promise<Array<MeetupLocation>>;
@@ -134,6 +148,7 @@ export interface backendInterface {
     getUserAccountDetails(userId: Principal): Promise<UserAccountDetails>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    promoteToAdmin(token: string): Promise<PromoteToAdminResult>;
     reviewVerification(user: Principal, approved: boolean): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchPlaces(category: PlaceCategory | null): Promise<Array<Place>>;

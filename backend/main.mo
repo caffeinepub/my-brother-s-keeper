@@ -2,21 +2,27 @@ import List "mo:core/List";
 import Map "mo:core/Map";
 import Time "mo:core/Time";
 import Text "mo:core/Text";
-import Float "mo:core/Float";
 import Principal "mo:core/Principal";
+import Float "mo:core/Float";
 import Array "mo:core/Array";
 import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
+import Iter "mo:core/Iter";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
-import Iter "mo:core/Iter";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor {
   include MixinStorage();
+
+  public type PromoteToAdminResult = {
+    #success : Text;
+    #accountAlreadyAdmin;
+    #invalidToken;
+    #tokenExpired;
+  };
+
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
@@ -124,6 +130,12 @@ actor {
     accountCreated : Time.Time;
   };
 
+  public type AdminToken = {
+    token : Text;
+    expiration : Time.Time;
+    createdBy : Principal;
+  };
+
   let userProfiles = Map.empty<Principal, UserProfile>();
   let places = Map.empty<Text, Place>();
   let routes = Map.empty<Principal, List.List<Route>>();
@@ -132,6 +144,7 @@ actor {
   let meetupLocations = Map.empty<Principal, MeetupLocation>();
   let activityLogs = List.empty<ActivityLogEntry>();
   let userActivityLogs = Map.empty<Principal, List.List<ActivityLogEntry>>();
+  let adminTokens = Map.empty<Text, AdminToken>();
 
   func isAdminUser(caller : Principal) : Bool {
     AccessControl.isAdmin(accessControlState, caller);
@@ -180,9 +193,9 @@ actor {
       Runtime.trap("Unauthorized: Only admins can access member list");
     };
     userProfiles.toArray().map(
-      func((id, profile)) {
+      func((_id, profile)) {
         {
-          userId = id;
+          userId = _id;
           name = profile.name;
           isVerified = profile.isVerified;
           registrationTime = profile.registrationTime;
@@ -516,9 +529,54 @@ actor {
     );
   };
 
+  public shared ({ caller }) func promoteToAdmin(token : Text) : async PromoteToAdminResult {
+    let tokenEntry = adminTokens.get(token);
+
+    switch (tokenEntry) {
+      case (null) {
+        #invalidToken;
+      };
+      case (?adminToken) {
+        if (Time.now() > adminToken.expiration) {
+          #tokenExpired;
+        } else if (isAdminUser(caller)) {
+          #accountAlreadyAdmin;
+        } else {
+          AccessControl.assignRole(
+            accessControlState,
+            adminToken.createdBy,
+            caller,
+            #admin,
+          );
+          addActivityLog(#adminAction, "User with principal " # debug_show (caller) # " promoted to admin.", adminToken.createdBy);
+          #success("Admin privileges granted successfully");
+        };
+      };
+    };
+  };
+
+  public shared ({ caller }) func generateAdminToken() : async Text {
+    if (not isAdminUser(caller)) {
+      Runtime.trap("Unauthorized: Only admins can generate tokens");
+    };
+
+    let token = "ROUTECOIN_ADMIN_" # caller.toText() # "_" # Time.now().toText();
+    let expiration = Time.now() + (86400_000_000_000 * 3);
+
+    let adminToken : AdminToken = {
+      token;
+      expiration;
+      createdBy = caller;
+    };
+
+    adminTokens.add(token, adminToken);
+    token;
+  };
+
   module Place {
     public func compare(place1 : Place, place2 : Place) : Order.Order {
       Text.compare(place1.name, place2.name);
     };
   };
 };
+

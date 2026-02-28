@@ -2,12 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-frontend-admin-token-handling-flow-so-that-after-a-user-authenticates-via-internet-identity-and-a-caffeineadmintoken-is-present-in-the-url-hash-the-app-automatically-calls-the-backend-admin-promotion-endpoint-with-that-token-if-the-backend-grants-admin-status-first-time-claim-the-app-should-reflect-the-admin-role-immediately-e-g-show-the-admin-dashboard-link-in-navigation-without-requiring-a-page-reload",
-      "featureTitle": "Update the frontend admin token handling flow so that after a user authenticates via Internet Identity and a caffeineAdminToken is present in the URL hash, the app automatically calls the backend admin promotion endpoint with that token. If the backend grants admin status (first-time claim), the app should reflect the admin role immediately (e.g., show the Admin Dashboard link in navigation) without requiring a page reload.",
+      "featureId": "feature-diagnose-and-fix-the-end-to-end-admin-promotion-flow-so-that-a-user-who-enters-a-valid-admin-token-gains-admin-privileges-this-includes-1-the-token-is-correctly-persisted-to-localstorage-before-the-internet-identity-login-redirect-2-adminpromotionhandler-reliably-reads-and-submits-the-token-after-login-3-the-backend-promotetoadmin-call-succeeds-and-returns-an-admin-status-and-4-adminrouteguard-correctly-reflects-the-updated-admin-status-and-grants-access-to-protected-routes",
+      "featureTitle": "Diagnose and fix the end-to-end admin promotion flow so that a user who enters a valid admin token gains admin privileges. This includes: (1) the token is correctly persisted to localStorage before the Internet Identity login redirect, (2) AdminPromotionHandler reliably reads and submits the token after login, (3) the backend promoteToAdmin call succeeds and returns an admin status, and (4) AdminRouteGuard correctly reflects the updated admin status and grants access to protected routes.",
       "files": [
-        "frontend/src/components/layout/AppNav.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/lib/adminPromotion.ts"
+        "frontend/src/components/AdminPromotionHandler.tsx",
+        "frontend/src/components/auth/AdminRouteGuard.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -19,7 +19,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-8"
+        "REQ-1"
       ],
       "confidence": "high"
     }

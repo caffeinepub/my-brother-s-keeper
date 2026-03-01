@@ -74,6 +74,12 @@ export const MeetupLocation = IDL.Record({
   'longitude' : IDL.Float64,
   'timestamp' : Time,
 });
+export const AdminTokenInfo = IDL.Record({
+  'token' : IDL.Text,
+  'createdBy' : IDL.Principal,
+  'expiration' : Time,
+  'isRedeemed' : IDL.Bool,
+});
 export const MemberSummary = IDL.Record({
   'userId' : IDL.Principal,
   'name' : IDL.Text,
@@ -178,6 +184,8 @@ export const idlService = IDL.Service({
       [IDL.Vec(MeetupLocation)],
       ['query'],
     ),
+  'getAllActiveTokens' : IDL.Func([], [IDL.Vec(AdminTokenInfo)], ['query']),
+  'getAllAdminTokenInfos' : IDL.Func([], [IDL.Vec(AdminTokenInfo)], ['query']),
   'getAllAvailableMeetupLocations' : IDL.Func(
       [],
       [IDL.Vec(MeetupLocation)],
@@ -218,6 +226,7 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'isAdmin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'promoteToAdmin' : IDL.Func([IDL.Text], [PromoteToAdminResult], []),
   'reviewVerification' : IDL.Func([IDL.Principal, IDL.Bool], [], []),
@@ -304,6 +313,12 @@ export const idlFactory = ({ IDL }) => {
     'isActive' : IDL.Bool,
     'longitude' : IDL.Float64,
     'timestamp' : Time,
+  });
+  const AdminTokenInfo = IDL.Record({
+    'token' : IDL.Text,
+    'createdBy' : IDL.Principal,
+    'expiration' : Time,
+    'isRedeemed' : IDL.Bool,
   });
   const MemberSummary = IDL.Record({
     'userId' : IDL.Principal,
@@ -413,6 +428,12 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(MeetupLocation)],
         ['query'],
       ),
+    'getAllActiveTokens' : IDL.Func([], [IDL.Vec(AdminTokenInfo)], ['query']),
+    'getAllAdminTokenInfos' : IDL.Func(
+        [],
+        [IDL.Vec(AdminTokenInfo)],
+        ['query'],
+      ),
     'getAllAvailableMeetupLocations' : IDL.Func(
         [],
         [IDL.Vec(MeetupLocation)],
@@ -457,6 +478,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'isAdmin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'promoteToAdmin' : IDL.Func([IDL.Text], [PromoteToAdminResult], []),
     'reviewVerification' : IDL.Func([IDL.Principal, IDL.Bool], [], []),

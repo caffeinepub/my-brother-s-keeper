@@ -1,26 +1,26 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T16:54:20.275Z",
-  "summary": "The diff implements fixes across the full admin promotion flow as specified in REQ-1. The backend promoteToAdmin result type is defined, AdminPromotionHandler is rewritten to reliably read/submit/clear the token, AdminRouteGuard waits for actor initialization before evaluating admin status, and usePromoteToAdmin invalidates+refetches the isCallerAdmin query with staleTime:0. The diff does not show the adminPromotion lib or AdminAccessDialog changes explicitly, though the file summaries reference them.",
-  "missing_requirements": [
+  "generatedAt": "2026-03-01T17:08:06.427Z",
+  "summary": "All four requirements are substantially implemented. REQ-1 hardcodes the bootstrap admin Principal ID in backend/main.mo with an isBootstrapAdmin helper and isAdminUser function. REQ-2 fixes AdminPromotionHandler.tsx with a hasAttempted ref guard and no-op when no token is present. REQ-3 fixes AdminRouteGuard.tsx to show children or AccessDeniedScreen without navigation. REQ-4 fixes useIsCallerAdmin in useQueries.ts with stable query key, disabled refetchOnWindowFocus, and retry:false. One minor concern exists: AdminPromotionHandler still navigates when isAdmin===true and a token is present, but the core requirement (no navigation when no token is present) is satisfied.",
+  "missing_requirements": [],
+  "hallucinated_features": [
     {
-      "id": "REQ-1",
-      "requirement": "The token is correctly persisted to localStorage before the Internet Identity login redirect (AdminAccessDialog saves token before login redirect), and the 'already logged in' immediate-promotion path is implemented",
-      "reason": "The diff does not include AdminAccessDialog source or the adminPromotion.ts lib. The file summaries mention LoginButton no longer saves the token and that AdminAccessDialog handles token saving, but the actual implementation is not shown in the diff, making it impossible to verify the localStorage persistence and the already-logged-in immediate-promotion path.",
+      "description": "BootstrapAdminContext is retained as a no-op stub rather than being removed",
+      "reason": "The build request does not mention keeping BootstrapAdminContext as a stub; it only asks to fix the auth loop. While conservative and harmless, this is extra code not requested.",
       "evidence": [
-        "frontend/src/components/AdminPromotionHandler.tsx",
-        "frontend-file-summaries.txt"
+        "frontend/src/contexts/BootstrapAdminContext.tsx"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.72,
+  "confidence": 0.88,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
     "frontend/src/components/AdminPromotionHandler.tsx",
+    "frontend/src/components/auth/AccessDeniedScreen.tsx",
     "frontend/src/components/auth/AdminRouteGuard.tsx",
+    "frontend/src/contexts/BootstrapAdminContext.tsx",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]

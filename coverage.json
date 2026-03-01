@@ -1,30 +1,52 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T16:54:20.279Z",
+  "generatedAt": "2026-03-01T17:08:06.431Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 1,
+    "total": 4,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Diagnose and fix the end-to-end admin promotion flow so that a user who enters a valid admin token gains admin privileges. This includes: (1) the token is correctly persisted to localStorage before the Internet Identity login redirect, (2) AdminPromotionHandler reliably reads and submits the token after login, (3) the backend promoteToAdmin call succeeds and returns an admin status, and (4) AdminRouteGuard correctly reflects the updated admin status and grants access to protected routes.",
+        "summary": "Hardcode the bootstrap admin Principal ID directly in the backend actor (`backend/main.mo`). Remove any dynamic detection or stored-state lookup for the bootstrap admin. The hardcoded Principal ID must be treated as an unconditional admin — no token required, no promotion step needed, no flags to check.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Fix `AdminPromotionHandler.tsx` so it does NOT trigger any navigation, redirect, or re-initialization loop. Remove or disable the silent bootstrap auto-promotion attempt that re-triggers on every render/mount cycle. The component should be a no-op if the caller is already confirmed as admin or if no promotion token is present in localStorage.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/adminPromotion.ts",
-          "frontend/src/components/auth/AdminAccessDialog.tsx",
-          "frontend/src/components/AdminPromotionHandler.tsx",
-          "frontend/src/components/auth/AdminRouteGuard.tsx",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/AdminDashboardPage.tsx"
+          "frontend/src/components/AdminPromotionHandler.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/AdminPromotionHandler.tsx",
-          "frontend/src/components/auth/AdminRouteGuard.tsx",
+          "frontend/src/components/AdminPromotionHandler.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Fix `AdminRouteGuard.tsx` so it does not show the loading spinner indefinitely or redirect back to the initialization/landing page. It must resolve admin status with a single backend query and render either the children or `AccessDeniedScreen` — never loop back to the app start.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/auth/AdminRouteGuard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/auth/AdminRouteGuard.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Audit and fix `useQueries.ts` — specifically the `useIsAdmin` (or equivalent) query — to ensure it does not cause a cascade of re-fetches or identity re-initializations that restart the app flow. The query must use a stable actor reference and must not invalidate itself in a way that triggers the identity provider to restart.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
           "frontend/src/hooks/useQueries.ts"
         ]
       }
@@ -37,7 +59,9 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/components/AdminPromotionHandler.tsx",
+    "frontend/src/components/auth/AccessDeniedScreen.tsx",
     "frontend/src/components/auth/AdminRouteGuard.tsx",
+    "frontend/src/contexts/BootstrapAdminContext.tsx",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",

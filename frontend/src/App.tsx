@@ -1,10 +1,11 @@
-import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
+import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet, redirect } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 
 import AppLayout from './components/layout/AppLayout';
 import AdminPromotionHandler from './components/AdminPromotionHandler';
+import { BootstrapAdminProvider } from './contexts/BootstrapAdminContext';
 
 import LandingPage from './pages/LandingPage';
 import PlacesListPage from './pages/PlacesListPage';
@@ -37,10 +38,12 @@ const queryClient = new QueryClient({
 // Root layout with AppLayout wrapper
 const rootRoute = createRootRoute({
   component: () => (
-    <AppLayout>
-      <AdminPromotionHandler />
-      <Outlet />
-    </AppLayout>
+    <BootstrapAdminProvider>
+      <AppLayout>
+        <AdminPromotionHandler />
+        <Outlet />
+      </AppLayout>
+    </BootstrapAdminProvider>
   ),
 });
 
@@ -156,6 +159,15 @@ const meetupRoute = createRoute({
   ),
 });
 
+// Admin redirect: /admin → /admin/dashboard
+const adminRedirectRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin',
+  beforeLoad: () => {
+    throw redirect({ to: '/admin/dashboard' });
+  },
+});
+
 // Admin routes
 const adminDashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -195,6 +207,7 @@ const routeTree = rootRoute.addChildren([
   sosRoute,
   sosCardRoute,
   meetupRoute,
+  adminRedirectRoute,
   adminDashboardRoute,
   userAccountDetailsRoute,
 ]);

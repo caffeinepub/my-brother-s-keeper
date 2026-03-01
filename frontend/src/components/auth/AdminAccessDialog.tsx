@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { KeyRound, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from '@tanstack/react-router';
 import {
   Dialog,
   DialogContent,
@@ -13,8 +14,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useInternetIdentity } from '../../hooks/useInternetIdentity';
-import { usePromoteToAdmin } from '../../hooks/useQueries';
+import { useIsCallerAdmin, usePromoteToAdmin } from '../../hooks/useQueries';
 import { saveAdminTokenBeforeLogin } from '../../lib/adminPromotion';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AdminAccessDialogProps {
   open: boolean;
@@ -25,8 +27,13 @@ export default function AdminAccessDialog({ open, onOpenChange }: AdminAccessDia
   const { identity, login, loginStatus } = useInternetIdentity();
   const [token, setToken] = useState('');
   const promoteMutation = usePromoteToAdmin();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const isAuthenticated = !!identity;
   const isLoggingIn = loginStatus === 'logging-in';
+
+  // Check if the user is already an admin
+  const { data: isAdmin } = useIsCallerAdmin();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,26 +49,74 @@ export default function AdminAccessDialog({ open, onOpenChange }: AdminAccessDia
       return;
     }
 
+    // User is already authenticated — call promoteToAdmin directly
     promoteMutation.mutate(trimmedToken, {
       onSuccess: (result) => {
-        setToken('');
         if (result.__kind__ === 'success') {
+          setToken('');
           toast.success('Admin access granted! You now have administrator privileges.');
+          // Invalidate admin status so guards update immediately
+          queryClient.invalidateQueries({ queryKey: ['isCallerAdmin'] });
+          queryClient.refetchQueries({ queryKey: ['isCallerAdmin'] });
           onOpenChange(false);
+          navigate({ to: '/admin/dashboard' });
         } else if (result.__kind__ === 'accountAlreadyAdmin') {
+          setToken('');
           toast.info('Your account already has admin privileges.');
+          queryClient.invalidateQueries({ queryKey: ['isCallerAdmin'] });
           onOpenChange(false);
+          navigate({ to: '/admin/dashboard' });
         } else if (result.__kind__ === 'invalidToken') {
+          // Keep dialog open for re-entry
           toast.error('Invalid admin token. Please check the token and try again.');
         } else if (result.__kind__ === 'tokenExpired') {
-          toast.error('This admin token has expired. Please request a new one.');
+          // Keep dialog open for re-entry
+          toast.error('This admin token has expired. Please request a new one from an administrator.');
         }
       },
       onError: (error) => {
+        // Keep dialog open for re-entry
         toast.error(`Failed to apply admin token: ${error.message}`);
       },
     });
   };
+
+  // If the user is already an admin, show a confirmation instead of the token form
+  if (isAuthenticated && isAdmin === true) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              <DialogTitle>Admin Access</DialogTitle>
+            </div>
+            <DialogDescription>
+              You already have administrator privileges.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-2">
+            <Button
+              onClick={() => {
+                onOpenChange(false);
+                navigate({ to: '/admin/dashboard' });
+              }}
+              className="w-full"
+            >
+              Go to Admin Dashboard
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="w-full"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -71,8 +126,15 @@ export default function AdminAccessDialog({ open, onOpenChange }: AdminAccessDia
             <ShieldCheck className="h-5 w-5 text-primary" />
             <DialogTitle>Admin Access</DialogTitle>
           </div>
-          <DialogDescription>
-            Enter your admin token to gain administrator privileges. Tokens are provided by existing administrators.
+          <DialogDescription asChild>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>
+                <strong className="text-foreground">Bootstrap admin:</strong> If you are the designated first administrator, simply log in with your registered principal — admin access is granted automatically, no token required.
+              </p>
+              <p>
+                <strong className="text-foreground">Other users:</strong> Enter an admin token generated by an existing administrator to receive admin privileges.
+              </p>
+            </div>
           </DialogDescription>
         </DialogHeader>
 
@@ -93,6 +155,12 @@ export default function AdminAccessDialog({ open, onOpenChange }: AdminAccessDia
           {!isAuthenticated && (
             <p className="text-sm text-muted-foreground bg-muted rounded-md p-3">
               <strong>Note:</strong> You are not logged in. Submitting will save your token and redirect you to login. Your admin privileges will be applied automatically after authentication.
+            </p>
+          )}
+
+          {isAuthenticated && (
+            <p className="text-sm text-muted-foreground bg-muted rounded-md p-3">
+              You are logged in. Submitting will apply the token immediately to your account.
             </p>
           )}
 

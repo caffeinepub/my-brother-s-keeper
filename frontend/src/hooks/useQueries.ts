@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useInternetIdentity } from './useInternetIdentity';
 import type { UserProfile, Place, PlaceCategory, Route, EmergencyProfile, MeetupLocationInput, MemberSummary, ActivityLogEntry, UserAccountDetails, PromoteToAdminResult } from '../backend';
 import { Principal } from '@dfinity/principal';
 
@@ -72,16 +73,27 @@ export function useUploadVerification() {
 
 export function useIsCallerAdmin() {
   const { actor, isFetching } = useActor();
+  const { identity, isInitializing } = useInternetIdentity();
+
+  // Include the identity principal in the query key so the result is
+  // scoped per identity — prevents stale anonymous results being served
+  // to authenticated users and vice versa.
+  const principalKey = identity?.getPrincipal().toString() ?? 'anonymous';
 
   return useQuery<boolean>({
-    queryKey: ['isCallerAdmin'],
+    queryKey: ['isCallerAdmin', principalKey],
     queryFn: async () => {
-      if (!actor) return false;
+      if (!actor) throw new Error('Actor not available');
       return actor.isCallerAdmin();
     },
-    enabled: !!actor && !isFetching,
-    // Do not cache stale admin status for too long
+    // Only run when actor is ready and identity is fully initialized
+    enabled: !!actor && !isFetching && !isInitializing,
+    // Do not cache stale admin status
     staleTime: 0,
+    // Don't retry on error — prevents amplifying loop behavior
+    retry: false,
+    // Don't refetch on window focus to prevent spurious re-checks
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -96,9 +108,8 @@ export function usePromoteToAdmin() {
     },
     onSuccess: (result) => {
       if (result.__kind__ === 'success' || result.__kind__ === 'accountAlreadyAdmin') {
-        // Invalidate and immediately refetch admin status so guards update
+        // Invalidate admin status so guards update
         queryClient.invalidateQueries({ queryKey: ['isCallerAdmin'] });
-        queryClient.refetchQueries({ queryKey: ['isCallerAdmin'] });
         queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
         queryClient.invalidateQueries({ queryKey: ['callerRole'] });
       }
@@ -347,6 +358,39 @@ export function useShareMeetupLocation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meetupLocation'] });
+      queryClient.invalidateQueries({ queryKey: ['allMeetupLocations'] });
+    },
+  });
+}
+
+export function useUpdateMeetupLocation() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (locationInput: MeetupLocationInput) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateMeetupLocation(locationInput);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetupLocation'] });
+      queryClient.invalidateQueries({ queryKey: ['allMeetupLocations'] });
+    },
+  });
+}
+
+export function useDeactivateMeetupLocation() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.deactivateMeetupLocation();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetupLocation'] });
+      queryClient.invalidateQueries({ queryKey: ['allMeetupLocations'] });
     },
   });
 }
@@ -364,44 +408,53 @@ export function useGetMeetupLocation(userId: Principal | null) {
   });
 }
 
-export function useDeactivateMeetupLocation() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.deactivateMeetupLocation();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meetupLocation'] });
-    },
-  });
-}
-
-export function useUpdateMeetupLocation() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (locationInput: MeetupLocationInput) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.updateMeetupLocation(locationInput);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meetupLocation'] });
-    },
-  });
-}
-
 export function useGetAllActiveMeetupLocations() {
   const { actor, isFetching } = useActor();
 
   return useQuery({
-    queryKey: ['allActiveMeetupLocations'],
+    queryKey: ['allMeetupLocations'],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAllActiveMeetupLocations();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetLatestMeetupLocation(userId: Principal | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery({
+    queryKey: ['latestMeetupLocation', userId?.toString()],
+    queryFn: async () => {
+      if (!actor || !userId) return null;
+      return actor.getLatestMeetupLocation(userId);
+    },
+    enabled: !!actor && !isFetching && !!userId,
+  });
+}
+
+export function useGetAllAdminTokenInfos() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery({
+    queryKey: ['adminTokenInfos'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllAdminTokenInfos();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetAllActiveTokens() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery({
+    queryKey: ['activeAdminTokens'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllActiveTokens();
     },
     enabled: !!actor && !isFetching,
   });

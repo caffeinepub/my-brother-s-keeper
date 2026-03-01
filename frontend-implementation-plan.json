@@ -1,49 +1,52 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix admin access/promotion flow",
+  "title": "Fix admin auth loop — remove gate logic and hardcode bootstrap admin Principal ID",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Diagnose and fix the end-to-end admin promotion flow so users with valid admin tokens gain admin privileges reliably",
+      "id": "REQ-2",
+      "summary": "Fix AdminPromotionHandler to prevent navigation and re-initialization loops",
       "acceptanceCriteria": [
-        "A user can open the AdminAccessDialog, enter a valid admin token, and be promoted to admin after authenticating via Internet Identity",
-        "If already logged in, entering a valid token in AdminAccessDialog immediately promotes the user without requiring re-login",
-        "After successful promotion, the user can access admin-protected routes (e.g., /admin dashboard) without seeing the AccessDeniedScreen",
-        "AdminPromotionHandler correctly reads the stored token post-redirect, calls promoteToAdmin, and clears the token from localStorage regardless of outcome",
-        "Backend promoteToAdmin returns a success variant for a valid token",
-        "If an invalid token is used, the user sees an appropriate error toast and is not promoted"
+        "Mounting AdminPromotionHandler when no token is stored in localStorage causes zero navigation events",
+        "No redirect loop occurs after login when the user is the hardcoded bootstrap admin",
+        "The component runs its effect at most once per login session (guarded by a ref or stable dependency)"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/adminPromotion.ts",
-          "operation": "modify",
-          "description": "Review and fix token persistence logic to ensure admin tokens survive Internet Identity login redirects. Verify storeAdminToken, getStoredAdminToken, and clearStoredAdminToken functions use a consistent localStorage key and handle edge cases (empty strings, whitespace). Ensure extractAdminTokenFromUrl correctly reads tokens from URL hash parameters and returns null when absent."
-        },
-        {
-          "path": "frontend/src/components/auth/AdminAccessDialog.tsx",
-          "operation": "modify",
-          "description": "Fix token submission flow to ensure the token is persisted to localStorage before redirect if the user is not authenticated. For authenticated users, immediately call promoteToAdmin mutation. Add validation to prevent empty or whitespace-only tokens from being submitted. Ensure the dialog closes and shows appropriate loading/success states. Add error handling for mutation failures with user-friendly toast messages."
-        },
-        {
           "path": "frontend/src/components/AdminPromotionHandler.tsx",
           "operation": "modify",
-          "description": "Fix post-login token handling to reliably retrieve the stored admin token, call promoteToAdmin mutation, and unconditionally clear the token from localStorage after the attempt (success or failure). Ensure the component runs only once per identity change and handles all PromoteToAdminResult variants (success, invalidToken, tokenExpired, accountAlreadyAdmin) with appropriate toast notifications. Verify the component does not trigger redundant promotion attempts."
-        },
+          "description": "Remove the silent bootstrap auto-promotion attempt that triggers when no token is present. The component should only handle token-based promotion (when a token exists in localStorage). Add a useRef guard to ensure the effect runs at most once per mount. Remove any navigation calls that trigger app re-initialization. The component must be a no-op when the caller is already admin or when no promotion token exists."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Fix AdminRouteGuard to resolve admin status without looping",
+      "acceptanceCriteria": [
+        "AdminRouteGuard settles (shows children or access denied) within one successful actor query",
+        "Loading spinner is shown only while the query is in-flight, never indefinitely",
+        "No navigation away from the admin route occurs when the caller is the hardcoded bootstrap admin"
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/components/auth/AdminRouteGuard.tsx",
           "operation": "modify",
-          "description": "Review admin check logic to ensure it correctly reflects updated admin status after successful promotion. Verify the useIsCallerAdmin query is properly invalidated when admin status changes. Add proper loading state handling to prevent race conditions where stale admin status causes incorrect access denial. Ensure the guard re-evaluates admin status when identity or query data changes."
-        },
+          "description": "Refactor the guard to use a single consolidated loading state from useActor and useIsCallerAdmin. Ensure the loading spinner is shown only while identity/actor are initializing OR while the admin query is fetching. Once the query settles, render either children (if admin) or AccessDeniedScreen (if not admin) — never navigate away. Remove any redirect logic that sends users back to the landing page or initialization flow. Verify that the guard does not trigger actor/identity re-initialization."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Audit and fix useQueries to prevent cascade re-fetches and identity restarts",
+      "acceptanceCriteria": [
+        "The admin status query is fetched once after actor is available and does not trigger further identity/actor re-initialization",
+        "No circular query invalidation exists between actor, identity, and admin status hooks"
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Review usePromoteToAdmin mutation to ensure it correctly calls the backend promoteToAdmin method and handles all result variants. Add proper query invalidation for 'isAdmin' and 'userRole' queries after successful promotion to force AdminRouteGuard to re-check access. Verify mutation onSuccess callback triggers appropriate cache updates and UI state refreshes."
-        },
-        {
-          "path": "frontend/src/pages/AdminDashboardPage.tsx",
-          "operation": "modify",
-          "description": "Add debugging or error boundary to capture cases where users reach the admin dashboard without proper admin status. Ensure the page gracefully handles edge cases where admin checks pass the guard but backend queries fail authorization. Verify all data-fetching hooks handle unauthorized errors appropriately."
+          "description": "Review useIsCallerAdmin and any related query hooks. Ensure the query is enabled only when actor is available and not fetching (enabled: !!actor && !actorFetching). Remove any query invalidation logic that triggers actor or identity re-initialization. Verify that the queryKey for admin status does not depend on unstable references. Ensure the query uses a stable actor reference and does not cause a cascade of re-fetches. Add retry: false to prevent automatic retries that could amplify loop behavior."
         }
       ]
     }

@@ -1,38 +1,92 @@
 {
   "kind": "build_request",
-  "title": "Fix admin access/promotion flow",
+  "title": "Fix admin auth loop — remove gate logic and hardcode bootstrap admin Principal ID",
+  "projectName": "MBK Riders",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Diagnose and fix the end-to-end admin promotion flow so that a user who enters a valid admin token gains admin privileges. This includes: (1) the token is correctly persisted to localStorage before the Internet Identity login redirect, (2) AdminPromotionHandler reliably reads and submits the token after login, (3) the backend promoteToAdmin call succeeds and returns an admin status, and (4) AdminRouteGuard correctly reflects the updated admin status and grants access to protected routes.",
-      "target": "both",
+      "text": "Hardcode the bootstrap admin Principal ID directly in the backend actor (`backend/main.mo`). Remove any dynamic detection or stored-state lookup for the bootstrap admin. The hardcoded Principal ID must be treated as an unconditional admin — no token required, no promotion step needed, no flags to check.",
+      "target": "backend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "I still am not getting access to the admin"
+          "Unlock the admin and then hardcode the Principal ID"
         ]
       },
       "acceptanceCriteria": [
-        "A user can open the AdminAccessDialog, enter a valid admin token, and be promoted to admin after authenticating via Internet Identity",
-        "If already logged in, entering a valid token in AdminAccessDialog immediately promotes the user without requiring re-login",
-        "After successful promotion, the user can access admin-protected routes (e.g., /admin dashboard) without seeing the AccessDeniedScreen",
-        "AdminPromotionHandler correctly reads the stored token post-redirect, calls promoteToAdmin, and clears the token from localStorage regardless of outcome",
-        "Backend promoteToAdmin returns a success variant for a valid token",
-        "If an invalid token is used, the user sees an appropriate error toast and is not promoted"
+        "A single Principal ID string is hardcoded as a constant in main.mo",
+        "The `isAdmin` (or equivalent) check returns `true` for that Principal immediately without any state lookup or promotion flow",
+        "No migration file change is required if only the constant is added; update migration.mo only if stored bootstrap state is being removed"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Fix `AdminPromotionHandler.tsx` so it does NOT trigger any navigation, redirect, or re-initialization loop. Remove or disable the silent bootstrap auto-promotion attempt that re-triggers on every render/mount cycle. The component should be a no-op if the caller is already confirmed as admin or if no promotion token is present in localStorage.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "It keeps looping to the initialization of the app",
+          "something is causing the same interference"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Mounting `AdminPromotionHandler` when no token is stored in localStorage causes zero navigation events",
+        "No redirect loop occurs after login when the user is the hardcoded bootstrap admin",
+        "The component runs its effect at most once per login session (guarded by a ref or stable dependency)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Fix `AdminRouteGuard.tsx` so it does not show the loading spinner indefinitely or redirect back to the initialization/landing page. It must resolve admin status with a single backend query and render either the children or `AccessDeniedScreen` — never loop back to the app start.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "It keeps looping to the initialization of the app",
+          "Please check how you are coding from the Principal ID to the acceptance of the code to the admin"
+        ]
+      },
+      "acceptanceCriteria": [
+        "AdminRouteGuard settles (shows children or access denied) within one successful actor query",
+        "Loading spinner is shown only while the query is in-flight, never indefinitely",
+        "No navigation away from the admin route occurs when the caller is the hardcoded bootstrap admin"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Audit and fix `useQueries.ts` — specifically the `useIsAdmin` (or equivalent) query — to ensure it does not cause a cascade of re-fetches or identity re-initializations that restart the app flow. The query must use a stable actor reference and must not invalidate itself in a way that triggers the identity provider to restart.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Please check how you are coding from the Principal ID to the acceptance of the code to the admin"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The admin status query is fetched once after actor is available and does not trigger further identity/actor re-initialization",
+        "No circular query invalidation exists between actor, identity, and admin status hooks"
       ]
     }
   ],
   "constraints": [
-    "Do not change the visual design, graphics, or styling of any page",
-    "Do not modify files listed in frontend.immutablePaths"
+    "The hardcoded bootstrap admin Principal ID must be the real Principal ID of the deployer/owner — confirm it matches the currently used identity before deploying",
+    "Do not change any file listed under frontend.immutablePaths",
+    "Do not add new external dependencies"
   ],
   "nonGoals": [
-    "Changes to any visual design, layout, or graphics",
-    "Adding new admin features or dashboard functionality",
-    "Modifying user-facing non-admin authentication flows"
+    "Adding new admin features or UI",
+    "Changing any non-admin authentication flow",
+    "Modifying the token-based promotion path for non-bootstrap admins"
   ],
   "imageRequirements": {
     "required": [],

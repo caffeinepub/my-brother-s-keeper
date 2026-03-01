@@ -55,6 +55,12 @@ export interface EmergencyLookupResult {
     userName?: string;
     emergencyProfile?: EmergencyProfile;
 }
+export interface AdminTokenInfo {
+    token: string;
+    createdBy: Principal;
+    expiration: Time;
+    isRedeemed: boolean;
+}
 export interface ActivityLogEntry {
     description: string;
     timestamp: Time;
@@ -135,6 +141,8 @@ export interface backendInterface {
     generateAdminToken(): Promise<string>;
     getActivityLogs(): Promise<Array<ActivityLogEntry>>;
     getAllActiveMeetupLocations(): Promise<Array<MeetupLocation>>;
+    getAllActiveTokens(): Promise<Array<AdminTokenInfo>>;
+    getAllAdminTokenInfos(): Promise<Array<AdminTokenInfo>>;
     getAllAvailableMeetupLocations(): Promise<Array<MeetupLocation>>;
     getAllLatestSOSLocations(): Promise<Array<SOSSnapshot>>;
     getAllMembers(): Promise<Array<MemberSummary>>;
@@ -147,6 +155,7 @@ export interface backendInterface {
     getRoutes(user: Principal): Promise<Array<Route>>;
     getUserAccountDetails(userId: Principal): Promise<UserAccountDetails>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    isAdmin(principal: Principal): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     promoteToAdmin(token: string): Promise<PromoteToAdminResult>;
     reviewVerification(user: Principal, approved: boolean): Promise<void>;

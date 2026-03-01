@@ -1,24 +1,52 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Web application with admin access functionality. User is satisfied with the visual design and graphics, but admin access is still not working correctly.",
-  "architectural_notes": [],
+  "summary": "Web app with authentication flow involving Principal ID and admin access. Persistent login loop bug affecting multiple versions.",
+  "architectural_notes": [
+    "Admin access must be unlocked and Principal ID hardcoded to resolve auth flow interference"
+  ],
   "known_issues": [
-    "Admin access is not working — user cannot gain admin privileges despite multiple fix attempts (reported at v38)"
+    "Login flow loops back to app initialization repeatedly; persists across 8-9 versions — likely caused by Principal ID to admin auth chain"
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-diagnose-and-fix-the-end-to-end-admin-promotion-flow-so-that-a-user-who-enters-a-valid-admin-token-gains-admin-privileges-this-includes-1-the-token-is-correctly-persisted-to-localstorage-before-the-internet-identity-login-redirect-2-adminpromotionhandler-reliably-reads-and-submits-the-token-after-login-3-the-backend-promotetoadmin-call-succeeds-and-returns-an-admin-status-and-4-adminrouteguard-correctly-reflects-the-updated-admin-status-and-grants-access-to-protected-routes",
-      "title": "Diagnose and fix the end-to-end admin promotion flow so that a user who enters a valid admin token gains admin privileges. This includes: (1) the token is correctly persisted to localStorage before the Internet Identity login redirect, (2) AdminPromotionHandler reliably reads and submits the token after login, (3) the backend promoteToAdmin call succeeds and returns an admin status, and (4) AdminRouteGuard correctly reflects the updated admin status and grants access to protected routes.",
+      "id": "feature-fix-adminpromotionhandler-tsx-so-it-does-not-trigger-any-navigation-redirect-or-re-initialization-loop-remove-or-disable-the-silent-bootstrap-auto-promotion-attempt-that-re-triggers-on-every-render-mount-cycle-the-component-should-be-a-no-op-if-the-caller-is-already-confirmed-as-admin-or-if-no-promotion-token-is-present-in-localstorage",
+      "title": "Fix `AdminPromotionHandler.tsx` so it does NOT trigger any navigation, redirect, or re-initialization loop. Remove or disable the silent bootstrap auto-promotion attempt that re-triggers on every render/mount cycle. The component should be a no-op if the caller is already confirmed as admin or if no promotion token is present in localStorage.",
       "reqIds": [
-        "REQ-1"
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-adminrouteguard-tsx-so-it-does-not-show-the-loading-spinner-indefinitely-or-redirect-back-to-the-initialization-landing-page-it-must-resolve-admin-status-with-a-single-backend-query-and-render-either-the-children-or-accessdeniedscreen-never-loop-back-to-the-app-start",
+      "title": "Fix `AdminRouteGuard.tsx` so it does not show the loading spinner indefinitely or redirect back to the initialization/landing page. It must resolve admin status with a single backend query and render either the children or `AccessDeniedScreen` — never loop back to the app start.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fix-usequeries-ts-specifically-the-useisadmin-or-equivalent-query-to-ensure-it-does-not-cause-a-cascade-of-re-fetches-or-identity-re-initializations-that-restart-the-app-flow-the-query-must-use-a-stable-actor-reference-and-must-not-invalidate-itself-in-a-way-that-triggers-the-identity-provider-to-restart",
+      "title": "Audit and fix `useQueries.ts` — specifically the `useIsAdmin` (or equivalent) query — to ensure it does not cause a cascade of re-fetches or identity re-initializations that restart the app flow. The query must use a stable actor reference and must not invalidate itself in a way that triggers the identity provider to restart.",
+      "reqIds": [
+        "REQ-4"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Fix admin access/promotion flow",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Hardcode the bootstrap admin Principal ID directly in the backend actor (`backend/main.mo`). Remove any dynamic detection or stored-state lookup for the bootstrap admin. The hardcoded Principal ID must be treated as an unconditional admin — no token required, no promotion step needed, no flags to check.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "MBK Riders",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

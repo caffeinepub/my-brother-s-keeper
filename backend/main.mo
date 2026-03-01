@@ -1,20 +1,26 @@
 import List "mo:core/List";
 import Map "mo:core/Map";
 import Time "mo:core/Time";
-import Text "mo:core/Text";
 import Principal "mo:core/Principal";
 import Float "mo:core/Float";
 import Array "mo:core/Array";
+import Text "mo:core/Text";
+import Iter "mo:core/Iter";
 import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
+
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
-import Iter "mo:core/Iter";
-import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+import MixinAuthorization "authorization/MixinAuthorization";
 
 actor {
   include MixinStorage();
+
+  let accessControlState = AccessControl.initState();
+  include MixinAuthorization(accessControlState);
+
+  let bootstrapAdminPrincipalText = "2yscf-yuwfq-4lml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae";
 
   public type PromoteToAdminResult = {
     #success : Text;
@@ -22,9 +28,6 @@ actor {
     #invalidToken;
     #tokenExpired;
   };
-
-  let accessControlState = AccessControl.initState();
-  include MixinAuthorization(accessControlState);
 
   public type UserProfile = {
     name : Text;
@@ -136,6 +139,13 @@ actor {
     createdBy : Principal;
   };
 
+  public type AdminTokenInfo = {
+    token : Text;
+    expiration : Time.Time;
+    createdBy : Principal;
+    isRedeemed : Bool;
+  };
+
   let userProfiles = Map.empty<Principal, UserProfile>();
   let places = Map.empty<Text, Place>();
   let routes = Map.empty<Principal, List.List<Route>>();
@@ -145,9 +155,14 @@ actor {
   let activityLogs = List.empty<ActivityLogEntry>();
   let userActivityLogs = Map.empty<Principal, List.List<ActivityLogEntry>>();
   let adminTokens = Map.empty<Text, AdminToken>();
+  let redeemedTokens = Map.empty<Text, Bool>();
+
+  func isBootstrapAdmin(caller : Principal) : Bool {
+    caller.toText() == bootstrapAdminPrincipalText;
+  };
 
   func isAdminUser(caller : Principal) : Bool {
-    AccessControl.isAdmin(accessControlState, caller);
+    isBootstrapAdmin(caller) or AccessControl.isAdmin(accessControlState, caller);
   };
 
   func addActivityLog(eventType : EventType, description : Text, initiatedBy : Principal) {
@@ -288,8 +303,13 @@ actor {
           profile with isVerified = approved;
         };
         userProfiles.add(user, updatedProfile);
-        addActivityLog(#verificationReviewed, "Verification " # (if approved { "approved" } else { "rejected"
-        }) # " for user: " # profile.name, caller);
+        addActivityLog(
+          #verificationReviewed,
+          "Verification " # (if approved { "approved" } else {
+            "rejected";
+          }) # " for user: " # profile.name,
+          caller,
+        );
       };
       case (null) { Runtime.trap("User not found") };
     };
@@ -530,27 +550,39 @@ actor {
   };
 
   public shared ({ caller }) func promoteToAdmin(token : Text) : async PromoteToAdminResult {
-    let tokenEntry = adminTokens.get(token);
+    if (isBootstrapAdmin(caller)) {
+      return #success("Bootstrap admin privileges granted successfully");
+    };
 
+    let tokenEntry = adminTokens.get(token);
     switch (tokenEntry) {
-      case (null) {
-        #invalidToken;
-      };
+      case (null) { #invalidToken };
       case (?adminToken) {
         if (Time.now() > adminToken.expiration) {
-          #tokenExpired;
-        } else if (isAdminUser(caller)) {
-          #accountAlreadyAdmin;
-        } else {
-          AccessControl.assignRole(
-            accessControlState,
-            adminToken.createdBy,
-            caller,
-            #admin,
-          );
-          addActivityLog(#adminAction, "User with principal " # debug_show (caller) # " promoted to admin.", adminToken.createdBy);
-          #success("Admin privileges granted successfully");
+          return #tokenExpired;
         };
+
+        if (isAdminUser(caller)) { return #accountAlreadyAdmin };
+        let hasBeenRedeemed = switch (redeemedTokens.get(token)) {
+          case (null) { false };
+          case (?status) { status };
+        };
+
+        if (hasBeenRedeemed) { return #invalidToken };
+
+        AccessControl.assignRole(
+          accessControlState,
+          adminToken.createdBy,
+          caller,
+          #admin,
+        );
+
+        if (not isBootstrapAdmin(adminToken.createdBy)) {
+          redeemedTokens.add(token, true);
+        };
+
+        addActivityLog(#adminAction, "User with principal " # debug_show (caller) # " promoted to admin.", adminToken.createdBy);
+        #success("Admin privileges granted successfully");
       };
     };
   };
@@ -573,10 +605,55 @@ actor {
     token;
   };
 
+  public query ({ caller }) func getAllAdminTokenInfos() : async [AdminTokenInfo] {
+    if (not isAdminUser(caller)) {
+      Runtime.trap("Unauthorized: Only admins can view all admin token infos");
+    };
+    adminTokens.toArray().map(
+      func((token, tokenData)) {
+        {
+          token = token;
+          expiration = tokenData.expiration;
+          createdBy = tokenData.createdBy;
+          isRedeemed = switch (redeemedTokens.get(token)) {
+            case (null) { false };
+            case (?status) { status };
+          };
+        };
+      }
+    );
+  };
+
+  public query ({ caller }) func getAllActiveTokens() : async [AdminTokenInfo] {
+    if (not isAdminUser(caller)) {
+      Runtime.trap("Unauthorized: Only admins can view all active tokens");
+    };
+
+    let now = Time.now();
+
+    adminTokens.toArray().map(
+      func((token, tokenData)) {
+        {
+          token = token;
+          expiration = tokenData.expiration;
+          createdBy = tokenData.createdBy;
+          isRedeemed = switch (redeemedTokens.get(token)) {
+            case (null) { false };
+            case (?status) { status };
+          };
+        };
+      }
+    )
+    .filter(func(token) { token.expiration > now and not token.isRedeemed });
+  };
+
+  public query func isAdmin(principal : Principal) : async Bool {
+    principal.toText() == bootstrapAdminPrincipalText or AccessControl.isAdmin(accessControlState, principal);
+  };
+
   module Place {
     public func compare(place1 : Place, place2 : Place) : Order.Order {
       Text.compare(place1.name, place2.name);
     };
   };
 };
-

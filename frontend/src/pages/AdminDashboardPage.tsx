@@ -41,6 +41,7 @@ import {
 import AdminRouteGuard from '../components/auth/AdminRouteGuard';
 import { buildGoogleMapsUrl } from '../lib/googleMapsUrl';
 import { getMapZoomPreference } from '../lib/mapZoomPreference';
+import GenerateAdminTokenCard from '../components/admin/GenerateAdminTokenCard';
 import type { UserProfile } from '../backend';
 import { Principal } from '@dfinity/principal';
 
@@ -483,6 +484,11 @@ function AdminDashboardContent() {
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           <p className="text-sm text-muted-foreground">Manage members, verifications, and more.</p>
         </div>
+      </div>
+
+      {/* Generate Admin Token — always visible to admins */}
+      <div className="mb-6">
+        <GenerateAdminTokenCard />
       </div>
 
       <Tabs defaultValue="members">

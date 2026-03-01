@@ -15,7 +15,8 @@ export function saveAdminTokenBeforeLogin(token: string): void {
  * Returns null if no token is stored.
  */
 export function getAdminToken(): string | null {
-  return localStorage.getItem(ADMIN_TOKEN_KEY);
+  const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+  return token && token.trim() ? token.trim() : null;
 }
 
 /**
@@ -71,4 +72,11 @@ export function captureAdminTokenFromUrl(): void {
       // Ignore URL manipulation errors
     }
   }
+}
+
+/**
+ * Check whether an admin token is currently stored in localStorage.
+ */
+export function hasPendingAdminToken(): boolean {
+  return getAdminToken() !== null;
 }

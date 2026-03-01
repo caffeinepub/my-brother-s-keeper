@@ -16,6 +16,12 @@ export interface ActivityLogEntry {
   'initiatedBy' : Principal,
   'eventType' : EventType,
 }
+export interface AdminTokenInfo {
+  'token' : string,
+  'createdBy' : Principal,
+  'expiration' : Time,
+  'isRedeemed' : boolean,
+}
 export interface EmergencyLookupResult {
   'sosSnapshot' : [] | [SOSSnapshot],
   'userName' : [] | [string],
@@ -150,6 +156,8 @@ export interface _SERVICE {
   'generateAdminToken' : ActorMethod<[], string>,
   'getActivityLogs' : ActorMethod<[], Array<ActivityLogEntry>>,
   'getAllActiveMeetupLocations' : ActorMethod<[], Array<MeetupLocation>>,
+  'getAllActiveTokens' : ActorMethod<[], Array<AdminTokenInfo>>,
+  'getAllAdminTokenInfos' : ActorMethod<[], Array<AdminTokenInfo>>,
   'getAllAvailableMeetupLocations' : ActorMethod<[], Array<MeetupLocation>>,
   'getAllLatestSOSLocations' : ActorMethod<[], Array<SOSSnapshot>>,
   'getAllMembers' : ActorMethod<[], Array<MemberSummary>>,
@@ -162,6 +170,7 @@ export interface _SERVICE {
   'getRoutes' : ActorMethod<[Principal], Array<Route>>,
   'getUserAccountDetails' : ActorMethod<[Principal], UserAccountDetails>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'isAdmin' : ActorMethod<[Principal], boolean>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'promoteToAdmin' : ActorMethod<[string], PromoteToAdminResult>,
   'reviewVerification' : ActorMethod<[Principal, boolean], undefined>,

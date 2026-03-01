@@ -2,11 +2,49 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-diagnose-and-fix-the-end-to-end-admin-promotion-flow-so-that-a-user-who-enters-a-valid-admin-token-gains-admin-privileges-this-includes-1-the-token-is-correctly-persisted-to-localstorage-before-the-internet-identity-login-redirect-2-adminpromotionhandler-reliably-reads-and-submits-the-token-after-login-3-the-backend-promotetoadmin-call-succeeds-and-returns-an-admin-status-and-4-adminrouteguard-correctly-reflects-the-updated-admin-status-and-grants-access-to-protected-routes",
-      "featureTitle": "Diagnose and fix the end-to-end admin promotion flow so that a user who enters a valid admin token gains admin privileges. This includes: (1) the token is correctly persisted to localStorage before the Internet Identity login redirect, (2) AdminPromotionHandler reliably reads and submits the token after login, (3) the backend promoteToAdmin call succeeds and returns an admin status, and (4) AdminRouteGuard correctly reflects the updated admin status and grants access to protected routes.",
+      "featureId": "feature-fix-adminpromotionhandler-tsx-so-it-does-not-trigger-any-navigation-redirect-or-re-initialization-loop-remove-or-disable-the-silent-bootstrap-auto-promotion-attempt-that-re-triggers-on-every-render-mount-cycle-the-component-should-be-a-no-op-if-the-caller-is-already-confirmed-as-admin-or-if-no-promotion-token-is-present-in-localstorage",
+      "featureTitle": "Fix `AdminPromotionHandler.tsx` so it does NOT trigger any navigation, redirect, or re-initialization loop. Remove or disable the silent bootstrap auto-promotion attempt that re-triggers on every render/mount cycle. The component should be a no-op if the caller is already confirmed as admin or if no promotion token is present in localStorage.",
       "files": [
-        "frontend/src/components/AdminPromotionHandler.tsx",
-        "frontend/src/components/auth/AdminRouteGuard.tsx",
+        "frontend/src/components/AdminPromotionHandler.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-fix-adminrouteguard-tsx-so-it-does-not-show-the-loading-spinner-indefinitely-or-redirect-back-to-the-initialization-landing-page-it-must-resolve-admin-status-with-a-single-backend-query-and-render-either-the-children-or-accessdeniedscreen-never-loop-back-to-the-app-start",
+      "featureTitle": "Fix `AdminRouteGuard.tsx` so it does not show the loading spinner indefinitely or redirect back to the initialization/landing page. It must resolve admin status with a single backend query and render either the children or `AccessDeniedScreen` — never loop back to the app start.",
+      "files": [
+        "frontend/src/components/auth/AdminRouteGuard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-audit-and-fix-usequeries-ts-specifically-the-useisadmin-or-equivalent-query-to-ensure-it-does-not-cause-a-cascade-of-re-fetches-or-identity-re-initializations-that-restart-the-app-flow-the-query-must-use-a-stable-actor-reference-and-must-not-invalidate-itself-in-a-way-that-triggers-the-identity-provider-to-restart",
+      "featureTitle": "Audit and fix `useQueries.ts` — specifically the `useIsAdmin` (or equivalent) query — to ensure it does not cause a cascade of re-fetches or identity re-initializations that restart the app flow. The query must use a stable actor reference and must not invalidate itself in a way that triggers the identity provider to restart.",
+      "files": [
         "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
@@ -19,7 +57,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-4"
       ],
       "confidence": "high"
     }

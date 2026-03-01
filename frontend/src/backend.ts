@@ -141,6 +141,12 @@ export interface EmergencyLookupResult {
     userName?: string;
     emergencyProfile?: EmergencyProfile;
 }
+export interface AdminTokenInfo {
+    token: string;
+    createdBy: Principal;
+    expiration: Time;
+    isRedeemed: boolean;
+}
 export interface ActivityLogEntry {
     description: string;
     timestamp: Time;
@@ -228,6 +234,8 @@ export interface backendInterface {
     generateAdminToken(): Promise<string>;
     getActivityLogs(): Promise<Array<ActivityLogEntry>>;
     getAllActiveMeetupLocations(): Promise<Array<MeetupLocation>>;
+    getAllActiveTokens(): Promise<Array<AdminTokenInfo>>;
+    getAllAdminTokenInfos(): Promise<Array<AdminTokenInfo>>;
     getAllAvailableMeetupLocations(): Promise<Array<MeetupLocation>>;
     getAllLatestSOSLocations(): Promise<Array<SOSSnapshot>>;
     getAllMembers(): Promise<Array<MemberSummary>>;
@@ -240,6 +248,7 @@ export interface backendInterface {
     getRoutes(user: Principal): Promise<Array<Route>>;
     getUserAccountDetails(userId: Principal): Promise<UserAccountDetails>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    isAdmin(principal: Principal): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     promoteToAdmin(token: string): Promise<PromoteToAdminResult>;
     reviewVerification(user: Principal, approved: boolean): Promise<void>;
@@ -490,6 +499,34 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getAllActiveTokens(): Promise<Array<AdminTokenInfo>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllActiveTokens();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllActiveTokens();
+            return result;
+        }
+    }
+    async getAllAdminTokenInfos(): Promise<Array<AdminTokenInfo>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllAdminTokenInfos();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllAdminTokenInfos();
+            return result;
+        }
+    }
     async getAllAvailableMeetupLocations(): Promise<Array<MeetupLocation>> {
         if (this.processError) {
             try {
@@ -656,6 +693,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getUserProfile(arg0);
             return from_candid_opt_n29(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async isAdmin(arg0: Principal): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.isAdmin(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.isAdmin(arg0);
+            return result;
         }
     }
     async isCallerAdmin(): Promise<boolean> {

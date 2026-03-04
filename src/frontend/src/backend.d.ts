@@ -25,16 +25,41 @@ export interface EmergencyProfile {
     nextOfKin: string;
 }
 export type Time = bigint;
-export interface EmergencyLookupResult {
-    sosSnapshot?: SOSSnapshot;
-    userName?: string;
-    emergencyProfile?: EmergencyProfile;
+export type PromoteToAdminResult = {
+    __kind__: "accountAlreadyAdmin";
+    accountAlreadyAdmin: null;
+} | {
+    __kind__: "success";
+    success: string;
+} | {
+    __kind__: "invalidToken";
+    invalidToken: null;
+} | {
+    __kind__: "tokenExpired";
+    tokenExpired: null;
+};
+export interface MemberSummary {
+    userId: Principal;
+    name: string;
+    isVerified: boolean;
+    registrationTime: Time;
 }
 export interface SOSSnapshot {
     latitude: number;
     user: Principal;
     longitude: number;
     timestamp: Time;
+}
+export interface EmergencyLookupResult {
+    sosSnapshot?: SOSSnapshot;
+    userName?: string;
+    emergencyProfile?: EmergencyProfile;
+}
+export interface AdminTokenInfo {
+    token: string;
+    createdBy: Principal;
+    expiration: Time;
+    isRedeemed: boolean;
 }
 export interface ActivityLogEntry {
     description: string;
@@ -56,6 +81,15 @@ export interface MeetupLocation {
     isActive: boolean;
     longitude: number;
     timestamp: Time;
+}
+export interface UserAccountDetails {
+    recentRoutes: Array<Route>;
+    emergencyProfile?: EmergencyProfile;
+    accountCreated: Time;
+    activityLog: Array<ActivityLogEntry>;
+    placesAdded: Array<Place>;
+    lastLocations: Array<MeetupLocation>;
+    profile: UserProfile;
 }
 export interface UserProfile {
     licenseProof?: ExternalBlob;
@@ -104,11 +138,14 @@ export interface backendInterface {
     createSOSSnapshot(latitude: number, longitude: number): Promise<void>;
     deactivateMeetupLocation(): Promise<void>;
     emergencyLookup(user: Principal, accessCode: string): Promise<EmergencyLookupResult>;
+    generateAdminToken(): Promise<string>;
     getActivityLogs(): Promise<Array<ActivityLogEntry>>;
     getAllActiveMeetupLocations(): Promise<Array<MeetupLocation>>;
+    getAllActiveTokens(): Promise<Array<AdminTokenInfo>>;
+    getAllAdminTokenInfos(): Promise<Array<AdminTokenInfo>>;
     getAllAvailableMeetupLocations(): Promise<Array<MeetupLocation>>;
     getAllLatestSOSLocations(): Promise<Array<SOSSnapshot>>;
-    getAllMembers(): Promise<Array<[Principal, UserProfile]>>;
+    getAllMembers(): Promise<Array<MemberSummary>>;
     getAllUserProfiles(): Promise<Array<[Principal, UserProfile]>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
@@ -116,12 +153,14 @@ export interface backendInterface {
     getLatestSOSLocation(user: Principal): Promise<SOSSnapshot | null>;
     getMeetupLocation(user: Principal): Promise<MeetupLocation | null>;
     getRoutes(user: Principal): Promise<Array<Route>>;
+    getUserAccountDetails(userId: Principal): Promise<UserAccountDetails>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    isAdmin(principal: Principal): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
+    promoteToAdmin(token: string): Promise<PromoteToAdminResult>;
     reviewVerification(user: Principal, approved: boolean): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchPlaces(category: PlaceCategory | null): Promise<Array<Place>>;
-    setupHardcodedAdmin(): Promise<string>;
     shareMeetupLocation(locationInput: MeetupLocationInput): Promise<void>;
     updateMeetupLocation(locationInput: MeetupLocationInput): Promise<void>;
     uploadVerification(licenseProof: ExternalBlob | null, idProof: ExternalBlob | null): Promise<void>;

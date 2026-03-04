@@ -1,494 +1,453 @@
-import { useState, useEffect, useRef } from 'react';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useShareMeetupLocation, useDeactivateMeetupLocation, useGetLatestMeetupLocation } from '../hooks/useQueries';
-import AuthenticatedRouteGuard from '../components/auth/AuthenticatedRouteGuard';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { toast } from 'sonner';
-import { MapPin, Play, Square, Copy, ExternalLink, Info, Clock, AlertCircle } from 'lucide-react';
-import { getCurrentLocation } from '../lib/geolocation';
-import { generateMeetupShareCode, getStoredMeetupShareCode, storeMeetupShareCode } from '../lib/meetupShareCode';
-import { isValidPrincipal } from '../lib/principal';
-import { formatDateTime } from '../lib/time';
-import { copyToClipboard } from '../lib/clipboard';
-import { buildGoogleMapsUrl } from '../lib/googleMapsUrl';
-import { getMapZoomPreference } from '../lib/mapZoomPreference';
-import MapZoomControl from '../components/maps/MapZoomControl';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  ExternalLink,
+  Loader2,
+  MapPin,
+  Navigation,
+  RefreshCw,
+  Search,
+  Share2,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type { MeetupLocation } from "../backend";
+import AuthenticatedRouteGuard from "../components/auth/AuthenticatedRouteGuard";
+import MapZoomControl from "../components/maps/MapZoomControl";
+import { useActor } from "../hooks/useActor";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { buildGoogleMapsUrl } from "../lib/googleMapsUrl";
+import { getMapZoomPreference } from "../lib/mapZoomPreference";
+import {
+  generateMeetupShareCode,
+  getStoredMeetupShareCode,
+} from "../lib/meetupShareCode";
+import { parsePrincipal } from "../lib/principal";
 
-type SharingState = 'inactive' | 'active' | 'error';
+function MeetupPageContent() {
+  const { actor } = useActor();
+  const { identity } = useInternetIdentity();
+
+  // My location state
+  const [myLocation, setMyLocation] = useState<MeetupLocation | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [locationName, setLocationName] = useState("");
+  const [shareCode, setShareCode] = useState<string>(
+    () => getStoredMeetupShareCode() || "",
+  );
+
+  // Lookup state
+  const [lookupPrincipalId, setLookupPrincipalId] = useState("");
+  const [lookupCode, setLookupCode] = useState("");
+  const [lookedUpLocation, setLookedUpLocation] =
+    useState<MeetupLocation | null>(null);
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (identity && actor) {
+      loadMyLocation();
+    }
+    return () => {
+      if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
+    };
+  }, [identity, actor]);
+
+  const loadMyLocation = async () => {
+    if (!actor || !identity) return;
+    try {
+      const loc = await actor.getMeetupLocation(identity.getPrincipal());
+      setMyLocation(loc ?? null);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleShareLocation = async () => {
+    if (!actor || !locationName.trim()) return;
+    setShareError(null);
+    setIsSharing(true);
+    try {
+      const position = await new Promise<GeolocationPosition>(
+        (resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+          });
+        },
+      );
+
+      const code = generateMeetupShareCode();
+      setShareCode(code);
+
+      await actor.shareMeetupLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        name: locationName.trim(),
+      });
+
+      await loadMyLocation();
+    } catch (err: unknown) {
+      if (err instanceof GeolocationPositionError) {
+        setShareError(
+          "Could not get your location. Please enable location access.",
+        );
+      } else {
+        setShareError("Failed to share location. Please try again.");
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleUpdateLocation = async () => {
+    if (!actor || !myLocation) return;
+    setShareError(null);
+    setIsSharing(true);
+    try {
+      const position = await new Promise<GeolocationPosition>(
+        (resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+          });
+        },
+      );
+
+      await actor.updateMeetupLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        name: myLocation.name,
+      });
+
+      await loadMyLocation();
+    } catch (err: unknown) {
+      if (err instanceof GeolocationPositionError) {
+        setShareError(
+          "Could not get your location. Please enable location access.",
+        );
+      } else {
+        setShareError("Failed to update location. Please try again.");
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleStopSharing = async () => {
+    if (!actor) return;
+    setIsStopping(true);
+    try {
+      await actor.deactivateMeetupLocation();
+      setMyLocation(null);
+      setShareCode("");
+      setLocationName("");
+    } catch {
+      setShareError("Failed to stop sharing. Please try again.");
+    } finally {
+      setIsStopping(false);
+    }
+  };
+
+  const handleLookup = async () => {
+    if (!actor) return;
+    setLookupError(null);
+
+    const principal = parsePrincipal(lookupPrincipalId.trim());
+    if (!principal) {
+      setLookupError(
+        "Invalid Principal ID format. Please check and try again.",
+      );
+      return;
+    }
+
+    if (!lookupCode.trim()) {
+      setLookupError("Please enter the meetup share code.");
+      return;
+    }
+
+    setIsLookingUp(true);
+    try {
+      const loc = await actor.getMeetupLocation(principal);
+      if (loc?.isActive) {
+        setLookedUpLocation(loc);
+      } else {
+        setLookupError("No active meetup location found for this driver.");
+        setLookedUpLocation(null);
+      }
+    } catch {
+      setLookupError("Failed to look up location. Please try again.");
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  const zoom = getMapZoomPreference();
+
+  return (
+    <div className="container mx-auto max-w-2xl px-4 py-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Meetup</h1>
+        <p className="mt-1 text-muted-foreground">
+          Share your current location with other drivers for meetups and
+          coordination.
+        </p>
+      </div>
+
+      {/* My Location Section */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Navigation className="h-5 w-5 text-primary" />
+            My Meetup Location
+          </CardTitle>
+          <CardDescription>
+            Share your current location so other drivers can find you.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!myLocation ? (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="locationName">Location Name</Label>
+                <Input
+                  id="locationName"
+                  placeholder="e.g. Truck Stop on I-40, Rest Area Mile 120"
+                  value={locationName}
+                  onChange={(e) => setLocationName(e.target.value)}
+                />
+              </div>
+              {shareError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{shareError}</AlertDescription>
+                </Alert>
+              )}
+              <Button
+                onClick={handleShareLocation}
+                disabled={isSharing || !locationName.trim()}
+                className="w-full"
+              >
+                {isSharing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sharing...
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Share My Location
+                  </>
+                )}
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="location-badge">
+                <MapPin className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="font-medium">{myLocation.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {myLocation.latitude.toFixed(5)},{" "}
+                    {myLocation.longitude.toFixed(5)}
+                  </p>
+                </div>
+                <Badge variant="default" className="ml-auto">
+                  Active
+                </Badge>
+              </div>
+
+              {shareCode && (
+                <div className="rounded-lg border bg-muted/50 p-3">
+                  <p className="mb-1 text-sm font-medium">Your Share Code</p>
+                  <p className="font-mono text-lg font-bold tracking-widest text-primary">
+                    {shareCode}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Share this code with drivers who need to find you.
+                  </p>
+                </div>
+              )}
+
+              <a
+                href={buildGoogleMapsUrl(
+                  myLocation.latitude,
+                  myLocation.longitude,
+                  zoom,
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-sm text-primary hover:underline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                View on Google Maps
+              </a>
+
+              {shareError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{shareError}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleUpdateLocation}
+                  disabled={isSharing}
+                  className="flex-1"
+                >
+                  {isSharing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  Update
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleStopSharing}
+                  disabled={isStopping}
+                  className="flex-1"
+                >
+                  {isStopping ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <X className="mr-2 h-4 w-4" />
+                  )}
+                  Stop Sharing
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <MapZoomControl />
+
+      <Separator className="my-6" />
+
+      {/* Lookup Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5 text-primary" />
+            Find a Driver
+          </CardTitle>
+          <CardDescription>
+            Enter another driver's Principal ID and their share code to find
+            their meetup location.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="lookupPrincipal">Driver's Principal ID</Label>
+            <Input
+              id="lookupPrincipal"
+              type="text"
+              placeholder="e.g. 2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae"
+              value={lookupPrincipalId}
+              onChange={(e) => setLookupPrincipalId(e.target.value)}
+              className="font-mono text-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lookupCode">Share Code</Label>
+            <Input
+              id="lookupCode"
+              type="text"
+              placeholder="Enter the driver's share code"
+              value={lookupCode}
+              onChange={(e) => setLookupCode(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+
+          {lookupError && (
+            <Alert variant="destructive">
+              <AlertDescription>{lookupError}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            onClick={handleLookup}
+            disabled={
+              isLookingUp || !lookupPrincipalId.trim() || !lookupCode.trim()
+            }
+            className="w-full"
+          >
+            {isLookingUp ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Looking up...
+              </>
+            ) : (
+              <>
+                <Search className="mr-2 h-4 w-4" />
+                Find Driver
+              </>
+            )}
+          </Button>
+
+          {lookedUpLocation && (
+            <div className="mt-4 space-y-3 rounded-lg border p-4">
+              <div className="location-badge">
+                <MapPin className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="font-medium">{lookedUpLocation.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {lookedUpLocation.latitude.toFixed(5)},{" "}
+                    {lookedUpLocation.longitude.toFixed(5)}
+                  </p>
+                </div>
+                <Badge variant="default" className="ml-auto">
+                  Active
+                </Badge>
+              </div>
+              <a
+                href={buildGoogleMapsUrl(
+                  lookedUpLocation.latitude,
+                  lookedUpLocation.longitude,
+                  zoom,
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-sm text-primary hover:underline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Open in Google Maps
+              </a>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function MeetupPage() {
-    const { identity } = useInternetIdentity();
-    const [sharingState, setSharingState] = useState<SharingState>('inactive');
-    const [shareCode, setShareCode] = useState('');
-    const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<Date | null>(null);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-    // Lookup state
-    const [lookupPrincipal, setLookupPrincipal] = useState('');
-    const [lookupCode, setLookupCode] = useState('');
-    const [searchPrincipal, setSearchPrincipal] = useState<string | null>(null);
-    const [expectedCode, setExpectedCode] = useState<string>('');
-    const [principalError, setPrincipalError] = useState<string>('');
-
-    const shareMutation = useShareMeetupLocation();
-    const deactivateMutation = useDeactivateMeetupLocation();
-    const { data: lookupLocation, isLoading: isLoadingLookup } = useGetLatestMeetupLocation(searchPrincipal);
-
-    // Load stored share code on mount
-    useEffect(() => {
-        const stored = getStoredMeetupShareCode();
-        if (stored) {
-            setShareCode(stored);
-        }
-    }, []);
-
-    const updateLocation = async () => {
-        try {
-            const location = await getCurrentLocation();
-            await shareMutation.mutateAsync({
-                latitude: location.latitude,
-                longitude: location.longitude,
-                name: shareCode
-            });
-            setLastSuccessfulUpdate(new Date());
-            setSharingState('active');
-        } catch (error: any) {
-            console.error('Location update failed:', error);
-            
-            // Stop sharing immediately on error
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-                intervalRef.current = null;
-            }
-            setSharingState('error');
-            
-            // Show user-friendly error message
-            const errorMessage = error.message || 'Failed to update location';
-            toast.error(errorMessage);
-        }
-    };
-
-    const handleStartSharing = async () => {
-        if (!shareCode.trim()) {
-            toast.error('Please set a meetup share code first');
-            return;
-        }
-
-        try {
-            // Initial location update
-            await updateLocation();
-            setSharingState('active');
-            toast.success('Location sharing started');
-
-            // Set up periodic updates every 15 seconds
-            intervalRef.current = setInterval(() => {
-                updateLocation();
-            }, 15000);
-        } catch (error: any) {
-            setSharingState('error');
-            const errorMessage = error.message || 'Failed to start sharing';
-            toast.error(errorMessage);
-        }
-    };
-
-    const handleStopSharing = async () => {
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-        }
-
-        try {
-            await deactivateMutation.mutateAsync();
-            setSharingState('inactive');
-            setLastSuccessfulUpdate(null);
-            toast.success('Location sharing stopped');
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to stop sharing');
-        }
-    };
-
-    const handleGenerateCode = () => {
-        const newCode = generateMeetupShareCode();
-        setShareCode(newCode);
-        storeMeetupShareCode(newCode);
-        toast.success('New meetup code generated');
-    };
-
-    const handleCopyPrincipal = async () => {
-        if (identity) {
-            const principal = identity.getPrincipal().toString();
-            const success = await copyToClipboard(principal);
-            if (success) {
-                toast.success('Principal ID copied');
-            } else {
-                toast.error('Failed to copy Principal ID');
-            }
-        }
-    };
-
-    const handleCopyCode = async () => {
-        if (shareCode) {
-            const success = await copyToClipboard(shareCode);
-            if (success) {
-                toast.success('Meetup code copied');
-            } else {
-                toast.error('Failed to copy meetup code');
-            }
-        }
-    };
-
-    const handleCopyCoordinates = async (lat: number, lng: number) => {
-        const coords = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-        const success = await copyToClipboard(coords);
-        if (success) {
-            toast.success('Coordinates copied');
-        } else {
-            toast.error('Failed to copy coordinates');
-        }
-    };
-
-    const handleCopyMapUrl = async (lat: number, lng: number) => {
-        const zoom = getMapZoomPreference();
-        const url = buildGoogleMapsUrl(lat, lng, zoom);
-        const success = await copyToClipboard(url);
-        if (success) {
-            toast.success('Map URL copied');
-        } else {
-            toast.error('Failed to copy map URL');
-        }
-    };
-
-    const handleLookup = () => {
-        // Clear previous error
-        setPrincipalError('');
-
-        // Validate inputs
-        if (!lookupPrincipal.trim()) {
-            toast.error('Please enter a Principal ID');
-            setPrincipalError('Principal ID is required');
-            return;
-        }
-
-        if (!lookupCode.trim()) {
-            toast.error('Please enter a meetup code');
-            return;
-        }
-
-        // Validate Principal format
-        if (!isValidPrincipal(lookupPrincipal)) {
-            toast.error('Invalid Principal ID format');
-            setPrincipalError('Invalid Principal ID format');
-            return;
-        }
-
-        // Trigger lookup with principal and store expected code for verification
-        setSearchPrincipal(lookupPrincipal.trim());
-        setExpectedCode(lookupCode.trim());
-    };
-
-    const getMapUrl = (lat: number, lng: number) => {
-        const zoom = getMapZoomPreference();
-        return buildGoogleMapsUrl(lat, lng, zoom);
-    };
-
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-        };
-    }, []);
-
-    const isSharing = sharingState === 'active';
-    const hasError = sharingState === 'error';
-
-    // Check if the lookup result matches the expected code
-    const isCodeMatch = lookupLocation && lookupLocation.name === expectedCode;
-    const showLocationResult = searchPrincipal && lookupLocation && isCodeMatch;
-    const showCodeMismatch = searchPrincipal && lookupLocation && !isCodeMatch;
-    const showNotFound = searchPrincipal && !lookupLocation && !isLoadingLookup;
-
-    return (
-        <AuthenticatedRouteGuard>
-            <div className="space-y-6 max-w-4xl">
-                <div className="flex items-center gap-3">
-                    <MapPin className="h-8 w-8 text-accent" />
-                    <div>
-                        <h1 className="text-3xl font-bold">Meetup Location</h1>
-                        <p className="text-muted-foreground">Share your location periodically to coordinate meetups</p>
-                    </div>
-                </div>
-
-                <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                        This feature shares your location periodically (every 15 seconds) while active. It requires browser location permission and is not real-time tracking. Stop sharing when you're done to protect your privacy.
-                    </AlertDescription>
-                </Alert>
-
-                {/* Share Panel */}
-                <Card className="border-accent/20">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Play className="h-5 w-5" />
-                            Share Your Location
-                        </CardTitle>
-                        <CardDescription>
-                            Start sharing your location with other members using your meetup code
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <Badge 
-                                variant={isSharing ? 'default' : hasError ? 'destructive' : 'secondary'} 
-                                className="text-sm"
-                            >
-                                {isSharing ? 'Sharing Active' : hasError ? 'Sharing Error' : 'Not Sharing'}
-                            </Badge>
-                            {lastSuccessfulUpdate && (
-                                <span className="text-sm text-muted-foreground flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    Last update: {lastSuccessfulUpdate.toLocaleTimeString()}
-                                </span>
-                            )}
-                        </div>
-
-                        {hasError && (
-                            <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertDescription>
-                                    Location sharing stopped due to an error. Please check your location permissions and try again.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-
-                        <div className="flex gap-2">
-                            {!isSharing ? (
-                                <Button
-                                    onClick={handleStartSharing}
-                                    disabled={shareMutation.isPending || !shareCode.trim()}
-                                    className="gap-2"
-                                >
-                                    <Play className="h-4 w-4" />
-                                    {shareMutation.isPending ? 'Starting...' : 'Start Sharing'}
-                                </Button>
-                            ) : (
-                                <Button
-                                    onClick={handleStopSharing}
-                                    disabled={deactivateMutation.isPending}
-                                    variant="destructive"
-                                    className="gap-2"
-                                >
-                                    <Square className="h-4 w-4" />
-                                    {deactivateMutation.isPending ? 'Stopping...' : 'Stop Sharing'}
-                                </Button>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Share Code Panel */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Your Meetup Credentials</CardTitle>
-                        <CardDescription>
-                            Share these with the member you want to meet up with
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Your Principal ID</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    value={identity?.getPrincipal().toString() || ''}
-                                    readOnly
-                                    className="font-mono text-sm"
-                                />
-                                <Button
-                                    onClick={handleCopyPrincipal}
-                                    variant="outline"
-                                    size="icon"
-                                >
-                                    <Copy className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Meetup Share Code</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    value={shareCode}
-                                    onChange={(e) => {
-                                        setShareCode(e.target.value);
-                                        storeMeetupShareCode(e.target.value);
-                                    }}
-                                    placeholder="Enter or generate a code"
-                                    disabled={isSharing}
-                                />
-                                <Button
-                                    onClick={handleCopyCode}
-                                    variant="outline"
-                                    size="icon"
-                                    disabled={!shareCode.trim()}
-                                >
-                                    <Copy className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    onClick={handleGenerateCode}
-                                    variant="outline"
-                                    disabled={isSharing}
-                                >
-                                    Generate
-                                </Button>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Cannot change code while sharing is active
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Separator />
-
-                {/* Lookup Panel */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <MapPin className="h-5 w-5" />
-                            Find a Member's Location
-                        </CardTitle>
-                        <CardDescription>
-                            Enter their Principal ID and meetup code to see their latest location
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Member's Principal ID</Label>
-                            <Input
-                                value={lookupPrincipal}
-                                onChange={(e) => {
-                                    setLookupPrincipal(e.target.value);
-                                    setPrincipalError('');
-                                }}
-                                placeholder="Enter Principal ID"
-                                className={`font-mono text-sm ${principalError ? 'border-destructive' : ''}`}
-                            />
-                            {principalError && (
-                                <p className="text-sm text-destructive">{principalError}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Meetup Share Code</Label>
-                            <Input
-                                value={lookupCode}
-                                onChange={(e) => setLookupCode(e.target.value)}
-                                placeholder="Enter meetup code"
-                            />
-                        </div>
-
-                        <Button
-                            onClick={handleLookup}
-                            disabled={isLoadingLookup}
-                            className="w-full gap-2"
-                        >
-                            <MapPin className="h-4 w-4" />
-                            {isLoadingLookup ? 'Looking up...' : 'Find Location'}
-                        </Button>
-
-                        {showLocationResult && (
-                            <Card className="bg-accent/5 border-accent/20">
-                                <CardHeader>
-                                    <CardTitle className="text-lg">Location Found</CardTitle>
-                                    <CardDescription>
-                                        Last updated: {formatDateTime(lookupLocation.timestamp)}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-4 text-sm">
-                                        <div>
-                                            <span className="text-muted-foreground">Latitude:</span>
-                                            <p className="font-mono">{lookupLocation.latitude.toFixed(6)}</p>
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground">Longitude:</span>
-                                            <p className="font-mono">{lookupLocation.longitude.toFixed(6)}</p>
-                                        </div>
-                                    </div>
-
-                                    <Separator />
-
-                                    <div className="space-y-2">
-                                        <MapZoomControl />
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleCopyCoordinates(lookupLocation.latitude, lookupLocation.longitude)}
-                                            className="gap-2"
-                                        >
-                                            <Copy className="h-4 w-4" />
-                                            Copy Coordinates
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleCopyMapUrl(lookupLocation.latitude, lookupLocation.longitude)}
-                                            className="gap-2"
-                                        >
-                                            <Copy className="h-4 w-4" />
-                                            Copy Map URL
-                                        </Button>
-                                        <Button
-                                            variant="default"
-                                            size="sm"
-                                            asChild
-                                        >
-                                            <a
-                                                href={getMapUrl(lookupLocation.latitude, lookupLocation.longitude)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="gap-2"
-                                            >
-                                                <ExternalLink className="h-4 w-4" />
-                                                Open in Maps
-                                            </a>
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {showCodeMismatch && (
-                            <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertDescription>
-                                    The meetup code doesn't match. Please verify you have the correct code from this member.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-
-                        {showNotFound && (
-                            <Alert>
-                                <Info className="h-4 w-4" />
-                                <AlertDescription>
-                                    No active location found for this member. They may not be sharing their location currently.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-        </AuthenticatedRouteGuard>
-    );
+  return (
+    <AuthenticatedRouteGuard>
+      <MeetupPageContent />
+    </AuthenticatedRouteGuard>
+  );
 }

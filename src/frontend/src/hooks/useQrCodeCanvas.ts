@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import { generateQRCodeToCanvas } from '@/lib/qrCodeGenerator';
+import { generateQRCodeToCanvas } from "@/lib/qrCodeGenerator";
+import { useEffect, useRef, useState } from "react";
 
 interface UseQrCodeCanvasOptions {
   canvas: HTMLCanvasElement | null;
@@ -8,7 +8,7 @@ interface UseQrCodeCanvasOptions {
   margin?: number;
 }
 
-type QrStatus = 'idle' | 'generating' | 'ready' | 'error';
+type QrStatus = "idle" | "generating" | "ready" | "error";
 
 interface UseQrCodeCanvasResult {
   qrReady: boolean;
@@ -27,14 +27,14 @@ export function useQrCodeCanvas({
   size = 256,
   margin = 4,
 }: UseQrCodeCanvasOptions): UseQrCodeCanvasResult {
-  const [status, setStatus] = useState<QrStatus>('idle');
+  const [status, setStatus] = useState<QrStatus>("idle");
   const [qrError, setQrError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     // If canvas or text is not available, stay idle (not generating)
     if (!canvas || !text) {
-      setStatus('idle');
+      setStatus("idle");
       setQrError(null);
       return;
     }
@@ -49,15 +49,15 @@ export function useQrCodeCanvas({
     abortControllerRef.current = abortController;
 
     // Start generating
-    setStatus('generating');
+    setStatus("generating");
     setQrError(null);
 
     // Safety timeout: if generation takes more than 3 seconds, mark as error
     const safetyTimeout = setTimeout(() => {
       if (!abortController.signal.aborted) {
-        console.error('QR generation timeout after 3 seconds');
-        setQrError('QR code generation timed out');
-        setStatus('error');
+        console.error("QR generation timeout after 3 seconds");
+        setQrError("QR code generation timed out");
+        setStatus("error");
         abortController.abort();
       }
     }, 3000);
@@ -65,21 +65,21 @@ export function useQrCodeCanvas({
     // Generate QR code
     const generateQR = async () => {
       try {
-        await generateQRCodeToCanvas(text, canvas, size, margin, 'M');
-        
+        await generateQRCodeToCanvas(text, canvas, size, margin, "M");
+
         // Only update state if not aborted
         if (!abortController.signal.aborted) {
           clearTimeout(safetyTimeout);
-          setStatus('ready');
+          setStatus("ready");
           setQrError(null);
         }
       } catch (error) {
         // Only update state if not aborted
         if (!abortController.signal.aborted) {
           clearTimeout(safetyTimeout);
-          console.error('QR generation error:', error);
-          setQrError('Failed to generate QR code');
-          setStatus('error');
+          console.error("QR generation error:", error);
+          setQrError("Failed to generate QR code");
+          setStatus("error");
         }
       }
     };
@@ -93,9 +93,9 @@ export function useQrCodeCanvas({
     };
   }, [canvas, text, size, margin]);
 
-  return { 
-    qrReady: status === 'ready', 
+  return {
+    qrReady: status === "ready",
     qrError,
-    status
+    status,
   };
 }

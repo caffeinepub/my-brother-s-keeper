@@ -1,12 +1,22 @@
-import { useState, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getMapZoomPreference, setMapZoomPreference, getZoomRange } from '../../lib/mapZoomPreference';
-import { ZoomIn } from 'lucide-react';
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ZoomIn } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  getMapZoomPreference,
+  getZoomRange,
+  setMapZoomPreference,
+} from "../../lib/mapZoomPreference";
 
 export default function MapZoomControl() {
   const [zoom, setZoom] = useState<number>(getMapZoomPreference());
-  const { min, max } = getZoomRange();
+  getZoomRange();
 
   useEffect(() => {
     // Load preference on mount
@@ -14,7 +24,7 @@ export default function MapZoomControl() {
   }, []);
 
   const handleZoomChange = (value: string) => {
-    const newZoom = parseInt(value, 10);
+    const newZoom = Number.parseInt(value, 10);
     setZoom(newZoom);
     setMapZoomPreference(newZoom);
   };
@@ -35,7 +45,12 @@ export default function MapZoomControl() {
         <SelectContent>
           {zoomOptions.map((level) => (
             <SelectItem key={level} value={level.toString()}>
-              {level} {level === 15 ? '(Default)' : level < 15 ? '(Zoomed out)' : '(Zoomed in)'}
+              {level}{" "}
+              {level === 15
+                ? "(Default)"
+                : level < 15
+                  ? "(Zoomed out)"
+                  : "(Zoomed in)"}
             </SelectItem>
           ))}
         </SelectContent>

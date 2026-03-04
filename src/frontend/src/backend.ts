@@ -104,13 +104,27 @@ export interface EmergencyProfile {
     nextOfKin: string;
 }
 export type Time = bigint;
+export type PromoteToAdminResult = {
+    __kind__: "accountAlreadyAdmin";
+    accountAlreadyAdmin: null;
+} | {
+    __kind__: "success";
+    success: string;
+} | {
+    __kind__: "invalidToken";
+    invalidToken: null;
+} | {
+    __kind__: "tokenExpired";
+    tokenExpired: null;
+};
 export interface _CaffeineStorageRefillInformation {
     proposed_top_up_amount?: bigint;
 }
-export interface EmergencyLookupResult {
-    sosSnapshot?: SOSSnapshot;
-    userName?: string;
-    emergencyProfile?: EmergencyProfile;
+export interface MemberSummary {
+    userId: Principal;
+    name: string;
+    isVerified: boolean;
+    registrationTime: Time;
 }
 export interface SOSSnapshot {
     latitude: number;
@@ -121,6 +135,17 @@ export interface SOSSnapshot {
 export interface _CaffeineStorageCreateCertificateResult {
     method: string;
     blob_hash: string;
+}
+export interface EmergencyLookupResult {
+    sosSnapshot?: SOSSnapshot;
+    userName?: string;
+    emergencyProfile?: EmergencyProfile;
+}
+export interface AdminTokenInfo {
+    token: string;
+    createdBy: Principal;
+    expiration: Time;
+    isRedeemed: boolean;
 }
 export interface ActivityLogEntry {
     description: string;
@@ -142,6 +167,15 @@ export interface MeetupLocation {
     isActive: boolean;
     longitude: number;
     timestamp: Time;
+}
+export interface UserAccountDetails {
+    recentRoutes: Array<Route>;
+    emergencyProfile?: EmergencyProfile;
+    accountCreated: Time;
+    activityLog: Array<ActivityLogEntry>;
+    placesAdded: Array<Place>;
+    lastLocations: Array<MeetupLocation>;
+    profile: UserProfile;
 }
 export interface UserProfile {
     licenseProof?: ExternalBlob;
@@ -197,11 +231,14 @@ export interface backendInterface {
     createSOSSnapshot(latitude: number, longitude: number): Promise<void>;
     deactivateMeetupLocation(): Promise<void>;
     emergencyLookup(user: Principal, accessCode: string): Promise<EmergencyLookupResult>;
+    generateAdminToken(): Promise<string>;
     getActivityLogs(): Promise<Array<ActivityLogEntry>>;
     getAllActiveMeetupLocations(): Promise<Array<MeetupLocation>>;
+    getAllActiveTokens(): Promise<Array<AdminTokenInfo>>;
+    getAllAdminTokenInfos(): Promise<Array<AdminTokenInfo>>;
     getAllAvailableMeetupLocations(): Promise<Array<MeetupLocation>>;
     getAllLatestSOSLocations(): Promise<Array<SOSSnapshot>>;
-    getAllMembers(): Promise<Array<[Principal, UserProfile]>>;
+    getAllMembers(): Promise<Array<MemberSummary>>;
     getAllUserProfiles(): Promise<Array<[Principal, UserProfile]>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
@@ -209,17 +246,19 @@ export interface backendInterface {
     getLatestSOSLocation(user: Principal): Promise<SOSSnapshot | null>;
     getMeetupLocation(user: Principal): Promise<MeetupLocation | null>;
     getRoutes(user: Principal): Promise<Array<Route>>;
+    getUserAccountDetails(userId: Principal): Promise<UserAccountDetails>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    isAdmin(principal: Principal): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
+    promoteToAdmin(token: string): Promise<PromoteToAdminResult>;
     reviewVerification(user: Principal, approved: boolean): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchPlaces(category: PlaceCategory | null): Promise<Array<Place>>;
-    setupHardcodedAdmin(): Promise<string>;
     shareMeetupLocation(locationInput: MeetupLocationInput): Promise<void>;
     updateMeetupLocation(locationInput: MeetupLocationInput): Promise<void>;
     uploadVerification(licenseProof: ExternalBlob | null, idProof: ExternalBlob | null): Promise<void>;
 }
-import type { ActivityLogEntry as _ActivityLogEntry, EmergencyLookupResult as _EmergencyLookupResult, EmergencyProfile as _EmergencyProfile, EventType as _EventType, ExternalBlob as _ExternalBlob, MeetupLocation as _MeetupLocation, Place as _Place, PlaceCategory as _PlaceCategory, Route as _Route, SOSSnapshot as _SOSSnapshot, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { ActivityLogEntry as _ActivityLogEntry, EmergencyLookupResult as _EmergencyLookupResult, EmergencyProfile as _EmergencyProfile, EventType as _EventType, ExternalBlob as _ExternalBlob, MeetupLocation as _MeetupLocation, Place as _Place, PlaceCategory as _PlaceCategory, PromoteToAdminResult as _PromoteToAdminResult, Route as _Route, SOSSnapshot as _SOSSnapshot, Time as _Time, UserAccountDetails as _UserAccountDetails, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -418,6 +457,20 @@ export class Backend implements backendInterface {
             return from_candid_EmergencyLookupResult_n13(this._uploadFile, this._downloadFile, result);
         }
     }
+    async generateAdminToken(): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.generateAdminToken();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.generateAdminToken();
+            return result;
+        }
+    }
     async getActivityLogs(): Promise<Array<ActivityLogEntry>> {
         if (this.processError) {
             try {
@@ -443,6 +496,34 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getAllActiveMeetupLocations();
+            return result;
+        }
+    }
+    async getAllActiveTokens(): Promise<Array<AdminTokenInfo>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllActiveTokens();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllActiveTokens();
+            return result;
+        }
+    }
+    async getAllAdminTokenInfos(): Promise<Array<AdminTokenInfo>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllAdminTokenInfos();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllAdminTokenInfos();
             return result;
         }
     }
@@ -474,18 +555,18 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getAllMembers(): Promise<Array<[Principal, UserProfile]>> {
+    async getAllMembers(): Promise<Array<MemberSummary>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getAllMembers();
-                return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
+                return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAllMembers();
-            return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
+            return result;
         }
     }
     async getAllUserProfiles(): Promise<Array<[Principal, UserProfile]>> {
@@ -586,6 +667,20 @@ export class Backend implements backendInterface {
             return from_candid_vec_n33(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getUserAccountDetails(arg0: Principal): Promise<UserAccountDetails> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getUserAccountDetails(arg0);
+                return from_candid_UserAccountDetails_n36(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getUserAccountDetails(arg0);
+            return from_candid_UserAccountDetails_n36(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
@@ -600,6 +695,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n29(this._uploadFile, this._downloadFile, result);
         }
     }
+    async isAdmin(arg0: Principal): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.isAdmin(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.isAdmin(arg0);
+            return result;
+        }
+    }
     async isCallerAdmin(): Promise<boolean> {
         if (this.processError) {
             try {
@@ -612,6 +721,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.isCallerAdmin();
             return result;
+        }
+    }
+    async promoteToAdmin(arg0: string): Promise<PromoteToAdminResult> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.promoteToAdmin(arg0);
+                return from_candid_PromoteToAdminResult_n43(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.promoteToAdmin(arg0);
+            return from_candid_PromoteToAdminResult_n43(this._uploadFile, this._downloadFile, result);
         }
     }
     async reviewVerification(arg0: Principal, arg1: boolean): Promise<void> {
@@ -631,43 +754,29 @@ export class Backend implements backendInterface {
     async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n36(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n45(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n36(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n45(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
     async searchPlaces(arg0: PlaceCategory | null): Promise<Array<Place>> {
         if (this.processError) {
             try {
-                const result = await this.actor.searchPlaces(to_candid_opt_n39(this._uploadFile, this._downloadFile, arg0));
-                return from_candid_vec_n40(this._uploadFile, this._downloadFile, result);
+                const result = await this.actor.searchPlaces(to_candid_opt_n48(this._uploadFile, this._downloadFile, arg0));
+                return from_candid_vec_n38(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.searchPlaces(to_candid_opt_n39(this._uploadFile, this._downloadFile, arg0));
-            return from_candid_vec_n40(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async setupHardcodedAdmin(): Promise<string> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.setupHardcodedAdmin();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.setupHardcodedAdmin();
-            return result;
+            const result = await this.actor.searchPlaces(to_candid_opt_n48(this._uploadFile, this._downloadFile, arg0));
+            return from_candid_vec_n38(this._uploadFile, this._downloadFile, result);
         }
     }
     async shareMeetupLocation(arg0: MeetupLocationInput): Promise<void> {
@@ -701,14 +810,14 @@ export class Backend implements backendInterface {
     async uploadVerification(arg0: ExternalBlob | null, arg1: ExternalBlob | null): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.uploadVerification(await to_candid_opt_n45(this._uploadFile, this._downloadFile, arg0), await to_candid_opt_n45(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.uploadVerification(await to_candid_opt_n49(this._uploadFile, this._downloadFile, arg0), await to_candid_opt_n49(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.uploadVerification(await to_candid_opt_n45(this._uploadFile, this._downloadFile, arg0), await to_candid_opt_n45(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.uploadVerification(await to_candid_opt_n49(this._uploadFile, this._downloadFile, arg0), await to_candid_opt_n49(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
@@ -725,14 +834,20 @@ function from_candid_EventType_n21(_uploadFile: (file: ExternalBlob) => Promise<
 async function from_candid_ExternalBlob_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
     return await _downloadFile(value);
 }
-function from_candid_PlaceCategory_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PlaceCategory): PlaceCategory {
-    return from_candid_variant_n44(_uploadFile, _downloadFile, value);
+function from_candid_PlaceCategory_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PlaceCategory): PlaceCategory {
+    return from_candid_variant_n42(_uploadFile, _downloadFile, value);
 }
-function from_candid_Place_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Place): Place {
-    return from_candid_record_n42(_uploadFile, _downloadFile, value);
+function from_candid_Place_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Place): Place {
+    return from_candid_record_n40(_uploadFile, _downloadFile, value);
+}
+function from_candid_PromoteToAdminResult_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PromoteToAdminResult): PromoteToAdminResult {
+    return from_candid_variant_n44(_uploadFile, _downloadFile, value);
 }
 function from_candid_Route_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Route): Route {
     return from_candid_record_n35(_uploadFile, _downloadFile, value);
+}
+async function from_candid_UserAccountDetails_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserAccountDetails): Promise<UserAccountDetails> {
+    return await from_candid_record_n37(_uploadFile, _downloadFile, value);
 }
 async function from_candid_UserProfile_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserProfile): Promise<UserProfile> {
     return await from_candid_record_n26(_uploadFile, _downloadFile, value);
@@ -845,7 +960,34 @@ function from_candid_record_n35(_uploadFile: (file: ExternalBlob) => Promise<Uin
         dateTime: value.dateTime
     };
 }
-function from_candid_record_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function from_candid_record_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    recentRoutes: Array<_Route>;
+    emergencyProfile: [] | [_EmergencyProfile];
+    accountCreated: _Time;
+    activityLog: Array<_ActivityLogEntry>;
+    placesAdded: Array<_Place>;
+    lastLocations: Array<_MeetupLocation>;
+    profile: _UserProfile;
+}): Promise<{
+    recentRoutes: Array<Route>;
+    emergencyProfile?: EmergencyProfile;
+    accountCreated: Time;
+    activityLog: Array<ActivityLogEntry>;
+    placesAdded: Array<Place>;
+    lastLocations: Array<MeetupLocation>;
+    profile: UserProfile;
+}> {
+    return {
+        recentRoutes: from_candid_vec_n33(_uploadFile, _downloadFile, value.recentRoutes),
+        emergencyProfile: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.emergencyProfile)),
+        accountCreated: value.accountCreated,
+        activityLog: from_candid_vec_n18(_uploadFile, _downloadFile, value.activityLog),
+        placesAdded: from_candid_vec_n38(_uploadFile, _downloadFile, value.placesAdded),
+        lastLocations: value.lastLocations,
+        profile: await from_candid_UserProfile_n25(_uploadFile, _downloadFile, value.profile)
+    };
+}
+function from_candid_record_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     name: string;
     submittedBy: Principal;
     description: string;
@@ -862,7 +1004,7 @@ function from_candid_record_n42(_uploadFile: (file: ExternalBlob) => Promise<Uin
         name: value.name,
         submittedBy: value.submittedBy,
         description: value.description,
-        category: from_candid_PlaceCategory_n43(_uploadFile, _downloadFile, value.category),
+        category: from_candid_PlaceCategory_n41(_uploadFile, _downloadFile, value.category),
         location: value.location
     };
 }
@@ -916,7 +1058,7 @@ function from_candid_variant_n31(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_variant_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     gasStation: null;
 } | {
     hotel: null;
@@ -929,6 +1071,41 @@ function from_candid_variant_n44(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): PlaceCategory {
     return "gasStation" in value ? PlaceCategory.gasStation : "hotel" in value ? PlaceCategory.hotel : "shop" in value ? PlaceCategory.shop : "mechanic" in value ? PlaceCategory.mechanic : "restaurant" in value ? PlaceCategory.restaurant : value;
 }
+function from_candid_variant_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    accountAlreadyAdmin: null;
+} | {
+    success: string;
+} | {
+    invalidToken: null;
+} | {
+    tokenExpired: null;
+}): {
+    __kind__: "accountAlreadyAdmin";
+    accountAlreadyAdmin: null;
+} | {
+    __kind__: "success";
+    success: string;
+} | {
+    __kind__: "invalidToken";
+    invalidToken: null;
+} | {
+    __kind__: "tokenExpired";
+    tokenExpired: null;
+} {
+    return "accountAlreadyAdmin" in value ? {
+        __kind__: "accountAlreadyAdmin",
+        accountAlreadyAdmin: value.accountAlreadyAdmin
+    } : "success" in value ? {
+        __kind__: "success",
+        success: value.success
+    } : "invalidToken" in value ? {
+        __kind__: "invalidToken",
+        invalidToken: value.invalidToken
+    } : "tokenExpired" in value ? {
+        __kind__: "tokenExpired",
+        tokenExpired: value.tokenExpired
+    } : value;
+}
 function from_candid_vec_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ActivityLogEntry>): Array<ActivityLogEntry> {
     return value.map((x)=>from_candid_ActivityLogEntry_n19(_uploadFile, _downloadFile, x));
 }
@@ -938,17 +1115,17 @@ async function from_candid_vec_n23(_uploadFile: (file: ExternalBlob) => Promise<
 function from_candid_vec_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Route>): Array<Route> {
     return value.map((x)=>from_candid_Route_n34(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Place>): Array<Place> {
-    return value.map((x)=>from_candid_Place_n41(_uploadFile, _downloadFile, x));
+function from_candid_vec_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Place>): Array<Place> {
+    return value.map((x)=>from_candid_Place_n39(_uploadFile, _downloadFile, x));
 }
-async function to_candid_ExternalBlob_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
+async function to_candid_ExternalBlob_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
     return await _uploadFile(value);
 }
 function to_candid_PlaceCategory_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: PlaceCategory): _PlaceCategory {
     return to_candid_variant_n9(_uploadFile, _downloadFile, value);
 }
-async function to_candid_UserProfile_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): Promise<_UserProfile> {
-    return await to_candid_record_n37(_uploadFile, _downloadFile, value);
+async function to_candid_UserProfile_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): Promise<_UserProfile> {
+    return await to_candid_record_n46(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n11(_uploadFile, _downloadFile, value);
@@ -962,11 +1139,11 @@ function to_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Arra
 function to_candid_opt_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: string | null): [] | [string] {
     return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: PlaceCategory | null): [] | [_PlaceCategory] {
+function to_candid_opt_n48(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: PlaceCategory | null): [] | [_PlaceCategory] {
     return value === null ? candid_none() : candid_some(to_candid_PlaceCategory_n8(_uploadFile, _downloadFile, value));
 }
-async function to_candid_opt_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob | null): Promise<[] | [_ExternalBlob]> {
-    return value === null ? candid_none() : candid_some(await to_candid_ExternalBlob_n38(_uploadFile, _downloadFile, value));
+async function to_candid_opt_n49(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob | null): Promise<[] | [_ExternalBlob]> {
+    return value === null ? candid_none() : candid_some(await to_candid_ExternalBlob_n47(_uploadFile, _downloadFile, value));
 }
 function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     proposed_top_up_amount?: bigint;
@@ -977,7 +1154,7 @@ function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         proposed_top_up_amount: value.proposed_top_up_amount ? candid_some(value.proposed_top_up_amount) : candid_none()
     };
 }
-async function to_candid_record_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function to_candid_record_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     licenseProof?: ExternalBlob;
     name: string;
     idProof?: ExternalBlob;
@@ -991,9 +1168,9 @@ async function to_candid_record_n37(_uploadFile: (file: ExternalBlob) => Promise
     registrationTime: _Time;
 }> {
     return {
-        licenseProof: value.licenseProof ? candid_some(await to_candid_ExternalBlob_n38(_uploadFile, _downloadFile, value.licenseProof)) : candid_none(),
+        licenseProof: value.licenseProof ? candid_some(await to_candid_ExternalBlob_n47(_uploadFile, _downloadFile, value.licenseProof)) : candid_none(),
         name: value.name,
-        idProof: value.idProof ? candid_some(await to_candid_ExternalBlob_n38(_uploadFile, _downloadFile, value.idProof)) : candid_none(),
+        idProof: value.idProof ? candid_some(await to_candid_ExternalBlob_n47(_uploadFile, _downloadFile, value.idProof)) : candid_none(),
         isVerified: value.isVerified,
         registrationTime: value.registrationTime
     };

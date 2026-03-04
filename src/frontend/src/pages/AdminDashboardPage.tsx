@@ -1,683 +1,592 @@
-import { useState, useMemo } from 'react';
-import { useGetAllUserProfiles, useGetUserProfile, useReviewVerification, useGetAllLatestSOSLocations, useGetAllMembers, useGetActivityLogs, useGetHardcodedAdminPrincipal } from '../hooks/useQueries';
-import AdminRouteGuard from '../components/auth/AdminRouteGuard';
-import AuthenticatedRouteGuard from '../components/auth/AuthenticatedRouteGuard';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { toast } from 'sonner';
-import { Shield, CheckCircle, XCircle, Search, Users, MapPin, ExternalLink, AlertTriangle, FileText, Calendar, User, Copy, Check, Info } from 'lucide-react';
-import { formatDateTime } from '../lib/time';
-import { getEventTypeLabel, eventTypeOptions } from '../lib/eventType';
-import { EventType } from '../backend';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { Principal } from "@dfinity/principal";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  Activity,
+  CheckCircle,
+  Clock,
+  ExternalLink,
+  FileCheck,
+  MapPin,
+  Search,
+  Shield,
+  Users,
+  XCircle,
+} from "lucide-react";
+import { useState } from "react";
+import type { UserProfile } from "../backend";
+import GenerateAdminTokenCard from "../components/admin/GenerateAdminTokenCard";
+import AdminRouteGuard from "../components/auth/AdminRouteGuard";
+import {
+  useGetActivityLogs,
+  useGetAllLatestSOSLocations,
+  useGetAllMembers,
+  useGetAllUserProfiles,
+  useReviewVerification,
+} from "../hooks/useQueries";
+import { getEventTypeLabel } from "../lib/eventType";
+import { buildGoogleMapsUrl } from "../lib/googleMapsUrl";
+import { getMapZoomPreference } from "../lib/mapZoomPreference";
+import { parsePrincipal } from "../lib/principal";
+import { formatDateTime } from "../lib/time";
+
+function RegistrationsTab() {
+  const { data: profiles, isLoading, error } = useGetAllUserProfiles();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filtered = profiles?.filter(([, profile]) =>
+    profile.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (error)
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>Failed to load registrations.</AlertDescription>
+      </Alert>
+    );
+
+  return (
+    <div className="space-y-4">
+      <Input
+        placeholder="Search by name..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Registered</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered?.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={3}
+                  className="text-center text-muted-foreground"
+                >
+                  No registrations found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered?.map(([principal, profile]) => (
+                <TableRow key={principal.toString()}>
+                  <TableCell className="font-medium">{profile.name}</TableCell>
+                  <TableCell>
+                    {profile.isVerified ? (
+                      <Badge variant="default" className="gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        Verified
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">Pending</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {formatDateTime(profile.registrationTime)}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function VerificationTab() {
+  const { data: profiles, isLoading, error } = useGetAllUserProfiles();
+  const reviewMutation = useReviewVerification();
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+
+  const pendingVerification = profiles?.filter(
+    ([, profile]) =>
+      (profile.licenseProof !== undefined || profile.idProof !== undefined) &&
+      !profile.isVerified,
+  );
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (error)
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>
+          Failed to load verification requests.
+        </AlertDescription>
+      </Alert>
+    );
+
+  const handleReview = async (
+    principal: Principal,
+    _profile: UserProfile,
+    approved: boolean,
+  ) => {
+    const id = principal.toString();
+    setReviewingId(id);
+    try {
+      await reviewMutation.mutateAsync({ user: principal, approved });
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        {pendingVerification?.length ?? 0} pending verification request
+        {pendingVerification?.length !== 1 ? "s" : ""}
+      </p>
+      {pendingVerification?.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <FileCheck className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
+            <p className="text-muted-foreground">
+              No pending verification requests.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        pendingVerification?.map(([principal, profile]) => (
+          <Card key={principal.toString()}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-medium">{profile.name}</p>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    {principal.toString()}
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    {profile.licenseProof && (
+                      <Badge variant="outline" className="gap-1">
+                        <FileCheck className="h-3 w-3" />
+                        License
+                      </Badge>
+                    )}
+                    {profile.idProof && (
+                      <Badge variant="outline" className="gap-1">
+                        <FileCheck className="h-3 w-3" />
+                        ID Proof
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 text-destructive hover:text-destructive"
+                    disabled={reviewingId === principal.toString()}
+                    onClick={() => handleReview(principal, profile, false)}
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Reject
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="gap-1"
+                    disabled={reviewingId === principal.toString()}
+                    onClick={() => handleReview(principal, profile, true)}
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Approve
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
+    </div>
+  );
+}
+
+function SOSLocationsTab() {
+  const {
+    data: sosLocations,
+    isLoading,
+    error,
+  } = useGetAllLatestSOSLocations();
+  const zoom = getMapZoomPreference();
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (error)
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>Failed to load SOS locations.</AlertDescription>
+      </Alert>
+    );
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        {sosLocations?.length ?? 0} SOS snapshot
+        {sosLocations?.length !== 1 ? "s" : ""} on record
+      </p>
+      {sosLocations?.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <MapPin className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
+            <p className="text-muted-foreground">No SOS snapshots recorded.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Coordinates</TableHead>
+                <TableHead>Timestamp</TableHead>
+                <TableHead>Map</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sosLocations?.map((snap, idx) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: snapshot has no unique id
+                <TableRow key={idx}>
+                  <TableCell className="font-mono text-xs">
+                    {snap.user.toString()}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {snap.latitude.toFixed(4)}, {snap.longitude.toFixed(4)}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {formatDateTime(snap.timestamp)}
+                  </TableCell>
+                  <TableCell>
+                    <a
+                      href={buildGoogleMapsUrl(
+                        snap.latitude,
+                        snap.longitude,
+                        zoom,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      View
+                    </a>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MembersTab() {
+  const { data: members, isLoading, error } = useGetAllMembers();
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [principalSearch, setPrincipalSearch] = useState("");
+  const [principalError, setPrincipalError] = useState<string | null>(null);
+
+  const filtered = members?.filter(
+    (m) =>
+      m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.userId.toString().includes(searchTerm),
+  );
+
+  const handlePrincipalNavigate = () => {
+    setPrincipalError(null);
+    const principal = parsePrincipal(principalSearch.trim());
+    if (!principal) {
+      setPrincipalError("Invalid Principal ID format.");
+      return;
+    }
+    navigate({
+      to: "/admin/users/$userId",
+      params: { userId: principal.toString() },
+    });
+  };
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (error)
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>Failed to load members.</AlertDescription>
+      </Alert>
+    );
+
+  return (
+    <div className="space-y-4">
+      {/* Principal ID direct navigation */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium">
+            Navigate to User Account
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Enter a Principal ID to view detailed account information.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="space-y-1">
+            <Label htmlFor="principalNav" className="text-xs">
+              Principal ID
+            </Label>
+            <Input
+              id="principalNav"
+              type="text"
+              placeholder="e.g. 2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae"
+              value={principalSearch}
+              onChange={(e) => setPrincipalSearch(e.target.value)}
+              className="font-mono text-xs"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              onKeyDown={(e) => e.key === "Enter" && handlePrincipalNavigate()}
+            />
+          </div>
+          {principalError && (
+            <p className="text-xs text-destructive">{principalError}</p>
+          )}
+          <Button
+            size="sm"
+            onClick={handlePrincipalNavigate}
+            disabled={!principalSearch.trim()}
+            className="w-full"
+          >
+            <Search className="mr-1 h-3 w-3" />
+            View Account
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Input
+        placeholder="Search members by name or Principal ID..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Registered</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered?.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="text-center text-muted-foreground"
+                >
+                  No members found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered?.map((member) => (
+                <TableRow
+                  key={member.userId.toString()}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() =>
+                    navigate({
+                      to: "/admin/users/$userId",
+                      params: { userId: member.userId.toString() },
+                    })
+                  }
+                >
+                  <TableCell className="font-medium">{member.name}</TableCell>
+                  <TableCell>
+                    {member.isVerified ? (
+                      <Badge variant="default" className="gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        Verified
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="gap-1">
+                        <Clock className="h-3 w-3" />
+                        Pending
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {formatDateTime(member.registrationTime)}
+                  </TableCell>
+                  <TableCell>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function ActivityLogsTab() {
+  const { data: logs, isLoading, error } = useGetActivityLogs();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filtered = logs?.filter(
+    (log) =>
+      log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getEventTypeLabel(log.eventType)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()),
+  );
+
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (error)
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>Failed to load activity logs.</AlertDescription>
+      </Alert>
+    );
+
+  return (
+    <div className="space-y-4">
+      <Input
+        placeholder="Search logs..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Event</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Time</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered?.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={3}
+                  className="text-center text-muted-foreground"
+                >
+                  No logs found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered?.map((log, idx) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: log has no unique id
+                <TableRow key={idx}>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {getEventTypeLabel(log.eventType)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">{log.description}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {formatDateTime(log.timestamp)}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function AdminDashboardContent() {
+  return (
+    <div className="container mx-auto max-w-4xl px-4 py-8">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+          <Shield className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage members, verifications, and more.
+          </p>
+        </div>
+      </div>
+
+      {/* Generate Admin Token — always visible to admins */}
+      <div className="mb-6">
+        <GenerateAdminTokenCard />
+      </div>
+
+      <Tabs defaultValue="members">
+        <TabsList className="mb-6 grid w-full grid-cols-5">
+          <TabsTrigger value="registrations" className="gap-1">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Registrations</span>
+          </TabsTrigger>
+          <TabsTrigger value="verification" className="gap-1">
+            <FileCheck className="h-4 w-4" />
+            <span className="hidden sm:inline">Verification</span>
+          </TabsTrigger>
+          <TabsTrigger value="sos" className="gap-1">
+            <MapPin className="h-4 w-4" />
+            <span className="hidden sm:inline">SOS</span>
+          </TabsTrigger>
+          <TabsTrigger value="members" className="gap-1">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Members</span>
+          </TabsTrigger>
+          <TabsTrigger value="logs" className="gap-1">
+            <Activity className="h-4 w-4" />
+            <span className="hidden sm:inline">Logs</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="registrations">
+          <RegistrationsTab />
+        </TabsContent>
+        <TabsContent value="verification">
+          <VerificationTab />
+        </TabsContent>
+        <TabsContent value="sos">
+          <SOSLocationsTab />
+        </TabsContent>
+        <TabsContent value="members">
+          <MembersTab />
+        </TabsContent>
+        <TabsContent value="logs">
+          <ActivityLogsTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
 
 export default function AdminDashboardPage() {
-    const [activeTab, setActiveTab] = useState('registrations');
-    
-    // Hardcoded admin principal
-    const { data: hardcodedAdminPrincipal } = useGetHardcodedAdminPrincipal();
-    const [copiedAdmin, setCopiedAdmin] = useState(false);
-    
-    // Registrations tab state
-    const { data: allProfiles, isLoading: isLoadingProfiles, error: profilesError } = useGetAllUserProfiles();
-    
-    // Verification Review tab state
-    const [principalInput, setPrincipalInput] = useState('');
-    const [lookupPrincipal, setLookupPrincipal] = useState<string | null>(null);
-    const { data: userProfile, isLoading: isLoadingUser } = useGetUserProfile(lookupPrincipal);
-    const reviewVerification = useReviewVerification();
-
-    // SOS Locations tab state
-    const { data: sosLocations, isLoading: isLoadingSOSLocations } = useGetAllLatestSOSLocations();
-
-    // Members tab state
-    const { data: allMembers, isLoading: isLoadingMembers } = useGetAllMembers();
-    const [memberSearchQuery, setMemberSearchQuery] = useState('');
-
-    // Logs tab state
-    const { data: activityLogs, isLoading: isLoadingLogs } = useGetActivityLogs();
-    const [logEventTypeFilter, setLogEventTypeFilter] = useState<string>('all');
-    const [logSearchQuery, setLogSearchQuery] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const logsPerPage = 20;
-
-    const handleCopyAdminPrincipal = async () => {
-        if (!hardcodedAdminPrincipal) return;
-        try {
-            await navigator.clipboard.writeText(hardcodedAdminPrincipal);
-            setCopiedAdmin(true);
-            toast.success('Admin Principal ID copied to clipboard');
-            setTimeout(() => setCopiedAdmin(false), 2000);
-        } catch (error) {
-            console.error('Failed to copy:', error);
-            toast.error('Failed to copy Principal ID');
-        }
-    };
-
-    const handleLookup = () => {
-        if (!principalInput.trim()) {
-            toast.error('Please enter a Principal ID');
-            return;
-        }
-        setLookupPrincipal(principalInput.trim());
-    };
-
-    const handleReview = async (approved: boolean) => {
-        if (!lookupPrincipal) return;
-
-        try {
-            await reviewVerification.mutateAsync({ user: lookupPrincipal, approved });
-            toast.success(approved ? 'User verified successfully' : 'Verification rejected');
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to review verification');
-        }
-    };
-
-    const getMapUrl = (lat: number, lng: number) => {
-        return `https://www.google.com/maps?q=${lat},${lng}&z=15`;
-    };
-
-    const truncatePrincipal = (principal: string) => {
-        if (principal.length <= 20) return principal;
-        return `${principal.slice(0, 10)}...${principal.slice(-10)}`;
-    };
-
-    // Filter and search members
-    const filteredMembers = useMemo(() => {
-        if (!allMembers) return [];
-        
-        return allMembers.filter(([principal, profile]) => {
-            const principalStr = principal.toString().toLowerCase();
-            const nameStr = profile.name.toLowerCase();
-            const query = memberSearchQuery.toLowerCase();
-            
-            return principalStr.includes(query) || nameStr.includes(query);
-        });
-    }, [allMembers, memberSearchQuery]);
-
-    // Sort members by registration time (newest first)
-    const sortedMembers = useMemo(() => {
-        return [...filteredMembers].sort((a, b) => {
-            return Number(b[1].registrationTime - a[1].registrationTime);
-        });
-    }, [filteredMembers]);
-
-    // Filter and paginate logs
-    const filteredLogs = useMemo(() => {
-        if (!activityLogs) return [];
-        
-        return activityLogs.filter((log) => {
-            // Filter by event type
-            if (logEventTypeFilter !== 'all' && log.eventType !== logEventTypeFilter) {
-                return false;
-            }
-            
-            // Filter by search query (description or principal)
-            if (logSearchQuery) {
-                const query = logSearchQuery.toLowerCase();
-                const descriptionMatch = log.description.toLowerCase().includes(query);
-                const principalMatch = log.initiatedBy.toString().toLowerCase().includes(query);
-                return descriptionMatch || principalMatch;
-            }
-            
-            return true;
-        });
-    }, [activityLogs, logEventTypeFilter, logSearchQuery]);
-
-    // Sort logs by timestamp (newest first)
-    const sortedLogs = useMemo(() => {
-        return [...filteredLogs].sort((a, b) => {
-            return Number(b.timestamp - a.timestamp);
-        });
-    }, [filteredLogs]);
-
-    // Paginate logs
-    const paginatedLogs = useMemo(() => {
-        const startIndex = (currentPage - 1) * logsPerPage;
-        const endIndex = startIndex + logsPerPage;
-        return sortedLogs.slice(startIndex, endIndex);
-    }, [sortedLogs, currentPage]);
-
-    const totalPages = Math.ceil(sortedLogs.length / logsPerPage);
-
-    return (
-        <AuthenticatedRouteGuard>
-            <AdminRouteGuard>
-                <div className="space-y-6 max-w-6xl">
-                    <div className="flex items-center gap-3">
-                        <Shield className="h-8 w-8" />
-                        <div>
-                            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-                            <p className="text-muted-foreground">Manage user registrations, verifications, members, and system logs</p>
-                        </div>
-                    </div>
-
-                    {/* Hardcoded Admin Principal Alert */}
-                    {hardcodedAdminPrincipal && (
-                        <Alert>
-                            <Info className="h-4 w-4" />
-                            <AlertTitle>Hardcoded Admin Principal ID</AlertTitle>
-                            <AlertDescription>
-                                <p className="mb-2">
-                                    The following Principal ID has permanent admin access. Log in with this identity to access admin features:
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono break-all">
-                                        {hardcodedAdminPrincipal}
-                                    </code>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={handleCopyAdminPrincipal}
-                                        className="shrink-0"
-                                    >
-                                        {copiedAdmin ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                                    </Button>
-                                </div>
-                            </AlertDescription>
-                        </Alert>
-                    )}
-
-                    <Tabs value={activeTab} onValueChange={setActiveTab}>
-                        <TabsList className="grid w-full grid-cols-5">
-                            <TabsTrigger value="registrations">
-                                <Users className="h-4 w-4 mr-2" />
-                                Registrations
-                            </TabsTrigger>
-                            <TabsTrigger value="verification">
-                                <Search className="h-4 w-4 mr-2" />
-                                Verification
-                            </TabsTrigger>
-                            <TabsTrigger value="sos">
-                                <MapPin className="h-4 w-4 mr-2" />
-                                SOS Locations
-                            </TabsTrigger>
-                            <TabsTrigger value="members">
-                                <Users className="h-4 w-4 mr-2" />
-                                Members
-                            </TabsTrigger>
-                            <TabsTrigger value="logs">
-                                <FileText className="h-4 w-4 mr-2" />
-                                Logs
-                            </TabsTrigger>
-                        </TabsList>
-
-                        {/* Registrations Tab */}
-                        <TabsContent value="registrations" className="space-y-4">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>User Registrations</CardTitle>
-                                    <CardDescription>
-                                        All registered users in the system
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    {isLoadingProfiles ? (
-                                        <div className="text-center py-8">
-                                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">Loading registrations...</p>
-                                        </div>
-                                    ) : profilesError ? (
-                                        <div className="text-center py-8">
-                                            <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">Failed to load registrations</p>
-                                        </div>
-                                    ) : !allProfiles || allProfiles.length === 0 ? (
-                                        <div className="text-center py-8">
-                                            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">No registered users yet</p>
-                                        </div>
-                                    ) : (
-                                        <div className="overflow-x-auto">
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead>Name</TableHead>
-                                                        <TableHead>Principal ID</TableHead>
-                                                        <TableHead>Status</TableHead>
-                                                        <TableHead>Registration Date</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {allProfiles.map(([principal, profile]) => (
-                                                        <TableRow key={principal.toString()}>
-                                                            <TableCell className="font-medium">{profile.name}</TableCell>
-                                                            <TableCell className="font-mono text-xs">
-                                                                {truncatePrincipal(principal.toString())}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {profile.isVerified ? (
-                                                                    <Badge variant="default" className="gap-1">
-                                                                        <CheckCircle className="h-3 w-3" />
-                                                                        Verified
-                                                                    </Badge>
-                                                                ) : (
-                                                                    <Badge variant="secondary" className="gap-1">
-                                                                        <XCircle className="h-3 w-3" />
-                                                                        Unverified
-                                                                    </Badge>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell className="text-sm text-muted-foreground">
-                                                                {formatDateTime(profile.registrationTime)}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        {/* Verification Review Tab */}
-                        <TabsContent value="verification" className="space-y-4">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Review User Verification</CardTitle>
-                                    <CardDescription>
-                                        Look up a user by Principal ID to review their verification documents
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="flex gap-2">
-                                        <div className="flex-1">
-                                            <Label htmlFor="principal-input">Principal ID</Label>
-                                            <Input
-                                                id="principal-input"
-                                                placeholder="Enter Principal ID..."
-                                                value={principalInput}
-                                                onChange={(e) => setPrincipalInput(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
-                                            />
-                                        </div>
-                                        <div className="flex items-end">
-                                            <Button onClick={handleLookup} disabled={isLoadingUser}>
-                                                <Search className="h-4 w-4 mr-2" />
-                                                Look Up
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {isLoadingUser && (
-                                        <div className="text-center py-8">
-                                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">Loading user profile...</p>
-                                        </div>
-                                    )}
-
-                                    {!isLoadingUser && lookupPrincipal && !userProfile && (
-                                        <div className="text-center py-8">
-                                            <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">User not found</p>
-                                        </div>
-                                    )}
-
-                                    {userProfile && (
-                                        <div className="space-y-4">
-                                            <Separator />
-                                            <div className="space-y-2">
-                                                <h3 className="font-semibold">User Information</h3>
-                                                <div className="grid gap-2 text-sm">
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Name:</span>
-                                                        <span className="font-medium">{userProfile.name}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Status:</span>
-                                                        {userProfile.isVerified ? (
-                                                            <Badge variant="default" className="gap-1">
-                                                                <CheckCircle className="h-3 w-3" />
-                                                                Verified
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge variant="secondary" className="gap-1">
-                                                                <XCircle className="h-3 w-3" />
-                                                                Unverified
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Registration:</span>
-                                                        <span className="font-medium">{formatDateTime(userProfile.registrationTime)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {(userProfile.licenseProof || userProfile.idProof) && (
-                                                <>
-                                                    <Separator />
-                                                    <div className="space-y-2">
-                                                        <h3 className="font-semibold">Verification Documents</h3>
-                                                        <div className="grid gap-4 md:grid-cols-2">
-                                                            {userProfile.licenseProof && (
-                                                                <div className="space-y-2">
-                                                                    <Label>Trucking License</Label>
-                                                                    <img
-                                                                        src={userProfile.licenseProof.getDirectURL()}
-                                                                        alt="License proof"
-                                                                        className="w-full rounded-lg border"
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                            {userProfile.idProof && (
-                                                                <div className="space-y-2">
-                                                                    <Label>ID Proof</Label>
-                                                                    <img
-                                                                        src={userProfile.idProof.getDirectURL()}
-                                                                        alt="ID proof"
-                                                                        className="w-full rounded-lg border"
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            )}
-
-                                            <Separator />
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    onClick={() => handleReview(true)}
-                                                    disabled={reviewVerification.isPending || userProfile.isVerified}
-                                                    className="flex-1"
-                                                >
-                                                    <CheckCircle className="h-4 w-4 mr-2" />
-                                                    Approve
-                                                </Button>
-                                                <Button
-                                                    variant="destructive"
-                                                    onClick={() => handleReview(false)}
-                                                    disabled={reviewVerification.isPending}
-                                                    className="flex-1"
-                                                >
-                                                    <XCircle className="h-4 w-4 mr-2" />
-                                                    Reject
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        {/* SOS Locations Tab */}
-                        <TabsContent value="sos" className="space-y-4">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>SOS Location Snapshots</CardTitle>
-                                    <CardDescription>
-                                        Latest emergency location snapshots from all users
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    {isLoadingSOSLocations ? (
-                                        <div className="text-center py-8">
-                                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">Loading SOS locations...</p>
-                                        </div>
-                                    ) : !sosLocations || sosLocations.length === 0 ? (
-                                        <div className="text-center py-8">
-                                            <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">No SOS snapshots recorded yet</p>
-                                        </div>
-                                    ) : (
-                                        <div className="overflow-x-auto">
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead>User Principal</TableHead>
-                                                        <TableHead>Timestamp</TableHead>
-                                                        <TableHead>Coordinates</TableHead>
-                                                        <TableHead>Map</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {sosLocations.map((snapshot, index) => (
-                                                        <TableRow key={`${snapshot.user.toString()}-${index}`}>
-                                                            <TableCell className="font-mono text-xs">
-                                                                {truncatePrincipal(snapshot.user.toString())}
-                                                            </TableCell>
-                                                            <TableCell className="text-sm">
-                                                                {formatDateTime(snapshot.timestamp)}
-                                                            </TableCell>
-                                                            <TableCell className="font-mono text-xs">
-                                                                {snapshot.latitude.toFixed(6)}, {snapshot.longitude.toFixed(6)}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    asChild
-                                                                >
-                                                                    <a
-                                                                        href={getMapUrl(snapshot.latitude, snapshot.longitude)}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                    >
-                                                                        <ExternalLink className="h-4 w-4 mr-2" />
-                                                                        View
-                                                                    </a>
-                                                                </Button>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        {/* Members Tab */}
-                        <TabsContent value="members" className="space-y-4">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Registered Members</CardTitle>
-                                    <CardDescription>
-                                        All members registered in the system
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div>
-                                        <Label htmlFor="member-search">Search Members</Label>
-                                        <Input
-                                            id="member-search"
-                                            placeholder="Search by name or Principal ID..."
-                                            value={memberSearchQuery}
-                                            onChange={(e) => setMemberSearchQuery(e.target.value)}
-                                        />
-                                    </div>
-
-                                    {isLoadingMembers ? (
-                                        <div className="text-center py-8">
-                                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">Loading members...</p>
-                                        </div>
-                                    ) : sortedMembers.length === 0 ? (
-                                        <div className="text-center py-8">
-                                            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">
-                                                {memberSearchQuery ? 'No members found matching your search' : 'No registered members yet'}
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="overflow-x-auto">
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead>Name</TableHead>
-                                                        <TableHead>Principal ID</TableHead>
-                                                        <TableHead>Status</TableHead>
-                                                        <TableHead>Registered</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {sortedMembers.map(([principal, profile]) => (
-                                                        <TableRow key={principal.toString()}>
-                                                            <TableCell className="font-medium">{profile.name}</TableCell>
-                                                            <TableCell className="font-mono text-xs">
-                                                                {truncatePrincipal(principal.toString())}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {profile.isVerified ? (
-                                                                    <Badge variant="default" className="gap-1">
-                                                                        <CheckCircle className="h-3 w-3" />
-                                                                        Verified
-                                                                    </Badge>
-                                                                ) : (
-                                                                    <Badge variant="secondary" className="gap-1">
-                                                                        <XCircle className="h-3 w-3" />
-                                                                        Unverified
-                                                                    </Badge>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell className="text-sm text-muted-foreground">
-                                                                {formatDateTime(profile.registrationTime)}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    )}
-
-                                    {sortedMembers.length > 0 && (
-                                        <div className="text-sm text-muted-foreground text-center">
-                                            Showing {sortedMembers.length} of {allMembers?.length || 0} members
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        {/* Logs Tab */}
-                        <TabsContent value="logs" className="space-y-4">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Activity Logs</CardTitle>
-                                    <CardDescription>
-                                        System activity and user actions
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div>
-                                            <Label htmlFor="event-type-filter">Event Type</Label>
-                                            <Select value={logEventTypeFilter} onValueChange={setLogEventTypeFilter}>
-                                                <SelectTrigger id="event-type-filter">
-                                                    <SelectValue placeholder="All events" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">All Events</SelectItem>
-                                                    {eventTypeOptions.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="log-search">Search Logs</Label>
-                                            <Input
-                                                id="log-search"
-                                                placeholder="Search description or principal..."
-                                                value={logSearchQuery}
-                                                onChange={(e) => setLogSearchQuery(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {isLoadingLogs ? (
-                                        <div className="text-center py-8">
-                                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">Loading activity logs...</p>
-                                        </div>
-                                    ) : paginatedLogs.length === 0 ? (
-                                        <div className="text-center py-8">
-                                            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">
-                                                {logSearchQuery || logEventTypeFilter !== 'all' ? 'No logs found matching your filters' : 'No activity logs yet'}
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="overflow-x-auto">
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow>
-                                                            <TableHead>Timestamp</TableHead>
-                                                            <TableHead>Event Type</TableHead>
-                                                            <TableHead>Description</TableHead>
-                                                            <TableHead>Initiated By</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {paginatedLogs.map((log, index) => (
-                                                            <TableRow key={`${log.timestamp}-${index}`}>
-                                                                <TableCell className="text-sm whitespace-nowrap">
-                                                                    {formatDateTime(log.timestamp)}
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <Badge variant="outline">
-                                                                        {getEventTypeLabel(log.eventType)}
-                                                                    </Badge>
-                                                                </TableCell>
-                                                                <TableCell className="max-w-md">
-                                                                    {log.description}
-                                                                </TableCell>
-                                                                <TableCell className="font-mono text-xs">
-                                                                    {truncatePrincipal(log.initiatedBy.toString())}
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-
-                                            {totalPages > 1 && (
-                                                <div className="flex items-center justify-between">
-                                                    <div className="text-sm text-muted-foreground">
-                                                        Page {currentPage} of {totalPages} ({sortedLogs.length} total logs)
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                                            disabled={currentPage === 1}
-                                                        >
-                                                            Previous
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                                            disabled={currentPage === totalPages}
-                                                        >
-                                                            Next
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                    </Tabs>
-                </div>
-            </AdminRouteGuard>
-        </AuthenticatedRouteGuard>
-    );
+  return (
+    <AdminRouteGuard>
+      <AdminDashboardContent />
+    </AdminRouteGuard>
+  );
 }

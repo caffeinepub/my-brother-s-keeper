@@ -1,4 +1,4 @@
-import { Principal } from '@dfinity/principal';
+import { Principal } from "@dfinity/principal";
 
 /**
  * Validates whether a string is a valid textual Principal ID.
@@ -8,7 +8,7 @@ export function isValidPrincipal(text: string): boolean {
   if (!text || text.trim().length === 0) {
     return false;
   }
-  
+
   try {
     Principal.fromText(text.trim());
     return true;
@@ -26,4 +26,12 @@ export function safePrincipalFromText(text: string): Principal | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Alias for safePrincipalFromText — parses a Principal ID string,
+ * returning null if the format is invalid.
+ */
+export function parsePrincipal(text: string): Principal | null {
+  return safePrincipalFromText(text);
 }

@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'mbk_map_zoom_preference';
+const STORAGE_KEY = "mbk_map_zoom_preference";
 const DEFAULT_ZOOM = 15;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 21;
@@ -10,13 +10,13 @@ export function getMapZoomPreference(): number {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      const parsed = parseInt(stored, 10);
-      if (!isNaN(parsed)) {
+      const parsed = Number.parseInt(stored, 10);
+      if (!Number.isNaN(parsed)) {
         return clampZoom(parsed);
       }
     }
   } catch (error) {
-    console.error('Failed to read map zoom preference:', error);
+    console.error("Failed to read map zoom preference:", error);
   }
   return DEFAULT_ZOOM;
 }
@@ -29,7 +29,7 @@ export function setMapZoomPreference(zoom: number): void {
     const clamped = clampZoom(zoom);
     localStorage.setItem(STORAGE_KEY, clamped.toString());
   } catch (error) {
-    console.error('Failed to store map zoom preference:', error);
+    console.error("Failed to store map zoom preference:", error);
   }
 }
 
@@ -40,7 +40,7 @@ export function clearMapZoomPreference(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
-    console.error('Failed to clear map zoom preference:', error);
+    console.error("Failed to clear map zoom preference:", error);
   }
 }
 

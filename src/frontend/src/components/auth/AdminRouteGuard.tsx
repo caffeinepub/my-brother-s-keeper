@@ -1,61 +1,71 @@
-import { useEffect } from 'react';
-import { useIsCallerAdmin } from '../../hooks/useQueries';
-import { useActor } from '../../hooks/useActor';
-import { useInternetIdentity } from '../../hooks/useInternetIdentity';
-import AccessDeniedScreen from './AccessDeniedScreen';
+import { Loader2 } from "lucide-react";
+import { type ReactNode, useRef } from "react";
+import { useActor } from "../../hooks/useActor";
+import { useInternetIdentity } from "../../hooks/useInternetIdentity";
+import { useIsCallerAdmin } from "../../hooks/useQueries";
+import AccessDeniedScreen from "./AccessDeniedScreen";
 
-export default function AdminRouteGuard({ children }: { children: React.ReactNode }) {
-    const { actor, isFetching: actorFetching } = useActor();
-    const { identity } = useInternetIdentity();
-    const { data: isAdmin, isLoading, isFetched, error, status } = useIsCallerAdmin();
+interface AdminRouteGuardProps {
+  children: ReactNode;
+}
 
-    useEffect(() => {
-        console.log('[AdminRouteGuard] 🔍 Component state:', {
-            actorAvailable: !!actor,
-            actorFetching,
-            identityAvailable: !!identity,
-            principalId: identity?.getPrincipal().toString(),
-            isLoading,
-            isFetched,
-            isAdmin,
-            status,
-            error: error ? String(error) : null
-        });
-    }, [actor, actorFetching, identity, isLoading, isFetched, isAdmin, status, error]);
+/**
+ * AdminRouteGuard
+ *
+ * Shows a loading spinner while identity/actor are initializing or while the
+ * admin status query is in-flight. Once settled, renders children if the caller
+ * is admin, or AccessDeniedScreen otherwise.
+ *
+ * Uses a resolvedRef to prevent the spinner from reappearing after the initial
+ * resolution, even if the query gets invalidated and re-fetches in the background.
+ *
+ * No navigation is performed here — no redirect loops possible.
+ * Bootstrap admin status is determined directly by isCallerAdmin() on the backend.
+ */
+export default function AdminRouteGuard({ children }: AdminRouteGuardProps) {
+  const { isInitializing } = useInternetIdentity();
+  const { isFetching: actorFetching } = useActor();
+  const {
+    data: isAdmin,
+    isLoading,
+    isFetched,
+    isFetching: queryFetching,
+  } = useIsCallerAdmin();
 
-    // Show loading state while actor is initializing or admin status is being fetched
-    if (actorFetching || isLoading || !isFetched) {
-        console.log('[AdminRouteGuard] ⏳ Showing loading state', {
-            actorFetching,
-            isLoading,
-            isFetched
-        });
-        return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="text-center">
-                    <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-                    <p className="text-muted-foreground">Checking admin permissions...</p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                        {actorFetching && 'Initializing connection...'}
-                        {!actorFetching && isLoading && 'Verifying credentials...'}
-                    </p>
-                </div>
-            </div>
-        );
-    }
+  // Track whether we've resolved admin status at least once.
+  // This prevents the spinner from reappearing on background re-fetches
+  // triggered by useActor's query invalidation effect.
+  const resolvedRef = useRef(false);
 
-    // If there's an error fetching the admin status, deny access
-    if (error) {
-        console.error('[AdminRouteGuard] ❌ Error fetching admin status, denying access:', error);
-        return <AccessDeniedScreen />;
-    }
+  // Mark as resolved once we have a definitive answer
+  if (isFetched && !queryFetching) {
+    resolvedRef.current = true;
+  }
 
-    // Only allow access if user is explicitly an admin
-    if (!isAdmin) {
-        console.log('[AdminRouteGuard] 🚫 Access denied - user is not admin. isAdmin value:', isAdmin);
-        return <AccessDeniedScreen />;
-    }
+  // Show loading while:
+  // 1. Internet Identity is still initializing
+  // 2. The actor is being set up
+  // 3. The admin query is actively loading for the first time (not yet resolved)
+  const isStillLoading =
+    isInitializing ||
+    actorFetching ||
+    isLoading ||
+    (!resolvedRef.current && !isFetched);
 
-    console.log('[AdminRouteGuard] ✅ Access granted - rendering children');
-    return <>{children}</>;
+  if (isStillLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm">Checking admin permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return <AccessDeniedScreen />;
+  }
+
+  return <>{children}</>;
 }

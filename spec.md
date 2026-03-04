@@ -1,12 +1,20 @@
-# Specification
+# My Brother's Keeper
 
-## Summary
-**Goal:** Fix the admin authentication loop by hardcoding the bootstrap admin Principal ID in the backend and removing the broken auto-promotion and redirect logic in the frontend.
+## Current State
+The app is a trucker safety network with routes, safe places, emergency profiles, SOS, meetup locations, and an admin dashboard. The backend has a `bootstrapAdminPrincipalText` hardcoded as `"2yscf-yuwfq-4lml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae"`. The `isAdmin()` query correctly checks both the bootstrap principal AND AccessControl state. However, `isCallerAdmin()` comes from the MixinAuthorization and ONLY checks AccessControl state — it never checks the bootstrap principal. This means the bootstrap admin always gets "Access Denied" when visiting `/admin/dashboard`, because `isCallerAdmin()` returns false for them.
 
-**Planned changes:**
-- Hardcode the bootstrap admin Principal ID as a constant in `backend/main.mo` so it is unconditionally treated as admin without any state lookup or promotion flow
-- Fix `AdminPromotionHandler.tsx` to be a no-op when no promotion token is in localStorage and to never trigger navigation or re-initialization loops
-- Fix `AdminRouteGuard.tsx` to resolve admin status with a single backend query and render children or access denied without looping back to app start
-- Audit and fix `useIsAdmin` in `useQueries.ts` to fetch admin status once after the actor is available and prevent circular query invalidation
+## Requested Changes (Diff)
 
-**User-visible outcome:** The bootstrap admin can log in and access admin routes without encountering infinite redirect or initialization loops.
+### Add
+- A public `isCallerAdmin()` override in `main.mo` (after the mixin include) that checks BOTH `bootstrapAdminPrincipalText` AND `AccessControl.isAdmin()`, exactly matching the existing `isAdmin()` logic but for the caller.
+
+### Modify
+- The backend `main.mo` to include the `isCallerAdmin()` override so the frontend's AdminRouteGuard correctly recognizes the bootstrap admin.
+
+### Remove
+- Nothing.
+
+## Implementation Plan
+1. Regenerate backend Motoko with an explicit `isCallerAdmin()` function in the actor that overrides the mixin version and checks both the bootstrap principal text AND AccessControl.isAdmin(). The function signature must be: `public query ({ caller }) func isCallerAdmin() : async Bool { caller.toText() == bootstrapAdminPrincipalText or AccessControl.isAdmin(accessControlState, caller) }`.
+2. No frontend changes are needed — the frontend already calls `actor.isCallerAdmin()` correctly.
+3. Deploy.

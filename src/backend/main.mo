@@ -1,23 +1,33 @@
 import List "mo:core/List";
 import Map "mo:core/Map";
 import Time "mo:core/Time";
-import Text "mo:core/Text";
+import Principal "mo:core/Principal";
 import Float "mo:core/Float";
 import Array "mo:core/Array";
-import Principal "mo:core/Principal";
+import Text "mo:core/Text";
+import Iter "mo:core/Iter";
 import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
+
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
-import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+import MixinAuthorization "authorization/MixinAuthorization";
 
 actor {
   include MixinStorage();
+
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  let HARDCODED_ADMIN_PRINCIPAL = "2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae";
+  let bootstrapAdminPrincipalText = "2yscf-yuwfq-4lml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae";
+
+  public type PromoteToAdminResult = {
+    #success : Text;
+    #accountAlreadyAdmin;
+    #invalidToken;
+    #tokenExpired;
+  };
 
   public type UserProfile = {
     name : Text;
@@ -106,25 +116,53 @@ actor {
     #adminAction;
   };
 
+  public type MemberSummary = {
+    userId : Principal;
+    name : Text;
+    isVerified : Bool;
+    registrationTime : Time.Time;
+  };
+
+  public type UserAccountDetails = {
+    profile : UserProfile;
+    emergencyProfile : ?EmergencyProfile;
+    recentRoutes : [Route];
+    placesAdded : [Place];
+    lastLocations : [MeetupLocation];
+    activityLog : [ActivityLogEntry];
+    accountCreated : Time.Time;
+  };
+
+  public type AdminToken = {
+    token : Text;
+    expiration : Time.Time;
+    createdBy : Principal;
+  };
+
+  public type AdminTokenInfo = {
+    token : Text;
+    expiration : Time.Time;
+    createdBy : Principal;
+    isRedeemed : Bool;
+  };
+
   let userProfiles = Map.empty<Principal, UserProfile>();
   let places = Map.empty<Text, Place>();
   let routes = Map.empty<Principal, List.List<Route>>();
   let emergencyProfiles = Map.empty<Principal, EmergencyProfile>();
   let sosSnapshots = Map.empty<Principal, SOSSnapshot>();
   let meetupLocations = Map.empty<Principal, MeetupLocation>();
-
   let activityLogs = List.empty<ActivityLogEntry>();
+  let userActivityLogs = Map.empty<Principal, List.List<ActivityLogEntry>>();
+  let adminTokens = Map.empty<Text, AdminToken>();
+  let redeemedTokens = Map.empty<Text, Bool>();
 
-  func isHardcodedAdmin(caller : Principal) : Bool {
-    caller.toText() == HARDCODED_ADMIN_PRINCIPAL;
+  func isBootstrapAdmin(caller : Principal) : Bool {
+    caller.toText() == bootstrapAdminPrincipalText;
   };
 
   func isAdminUser(caller : Principal) : Bool {
-    isHardcodedAdmin(caller) or AccessControl.isAdmin(accessControlState, caller);
-  };
-
-  public func setupHardcodedAdmin() : async Text {
-    HARDCODED_ADMIN_PRINCIPAL;
+    isBootstrapAdmin(caller) or AccessControl.isAdmin(accessControlState, caller);
   };
 
   func addActivityLog(eventType : EventType, description : Text, initiatedBy : Principal) {
@@ -135,6 +173,13 @@ actor {
       initiatedBy;
     };
     activityLogs.add(logEntry);
+
+    let userLog = switch (userActivityLogs.get(initiatedBy)) {
+      case (?existing) { existing };
+      case (null) { List.empty<ActivityLogEntry>() };
+    };
+    userLog.add(logEntry);
+    userActivityLogs.add(initiatedBy, userLog);
   };
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
@@ -158,11 +203,20 @@ actor {
     userProfiles.toArray();
   };
 
-  public query ({ caller }) func getAllMembers() : async [(Principal, UserProfile)] {
+  public query ({ caller }) func getAllMembers() : async [MemberSummary] {
     if (not isAdminUser(caller)) {
       Runtime.trap("Unauthorized: Only admins can access member list");
     };
-    userProfiles.toArray();
+    userProfiles.toArray().map(
+      func((_id, profile)) {
+        {
+          userId = _id;
+          name = profile.name;
+          isVerified = profile.isVerified;
+          registrationTime = profile.registrationTime;
+        };
+      }
+    );
   };
 
   public query ({ caller }) func getActivityLogs() : async [ActivityLogEntry] {
@@ -172,11 +226,48 @@ actor {
     activityLogs.toArray();
   };
 
+  public query ({ caller }) func getUserAccountDetails(userId : Principal) : async UserAccountDetails {
+    if (not isAdminUser(caller)) {
+      Runtime.trap("Unauthorized: Only admins can view account details");
+    };
+    switch (userProfiles.get(userId)) {
+      case (?profile) {
+        let emergencyProfile = emergencyProfiles.get(userId);
+        let recentRoutes = switch (routes.get(userId)) {
+          case (?routeList) { routeList.toArray() };
+          case (null) { [] };
+        };
+        let placesAdded = places.values().toArray().filter(
+          func(p) { p.submittedBy == userId }
+        );
+        let lastLocations = meetupLocations.values().toArray().filter(
+          func(location) { location.user == userId }
+        );
+        let activityLog = switch (userActivityLogs.get(userId)) {
+          case (?logList) { logList.toArray() };
+          case (null) { [] };
+        };
+
+        {
+          profile;
+          emergencyProfile;
+          recentRoutes;
+          placesAdded;
+          lastLocations;
+          activityLog;
+          accountCreated = profile.registrationTime;
+        };
+      };
+      case (null) { Runtime.trap("User not found") };
+    };
+  };
+
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.add(caller, profile);
+    addActivityLog(#userRegistration, "User registered: " # profile.name, caller);
   };
 
   public shared ({ caller }) func uploadVerification(
@@ -199,12 +290,7 @@ actor {
       };
     };
     userProfiles.add(caller, profile);
-
-    addActivityLog(
-      #verificationSubmitted,
-      "Verification submitted by user: " # profile.name,
-      caller,
-    );
+    addActivityLog(#verificationSubmitted, "Verification submitted by user: " # profile.name, caller);
   };
 
   public shared ({ caller }) func reviewVerification(user : Principal, approved : Bool) : async () {
@@ -217,10 +303,10 @@ actor {
           profile with isVerified = approved;
         };
         userProfiles.add(user, updatedProfile);
-
         addActivityLog(
           #verificationReviewed,
-          "Verification " # (if approved { "approved" } else { "rejected"
+          "Verification " # (if approved { "approved" } else {
+            "rejected";
           }) # " for user: " # profile.name,
           caller,
         );
@@ -247,12 +333,7 @@ actor {
       submittedBy = caller;
     };
     places.add(name, place);
-
-    addActivityLog(
-      #placeAdded,
-      "Place added: " # name,
-      caller,
-    );
+    addActivityLog(#placeAdded, "Place added: " # name, caller);
   };
 
   public query func searchPlaces(
@@ -292,12 +373,7 @@ actor {
     };
     existingRoutes.add(route);
     routes.add(caller, existingRoutes);
-
-    addActivityLog(
-      #routeCreated,
-      "Route created from " # start # " to " # destination,
-      caller,
-    );
+    addActivityLog(#routeCreated, "Route created from " # start # " to " # destination, caller);
   };
 
   public query ({ caller }) func getRoutes(user : Principal) : async [Route] {
@@ -324,12 +400,7 @@ actor {
       accessCode;
     };
     emergencyProfiles.add(caller, profile);
-
-    addActivityLog(
-      #emergencyProfileUpdated,
-      "Emergency profile updated",
-      caller,
-    );
+    addActivityLog(#emergencyProfileUpdated, "Emergency profile updated", caller);
   };
 
   public shared ({ caller }) func createSOSSnapshot(
@@ -346,12 +417,7 @@ actor {
       user = caller;
     };
     sosSnapshots.add(caller, snapshot);
-
-    addActivityLog(
-      #sosSnapshot,
-      "SOS snapshot created",
-      caller,
-    );
+    addActivityLog(#sosSnapshot, "SOS snapshot created", caller);
   };
 
   public query func emergencyLookup(user : Principal, accessCode : Text) : async EmergencyLookupResult {
@@ -392,12 +458,7 @@ actor {
     };
 
     meetupLocations.add(caller, location);
-
-    addActivityLog(
-      #meetupLocationShared,
-      "Meetup location shared: " # location.name,
-      caller,
-    );
+    addActivityLog(#meetupLocationShared, "Meetup location shared: " # location.name, caller);
   };
 
   public query func getMeetupLocation(user : Principal) : async ?MeetupLocation {
@@ -442,12 +503,7 @@ actor {
       isActive = true;
     };
     meetupLocations.add(caller, location);
-
-    addActivityLog(
-      #meetupLocationUpdated,
-      "Meetup location updated: " # location.name,
-      caller,
-    );
+    addActivityLog(#meetupLocationUpdated, "Meetup location updated: " # location.name, caller);
   };
 
   public query func getAllActiveMeetupLocations() : async [MeetupLocation] {
@@ -491,6 +547,108 @@ actor {
         location.isActive;
       }
     );
+  };
+
+  public shared ({ caller }) func promoteToAdmin(token : Text) : async PromoteToAdminResult {
+    if (isBootstrapAdmin(caller)) {
+      return #success("Bootstrap admin privileges granted successfully");
+    };
+
+    let tokenEntry = adminTokens.get(token);
+    switch (tokenEntry) {
+      case (null) { #invalidToken };
+      case (?adminToken) {
+        if (Time.now() > adminToken.expiration) {
+          return #tokenExpired;
+        };
+
+        if (isAdminUser(caller)) { return #accountAlreadyAdmin };
+        let hasBeenRedeemed = switch (redeemedTokens.get(token)) {
+          case (null) { false };
+          case (?status) { status };
+        };
+
+        if (hasBeenRedeemed) { return #invalidToken };
+
+        AccessControl.assignRole(
+          accessControlState,
+          adminToken.createdBy,
+          caller,
+          #admin,
+        );
+
+        if (not isBootstrapAdmin(adminToken.createdBy)) {
+          redeemedTokens.add(token, true);
+        };
+
+        addActivityLog(#adminAction, "User with principal " # debug_show (caller) # " promoted to admin.", adminToken.createdBy);
+        #success("Admin privileges granted successfully");
+      };
+    };
+  };
+
+  public shared ({ caller }) func generateAdminToken() : async Text {
+    if (not isAdminUser(caller)) {
+      Runtime.trap("Unauthorized: Only admins can generate tokens");
+    };
+
+    let token = "ROUTECOIN_ADMIN_" # caller.toText() # "_" # Time.now().toText();
+    let expiration = Time.now() + (86400_000_000_000 * 3);
+
+    let adminToken : AdminToken = {
+      token;
+      expiration;
+      createdBy = caller;
+    };
+
+    adminTokens.add(token, adminToken);
+    token;
+  };
+
+  public query ({ caller }) func getAllAdminTokenInfos() : async [AdminTokenInfo] {
+    if (not isAdminUser(caller)) {
+      Runtime.trap("Unauthorized: Only admins can view all admin token infos");
+    };
+    adminTokens.toArray().map(
+      func((token, tokenData)) {
+        {
+          token = token;
+          expiration = tokenData.expiration;
+          createdBy = tokenData.createdBy;
+          isRedeemed = switch (redeemedTokens.get(token)) {
+            case (null) { false };
+            case (?status) { status };
+          };
+        };
+      }
+    );
+  };
+
+  public query ({ caller }) func getAllActiveTokens() : async [AdminTokenInfo] {
+    if (not isAdminUser(caller)) {
+      Runtime.trap("Unauthorized: Only admins can view all active tokens");
+    };
+
+    let now = Time.now();
+
+    adminTokens.toArray().map(
+      func((token, tokenData)) {
+        {
+          token = token;
+          expiration = tokenData.expiration;
+          createdBy = tokenData.createdBy;
+          isRedeemed = switch (redeemedTokens.get(token)) {
+            case (null) { false };
+            case (?status) { status };
+          };
+        };
+      }
+    )
+    .filter(func(token) { token.expiration > now and not token.isRedeemed });
+  };
+
+  public query func isAdmin(principal : Principal) : async Bool {
+    principal.toText() == bootstrapAdminPrincipalText or AccessControl.isAdmin(accessControlState, principal);
   };
 
   module Place {

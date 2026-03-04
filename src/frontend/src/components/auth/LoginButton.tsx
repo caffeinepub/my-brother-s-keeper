@@ -1,55 +1,48 @@
-import { useInternetIdentity } from '../../hooks/useInternetIdentity';
-import { useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, Loader2 } from 'lucide-react';
+import { useQueryClient } from "@tanstack/react-query";
+import React from "react";
+import { useInternetIdentity } from "../../hooks/useInternetIdentity";
 
 export default function LoginButton() {
-    const { login, clear, loginStatus, identity } = useInternetIdentity();
-    const queryClient = useQueryClient();
+  const { login, clear, loginStatus, identity } = useInternetIdentity();
+  const queryClient = useQueryClient();
 
-    const isAuthenticated = !!identity;
-    const isLoading = loginStatus === 'logging-in';
+  const isAuthenticated = !!identity;
+  const disabled = loginStatus === "logging-in";
+  const text =
+    loginStatus === "logging-in"
+      ? "Logging in..."
+      : isAuthenticated
+        ? "Logout"
+        : "Login";
 
-    const handleAuth = async () => {
-        if (isAuthenticated) {
-            await clear();
-            queryClient.clear();
-        } else {
-            try {
-                await login();
-            } catch (error: any) {
-                console.error('Login error:', error);
-                if (error.message === 'User is already authenticated') {
-                    await clear();
-                    setTimeout(() => login(), 300);
-                }
-            }
+  const handleAuth = async () => {
+    if (isAuthenticated) {
+      await clear();
+      queryClient.clear();
+    } else {
+      try {
+        await login();
+      } catch (error: any) {
+        if (error.message === "User is already authenticated") {
+          await clear();
+          setTimeout(() => login(), 300);
         }
-    };
+      }
+    }
+  };
 
-    return (
-        <Button
-            onClick={handleAuth}
-            disabled={isLoading}
-            variant={isAuthenticated ? 'outline' : 'default'}
-            className="gap-2"
-        >
-            {isLoading ? (
-                <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Logging in...
-                </>
-            ) : isAuthenticated ? (
-                <>
-                    <LogOut className="h-4 w-4" />
-                    Logout
-                </>
-            ) : (
-                <>
-                    <LogIn className="h-4 w-4" />
-                    Login
-                </>
-            )}
-        </Button>
-    );
+  return (
+    <button
+      type="button"
+      onClick={handleAuth}
+      disabled={disabled}
+      className={`px-6 py-2 rounded-full transition-colors font-medium ${
+        isAuthenticated
+          ? "bg-muted hover:bg-muted/80 text-foreground"
+          : "bg-primary hover:bg-primary/90 text-primary-foreground"
+      } disabled:opacity-50`}
+    >
+      {text}
+    </button>
+  );
 }

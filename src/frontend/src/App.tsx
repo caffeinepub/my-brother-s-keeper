@@ -1,65 +1,94 @@
-import { StrictMode } from 'react';
-import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from 'next-themes';
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from "@/components/ui/sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  Outlet,
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  redirect,
+} from "@tanstack/react-router";
+import { ThemeProvider } from "next-themes";
 
-import AppLayout from './components/layout/AppLayout';
-import LandingPage from './pages/LandingPage';
-import PlacesListPage from './pages/PlacesListPage';
-import PlaceDetailPage from './pages/PlaceDetailPage';
-import AddPlacePage from './pages/AddPlacePage';
-import RoutesListPage from './pages/RoutesListPage';
-import AddRoutePage from './pages/AddRoutePage';
-import ProfilePage from './pages/ProfilePage';
-import SOSPage from './pages/SOSPage';
-import SOSCardPage from './pages/SOSCardPage';
-import EmergencyLookupPage from './pages/EmergencyLookupPage';
-import FlyerPage from './pages/FlyerPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import MeetupPage from './pages/MeetupPage';
+import AdminPromotionHandler from "./components/AdminPromotionHandler";
+import AppLayout from "./components/layout/AppLayout";
+import { BootstrapAdminProvider } from "./contexts/BootstrapAdminContext";
 
-import AuthenticatedRouteGuard from './components/auth/AuthenticatedRouteGuard';
-import AdminRouteGuard from './components/auth/AdminRouteGuard';
+import AddPlacePage from "./pages/AddPlacePage";
+import AddRoutePage from "./pages/AddRoutePage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import EmergencyLookupPage from "./pages/EmergencyLookupPage";
+import FlyerPage from "./pages/FlyerPage";
+import LandingPage from "./pages/LandingPage";
+import MeetupPage from "./pages/MeetupPage";
+import PlaceDetailPage from "./pages/PlaceDetailPage";
+import PlacesListPage from "./pages/PlacesListPage";
+import ProfilePage from "./pages/ProfilePage";
+import RouteDetailPage from "./pages/RouteDetailPage";
+import RoutesListPage from "./pages/RoutesListPage";
+import SOSCardPage from "./pages/SOSCardPage";
+import SOSPage from "./pages/SOSPage";
+import UserAccountDetailsPage from "./pages/UserAccountDetailsPage";
+
+import AdminRouteGuard from "./components/auth/AdminRouteGuard";
+import AuthenticatedRouteGuard from "./components/auth/AuthenticatedRouteGuard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5,
-      refetchOnWindowFocus: false,
+      retry: 1,
     },
   },
 });
 
+// Root layout with AppLayout wrapper
 const rootRoute = createRootRoute({
   component: () => (
-    <AppLayout>
-      <Outlet />
-    </AppLayout>
+    <BootstrapAdminProvider>
+      <AppLayout>
+        <AdminPromotionHandler />
+        <Outlet />
+      </AppLayout>
+    </BootstrapAdminProvider>
   ),
 });
 
+// Public routes
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/',
+  path: "/",
   component: LandingPage,
 });
 
 const placesRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/places',
+  path: "/places",
   component: PlacesListPage,
 });
 
 const placeDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/places/$placeName',
+  path: "/places/$placeId",
   component: PlaceDetailPage,
 });
 
+const emergencyLookupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/emergency-lookup",
+  component: EmergencyLookupPage,
+});
+
+const flyerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/flyer",
+  component: FlyerPage,
+});
+
+// Authenticated routes
 const addPlaceRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/places/add',
+  path: "/places/add",
   component: () => (
     <AuthenticatedRouteGuard>
       <AddPlacePage />
@@ -69,13 +98,27 @@ const addPlaceRoute = createRoute({
 
 const routesRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/routes',
-  component: RoutesListPage,
+  path: "/routes",
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <RoutesListPage />
+    </AuthenticatedRouteGuard>
+  ),
+});
+
+const routeDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/routes/$routeId",
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <RouteDetailPage />
+    </AuthenticatedRouteGuard>
+  ),
 });
 
 const addRouteRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/routes/add',
+  path: "/routes/add",
   component: () => (
     <AuthenticatedRouteGuard>
       <AddRoutePage />
@@ -85,7 +128,7 @@ const addRouteRoute = createRoute({
 
 const profileRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/profile',
+  path: "/profile",
   component: () => (
     <AuthenticatedRouteGuard>
       <ProfilePage />
@@ -95,7 +138,7 @@ const profileRoute = createRoute({
 
 const sosRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/sos',
+  path: "/sos",
   component: () => (
     <AuthenticatedRouteGuard>
       <SOSPage />
@@ -105,7 +148,7 @@ const sosRoute = createRoute({
 
 const sosCardRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/sos-card',
+  path: "/sos/card",
   component: () => (
     <AuthenticatedRouteGuard>
       <SOSCardPage />
@@ -113,9 +156,29 @@ const sosCardRoute = createRoute({
   ),
 });
 
+const meetupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/meetup",
+  component: () => (
+    <AuthenticatedRouteGuard>
+      <MeetupPage />
+    </AuthenticatedRouteGuard>
+  ),
+});
+
+// Admin redirect: /admin → /admin/dashboard
+const adminRedirectRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin",
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/dashboard" });
+  },
+});
+
+// Admin routes
 const adminDashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/admin',
+  path: "/admin/dashboard",
   component: () => (
     <AuthenticatedRouteGuard>
       <AdminRouteGuard>
@@ -125,24 +188,14 @@ const adminDashboardRoute = createRoute({
   ),
 });
 
-const emergencyLookupRoute = createRoute({
+const userAccountDetailsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/emergency-lookup',
-  component: EmergencyLookupPage,
-});
-
-const flyerRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/flyer',
-  component: FlyerPage,
-});
-
-const meetupRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/meetup',
+  path: "/admin/users/$userId",
   component: () => (
     <AuthenticatedRouteGuard>
-      <MeetupPage />
+      <AdminRouteGuard>
+        <UserAccountDetailsPage />
+      </AdminRouteGuard>
     </AuthenticatedRouteGuard>
   ),
 });
@@ -152,20 +205,23 @@ const routeTree = rootRoute.addChildren([
   placesRoute,
   placeDetailRoute,
   addPlaceRoute,
+  emergencyLookupRoute,
+  flyerRoute,
   routesRoute,
+  routeDetailRoute,
   addRouteRoute,
   profileRoute,
   sosRoute,
   sosCardRoute,
-  adminDashboardRoute,
-  emergencyLookupRoute,
-  flyerRoute,
   meetupRoute,
+  adminRedirectRoute,
+  adminDashboardRoute,
+  userAccountDetailsRoute,
 ]);
 
 const router = createRouter({ routeTree });
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
   }
@@ -173,13 +229,11 @@ declare module '@tanstack/react-router' {
 
 export default function App() {
   return (
-    <StrictMode>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <RouterProvider router={router} />
-          <Toaster />
-        </ThemeProvider>
+        <RouterProvider router={router} />
+        <Toaster richColors position="top-right" />
       </QueryClientProvider>
-    </StrictMode>
+    </ThemeProvider>
   );
 }

@@ -11,26 +11,26 @@
 export function clearUrlParam(paramName: string): void {
   try {
     const url = new URL(window.location.href);
-    
+
     // Check if we have hash-based routing with search params
-    if (url.hash.includes('?')) {
-      const [hashPath, hashSearch] = url.hash.split('?');
+    if (url.hash.includes("?")) {
+      const [hashPath, hashSearch] = url.hash.split("?");
       const searchParams = new URLSearchParams(hashSearch);
-      
+
       if (searchParams.has(paramName)) {
         searchParams.delete(paramName);
         const newSearch = searchParams.toString();
         url.hash = newSearch ? `${hashPath}?${newSearch}` : hashPath;
-        window.history.replaceState(null, '', url.toString());
+        window.history.replaceState(null, "", url.toString());
       }
-    } 
+    }
     // Standard query string parameters
     else if (url.searchParams.has(paramName)) {
       url.searchParams.delete(paramName);
-      window.history.replaceState(null, '', url.toString());
+      window.history.replaceState(null, "", url.toString());
     }
   } catch (error) {
-    console.error('Error clearing URL parameter:', error);
+    console.error("Error clearing URL parameter:", error);
   }
 }
 
@@ -43,20 +43,20 @@ export function clearUrlParam(paramName: string): void {
 export function getUrlParam(paramName: string): string | null {
   try {
     const url = new URL(window.location.href);
-    
+
     // Check hash-based routing first
-    if (url.hash.includes('?')) {
-      const hashSearch = url.hash.split('?')[1];
+    if (url.hash.includes("?")) {
+      const hashSearch = url.hash.split("?")[1];
       const searchParams = new URLSearchParams(hashSearch);
       if (searchParams.has(paramName)) {
         return searchParams.get(paramName);
       }
     }
-    
+
     // Fall back to standard query string
     return url.searchParams.get(paramName);
   } catch (error) {
-    console.error('Error getting URL parameter:', error);
+    console.error("Error getting URL parameter:", error);
     return null;
   }
 }

@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Copy, Download, Share2, FileText } from 'lucide-react';
-import { toast } from 'sonner';
-import { getShareUrl } from '@/lib/shareUrl';
-import { quickShare } from '@/lib/quickShare';
-import { useNavigate } from '@tanstack/react-router';
-import { copyToClipboard } from '@/lib/clipboard';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { copyToClipboard } from "@/lib/clipboard";
+import { quickShare } from "@/lib/quickShare";
+import { getShareUrl } from "@/lib/shareUrl";
+import { useNavigate } from "@tanstack/react-router";
+import { Copy, Download, FileText, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface ShareDialogProps {
   open: boolean;
@@ -21,7 +21,7 @@ interface ShareDialogProps {
 }
 
 export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
-  const [shareUrl, setShareUrl] = useState('');
+  const [shareUrl, setShareUrl] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const navigate = useNavigate();
 
@@ -36,47 +36,61 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
   const handleCopyLink = async () => {
     const success = await copyToClipboard(shareUrl);
     if (success) {
-      toast.success('Link copied to clipboard');
+      toast.success("Link copied to clipboard");
     } else {
-      toast.error('Failed to copy link. Please manually select and copy the link from the App Link field below.');
+      toast.error(
+        "Failed to copy link. Please manually select and copy the link from the App Link field below.",
+      );
     }
   };
 
   const handleQuickShare = async () => {
     // Guard against missing share URL
     if (!shareUrl || shareUrl.trim().length === 0) {
-      toast.error('Share link is not ready yet. Please wait a moment.');
+      toast.error("Share link is not ready yet. Please wait a moment.");
       return;
     }
 
     setIsSharing(true);
     try {
-      const result = await quickShare(shareUrl, "My Brother's Keeper - Trucker Safety Network");
-      
+      const result = await quickShare(
+        shareUrl,
+        "My Brother's Keeper - Trucker Safety Network",
+      );
+
       switch (result.status) {
-        case 'success':
-          toast.success('Shared successfully');
+        case "success":
+          toast.success("Shared successfully");
           break;
-        case 'copied':
-          toast.success('Link copied to clipboard');
+        case "copied":
+          toast.success("Link copied to clipboard");
           break;
-        case 'cancelled':
+        case "cancelled":
           // User cancelled - no toast needed
           break;
-        case 'not-supported':
-          toast.error('Sharing is not available. Please use the "Copy Link" button below to manually copy the app link from the App Link field.');
+        case "not-supported":
+          toast.error(
+            'Sharing is not available. Please use the "Copy Link" button below to manually copy the app link from the App Link field.',
+          );
           break;
-        case 'error':
-          toast.error(result.message || 'Failed to share. Please use the "Copy Link" button to manually copy the app link from the App Link field.');
+        case "error":
+          toast.error(
+            result.message ||
+              'Failed to share. Please use the "Copy Link" button to manually copy the app link from the App Link field.',
+          );
           break;
         default:
           // Handle any unexpected result status
-          console.error('Unexpected quick share result:', result);
-          toast.error('Failed to share. Please use the "Copy Link" button to manually copy the app link from the App Link field.');
+          console.error("Unexpected quick share result:", result);
+          toast.error(
+            'Failed to share. Please use the "Copy Link" button to manually copy the app link from the App Link field.',
+          );
       }
     } catch (error) {
-      console.error('Quick share error:', error);
-      toast.error('Failed to share. Please use the "Copy Link" button to manually copy the app link from the App Link field.');
+      console.error("Quick share error:", error);
+      toast.error(
+        'Failed to share. Please use the "Copy Link" button to manually copy the app link from the App Link field.',
+      );
     } finally {
       setIsSharing(false);
     }
@@ -84,12 +98,12 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
 
   const handleViewFlyer = () => {
     onOpenChange(false);
-    navigate({ to: '/flyer' });
+    navigate({ to: "/flyer" });
   };
 
   const handleDownloadFlyer = () => {
     onOpenChange(false);
-    navigate({ to: '/flyer', search: { autoExportFlyer: '1' } });
+    navigate({ to: "/flyer", search: { autoExportFlyer: "1" } });
   };
 
   return (
@@ -101,16 +115,20 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
             Share App
           </DialogTitle>
           <DialogDescription>
-            Share this app with drivers and subscribers. Recipients can open the link directly—no separate app download needed.
+            Share this app with drivers and subscribers. Recipients can open the
+            link directly—no separate app download needed.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-6 py-4">
           {/* Share URL */}
           <div className="w-full space-y-2">
-            <label className="text-sm font-medium">App Link</label>
+            <label htmlFor="share-app-link" className="text-sm font-medium">
+              App Link
+            </label>
             <div className="flex gap-2">
               <Input
+                id="share-app-link"
                 value={shareUrl}
                 readOnly
                 className="flex-1 font-mono text-sm"
@@ -135,7 +153,7 @@ export default function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
               className="w-full gap-2"
             >
               <Share2 className="h-4 w-4" />
-              {isSharing ? 'Sharing...' : 'Quick Share'}
+              {isSharing ? "Sharing..." : "Quick Share"}
             </Button>
           </div>
 

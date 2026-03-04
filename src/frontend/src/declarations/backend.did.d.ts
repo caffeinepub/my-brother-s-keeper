@@ -16,6 +16,12 @@ export interface ActivityLogEntry {
   'initiatedBy' : Principal,
   'eventType' : EventType,
 }
+export interface AdminTokenInfo {
+  'token' : string,
+  'createdBy' : Principal,
+  'expiration' : Time,
+  'isRedeemed' : boolean,
+}
 export interface EmergencyLookupResult {
   'sosSnapshot' : [] | [SOSSnapshot],
   'userName' : [] | [string],
@@ -50,6 +56,12 @@ export interface MeetupLocationInput {
   'name' : string,
   'longitude' : number,
 }
+export interface MemberSummary {
+  'userId' : Principal,
+  'name' : string,
+  'isVerified' : boolean,
+  'registrationTime' : Time,
+}
 export interface Place {
   'name' : string,
   'submittedBy' : Principal,
@@ -62,6 +74,10 @@ export type PlaceCategory = { 'gasStation' : null } |
   { 'shop' : null } |
   { 'mechanic' : null } |
   { 'restaurant' : null };
+export type PromoteToAdminResult = { 'accountAlreadyAdmin' : null } |
+  { 'success' : string } |
+  { 'invalidToken' : null } |
+  { 'tokenExpired' : null };
 export interface Route {
   'creator' : Principal,
   'destination' : string,
@@ -77,6 +93,15 @@ export interface SOSSnapshot {
   'timestamp' : Time,
 }
 export type Time = bigint;
+export interface UserAccountDetails {
+  'recentRoutes' : Array<Route>,
+  'emergencyProfile' : [] | [EmergencyProfile],
+  'accountCreated' : Time,
+  'activityLog' : Array<ActivityLogEntry>,
+  'placesAdded' : Array<Place>,
+  'lastLocations' : Array<MeetupLocation>,
+  'profile' : UserProfile,
+}
 export interface UserProfile {
   'licenseProof' : [] | [ExternalBlob],
   'name' : string,
@@ -128,11 +153,14 @@ export interface _SERVICE {
   'createSOSSnapshot' : ActorMethod<[number, number], undefined>,
   'deactivateMeetupLocation' : ActorMethod<[], undefined>,
   'emergencyLookup' : ActorMethod<[Principal, string], EmergencyLookupResult>,
+  'generateAdminToken' : ActorMethod<[], string>,
   'getActivityLogs' : ActorMethod<[], Array<ActivityLogEntry>>,
   'getAllActiveMeetupLocations' : ActorMethod<[], Array<MeetupLocation>>,
+  'getAllActiveTokens' : ActorMethod<[], Array<AdminTokenInfo>>,
+  'getAllAdminTokenInfos' : ActorMethod<[], Array<AdminTokenInfo>>,
   'getAllAvailableMeetupLocations' : ActorMethod<[], Array<MeetupLocation>>,
   'getAllLatestSOSLocations' : ActorMethod<[], Array<SOSSnapshot>>,
-  'getAllMembers' : ActorMethod<[], Array<[Principal, UserProfile]>>,
+  'getAllMembers' : ActorMethod<[], Array<MemberSummary>>,
   'getAllUserProfiles' : ActorMethod<[], Array<[Principal, UserProfile]>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
@@ -140,12 +168,14 @@ export interface _SERVICE {
   'getLatestSOSLocation' : ActorMethod<[Principal], [] | [SOSSnapshot]>,
   'getMeetupLocation' : ActorMethod<[Principal], [] | [MeetupLocation]>,
   'getRoutes' : ActorMethod<[Principal], Array<Route>>,
+  'getUserAccountDetails' : ActorMethod<[Principal], UserAccountDetails>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'isAdmin' : ActorMethod<[Principal], boolean>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'promoteToAdmin' : ActorMethod<[string], PromoteToAdminResult>,
   'reviewVerification' : ActorMethod<[Principal, boolean], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchPlaces' : ActorMethod<[[] | [PlaceCategory]], Array<Place>>,
-  'setupHardcodedAdmin' : ActorMethod<[], string>,
   'shareMeetupLocation' : ActorMethod<[MeetupLocationInput], undefined>,
   'updateMeetupLocation' : ActorMethod<[MeetupLocationInput], undefined>,
   'uploadVerification' : ActorMethod<

@@ -7,24 +7,32 @@
  */
 export function downloadCanvasAsPNG(
   canvas: HTMLCanvasElement,
-  filename: string = 'qr-code.png'
+  filename = "qr-code.png",
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     // Validate canvas has non-zero dimensions
     if (!canvas.width || !canvas.height) {
-      reject(new Error('QR code is not ready yet. Please wait a moment and try again.'));
+      reject(
+        new Error(
+          "QR code is not ready yet. Please wait a moment and try again.",
+        ),
+      );
       return;
     }
 
     canvas.toBlob((blob) => {
       if (!blob) {
-        reject(new Error('QR code is not ready yet. Please wait a moment and try again.'));
+        reject(
+          new Error(
+            "QR code is not ready yet. Please wait a moment and try again.",
+          ),
+        );
         return;
       }
 
       try {
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = url;
         link.download = filename;
         document.body.appendChild(link);
@@ -32,9 +40,9 @@ export function downloadCanvasAsPNG(
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         resolve();
-      } catch (error) {
-        reject(new Error('Failed to download. Please try again.'));
+      } catch (_error) {
+        reject(new Error("Failed to download. Please try again."));
       }
-    }, 'image/png');
+    }, "image/png");
   });
 }

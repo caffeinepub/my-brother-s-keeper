@@ -1,5 +1,5 @@
-import { forwardRef } from 'react';
-import { Shield } from 'lucide-react';
+import { Shield } from "lucide-react";
+import { forwardRef } from "react";
 
 interface FlyerPreviewProps {
   shareUrl: string;
@@ -29,10 +29,13 @@ const FlyerPreview = forwardRef<HTMLDivElement, FlyerPreviewProps>(
 
         {/* Introduction */}
         <div className="bg-card border border-border rounded-lg p-6 space-y-4 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-semibold text-center">Stay Safe on the Road</h2>
+          <h2 className="text-2xl font-semibold text-center">
+            Stay Safe on the Road
+          </h2>
           <div className="space-y-3 text-muted-foreground">
             <p>
-              My Brother's Keeper is a community-driven platform designed to keep truck drivers safe and connected.
+              My Brother's Keeper is a community-driven platform designed to
+              keep truck drivers safe and connected.
             </p>
             <ul className="space-y-2 list-disc list-inside">
               <li>Find trusted safe places recommended by fellow truckers</li>
@@ -41,7 +44,8 @@ const FlyerPreview = forwardRef<HTMLDivElement, FlyerPreviewProps>(
               <li>Access SOS features when you need help</li>
             </ul>
             <p className="font-medium">
-              Join a verified community built by truckers, for truckers. Your safety is our priority.
+              Join a verified community built by truckers, for truckers. Your
+              safety is our priority.
             </p>
           </div>
         </div>
@@ -66,9 +70,9 @@ const FlyerPreview = forwardRef<HTMLDivElement, FlyerPreviewProps>(
         </div>
       </div>
     );
-  }
+  },
 );
 
-FlyerPreview.displayName = 'FlyerPreview';
+FlyerPreview.displayName = "FlyerPreview";
 
 export default FlyerPreview;

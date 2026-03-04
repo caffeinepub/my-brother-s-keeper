@@ -1,149 +1,169 @@
-import { useState } from 'react';
-import { useEmergencyLookup } from '../hooks/useQueries';
-import PublicSOSCardView from '../components/sos/PublicSOSCardView';
-import LastKnownLocationCard from '../components/sos/LastKnownLocationCard';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { toast } from 'sonner';
-import { Search, AlertTriangle, XCircle } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, Search, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import type { EmergencyLookupResult } from "../backend";
+import LastKnownLocationCard from "../components/sos/LastKnownLocationCard";
+import PublicSOSCardView from "../components/sos/PublicSOSCardView";
+import { useActor } from "../hooks/useActor";
+import { parsePrincipal } from "../lib/principal";
 
 export default function EmergencyLookupPage() {
-    const [principalInput, setPrincipalInput] = useState('');
-    const [accessCodeInput, setAccessCodeInput] = useState('');
-    const [lookupPrincipal, setLookupPrincipal] = useState<string | null>(null);
-    const [lookupAccessCode, setLookupAccessCode] = useState<string | null>(null);
+  const { actor } = useActor();
+  const [principalId, setPrincipalId] = useState("");
+  const [accessCode, setAccessCode] = useState("");
+  const [result, setResult] = useState<EmergencyLookupResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
 
-    const { data: emergencyData, isLoading, error } = useEmergencyLookup(lookupPrincipal, lookupAccessCode);
+  const handleLookup = async () => {
+    if (!actor) return;
+    setError(null);
+    setResult(null);
 
-    const handleLookup = () => {
-        if (!principalInput.trim() || !accessCodeInput.trim()) {
-            toast.error('Please enter both Principal ID and Access Code');
-            return;
-        }
-        setLookupPrincipal(principalInput.trim());
-        setLookupAccessCode(accessCodeInput.trim());
-    };
+    const principal = parsePrincipal(principalId.trim());
+    if (!principal) {
+      setError("Invalid Principal ID format. Please check and try again.");
+      return;
+    }
 
-    // Determine if we have valid authorized data
-    const hasValidData = emergencyData && (emergencyData.emergencyProfile || emergencyData.sosSnapshot);
-    const hasInvalidCredentials = lookupPrincipal && lookupAccessCode && !isLoading && !hasValidData && !error;
+    if (!accessCode.trim()) {
+      setError("Please enter the Emergency Access Code.");
+      return;
+    }
 
-    return (
-        <div className="space-y-6 max-w-2xl mx-auto">
-            <div className="text-center">
-                <h1 className="text-3xl font-bold">Emergency Lookup</h1>
-                <p className="text-muted-foreground">Access emergency information for first responders</p>
-            </div>
+    setIsLoading(true);
+    setSearched(true);
+    try {
+      const lookupResult = await actor.emergencyLookup(
+        principal,
+        accessCode.trim(),
+      );
+      setResult(lookupResult);
+    } catch (_err) {
+      setError("An error occurred during lookup. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-            <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                    This page is for emergency use only. You need both the driver's Principal ID and their Emergency Access Code.
-                </AlertDescription>
-            </Alert>
+  const hasValidResult =
+    result &&
+    (result.emergencyProfile !== undefined ||
+      result.sosSnapshot !== undefined ||
+      result.userName !== undefined);
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Enter Emergency Credentials</CardTitle>
-                    <CardDescription>
-                        Both the Principal ID and Access Code are required
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="principal">Driver's Principal ID</Label>
-                        <Input
-                            id="principal"
-                            value={principalInput}
-                            onChange={(e) => setPrincipalInput(e.target.value)}
-                            placeholder="Enter Principal ID..."
-                        />
-                    </div>
+  const isUnauthorized = searched && result && !hasValidResult && !isLoading;
 
-                    <div className="space-y-2">
-                        <Label htmlFor="accessCode">Emergency Access Code</Label>
-                        <Input
-                            id="accessCode"
-                            value={accessCodeInput}
-                            onChange={(e) => setAccessCodeInput(e.target.value)}
-                            placeholder="e.g., XXXX-XXXX-XXXX"
-                        />
-                    </div>
-
-                    <Button onClick={handleLookup} className="w-full gap-2">
-                        <Search className="h-4 w-4" />
-                        Lookup Emergency Information
-                    </Button>
-                </CardContent>
-            </Card>
-
-            {isLoading && (
-                <div className="text-center py-12">
-                    <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-                    <p className="text-muted-foreground">Looking up emergency information...</p>
-                </div>
-            )}
-
-            {error && (
-                <Card>
-                    <CardContent className="py-12 text-center space-y-3">
-                        <XCircle className="h-12 w-12 text-destructive mx-auto" />
-                        <p className="text-muted-foreground">
-                            An error occurred while looking up emergency information. Please try again.
-                        </p>
-                    </CardContent>
-                </Card>
-            )}
-
-            {hasInvalidCredentials && (
-                <Card>
-                    <CardContent className="py-12 text-center space-y-3">
-                        <XCircle className="h-12 w-12 text-muted-foreground mx-auto" />
-                        <p className="font-semibold">Invalid Credentials</p>
-                        <p className="text-muted-foreground">
-                            No emergency information found. Please verify the Principal ID and Access Code are correct.
-                        </p>
-                    </CardContent>
-                </Card>
-            )}
-
-            {hasValidData && emergencyData.emergencyProfile && (
-                <PublicSOSCardView
-                    emergencyProfile={emergencyData.emergencyProfile}
-                    sosSnapshot={emergencyData.sosSnapshot}
-                    userName={emergencyData.userName}
-                />
-            )}
-
-            {hasValidData && !emergencyData.emergencyProfile && emergencyData.sosSnapshot && (
-                <div className="space-y-4">
-                    <Alert variant="destructive">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription className="font-semibold">
-                            EMERGENCY INFORMATION - FOR FIRST RESPONDERS
-                        </AlertDescription>
-                    </Alert>
-
-                    {emergencyData.userName && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Driver Information</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Driver Name</p>
-                                    <p className="text-lg font-semibold">{emergencyData.userName}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    <LastKnownLocationCard sosSnapshot={emergencyData.sosSnapshot} />
-                </div>
-            )}
+  return (
+    <div className="container mx-auto max-w-2xl px-4 py-8">
+      <div className="mb-8 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+          <ShieldAlert className="h-8 w-8 text-destructive" />
         </div>
-    );
+        <h1 className="text-3xl font-bold">Emergency Lookup</h1>
+        <p className="mt-2 text-muted-foreground">
+          Enter a driver's Principal ID and Emergency Access Code to view their
+          emergency information snapshot.
+        </p>
+      </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Driver Lookup</CardTitle>
+          <CardDescription>
+            Both the Principal ID and Emergency Access Code are required. The
+            driver must have shared these with you in advance.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="principalId">Principal ID</Label>
+            <Input
+              id="principalId"
+              type="text"
+              placeholder="e.g. 2yscf-yuwfq-41ml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae"
+              value={principalId}
+              onChange={(e) => setPrincipalId(e.target.value)}
+              className="font-mono text-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="accessCode">Emergency Access Code</Label>
+            <Input
+              id="accessCode"
+              type="text"
+              placeholder="Enter the emergency access code"
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            onClick={handleLookup}
+            disabled={isLoading || !principalId.trim() || !accessCode.trim()}
+            className="w-full"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Looking up...
+              </>
+            ) : (
+              <>
+                <Search className="mr-2 h-4 w-4" />
+                Look Up Emergency Info
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {isUnauthorized && (
+        <Alert variant="destructive">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertDescription>
+            Invalid credentials. Please check the Principal ID and Emergency
+            Access Code and try again.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {result && hasValidResult && result.emergencyProfile && (
+        <PublicSOSCardView
+          emergencyProfile={result.emergencyProfile}
+          sosSnapshot={result.sosSnapshot}
+          userName={result.userName}
+        />
+      )}
+
+      {result &&
+        hasValidResult &&
+        !result.emergencyProfile &&
+        result.sosSnapshot && (
+          <LastKnownLocationCard sosSnapshot={result.sosSnapshot} />
+        )}
+    </div>
+  );
 }

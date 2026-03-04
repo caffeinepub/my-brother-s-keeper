@@ -74,6 +74,18 @@ export const MeetupLocation = IDL.Record({
   'longitude' : IDL.Float64,
   'timestamp' : Time,
 });
+export const AdminTokenInfo = IDL.Record({
+  'token' : IDL.Text,
+  'createdBy' : IDL.Principal,
+  'expiration' : Time,
+  'isRedeemed' : IDL.Bool,
+});
+export const MemberSummary = IDL.Record({
+  'userId' : IDL.Principal,
+  'name' : IDL.Text,
+  'isVerified' : IDL.Bool,
+  'registrationTime' : Time,
+});
 export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const UserProfile = IDL.Record({
   'licenseProof' : IDL.Opt(ExternalBlob),
@@ -96,6 +108,21 @@ export const Place = IDL.Record({
   'description' : IDL.Text,
   'category' : PlaceCategory,
   'location' : IDL.Text,
+});
+export const UserAccountDetails = IDL.Record({
+  'recentRoutes' : IDL.Vec(Route),
+  'emergencyProfile' : IDL.Opt(EmergencyProfile),
+  'accountCreated' : Time,
+  'activityLog' : IDL.Vec(ActivityLogEntry),
+  'placesAdded' : IDL.Vec(Place),
+  'lastLocations' : IDL.Vec(MeetupLocation),
+  'profile' : UserProfile,
+});
+export const PromoteToAdminResult = IDL.Variant({
+  'accountAlreadyAdmin' : IDL.Null,
+  'success' : IDL.Text,
+  'invalidToken' : IDL.Null,
+  'tokenExpired' : IDL.Null,
 });
 export const MeetupLocationInput = IDL.Record({
   'latitude' : IDL.Float64,
@@ -150,23 +177,22 @@ export const idlService = IDL.Service({
       [EmergencyLookupResult],
       ['query'],
     ),
+  'generateAdminToken' : IDL.Func([], [IDL.Text], []),
   'getActivityLogs' : IDL.Func([], [IDL.Vec(ActivityLogEntry)], ['query']),
   'getAllActiveMeetupLocations' : IDL.Func(
       [],
       [IDL.Vec(MeetupLocation)],
       ['query'],
     ),
+  'getAllActiveTokens' : IDL.Func([], [IDL.Vec(AdminTokenInfo)], ['query']),
+  'getAllAdminTokenInfos' : IDL.Func([], [IDL.Vec(AdminTokenInfo)], ['query']),
   'getAllAvailableMeetupLocations' : IDL.Func(
       [],
       [IDL.Vec(MeetupLocation)],
       ['query'],
     ),
   'getAllLatestSOSLocations' : IDL.Func([], [IDL.Vec(SOSSnapshot)], ['query']),
-  'getAllMembers' : IDL.Func(
-      [],
-      [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
-      ['query'],
-    ),
+  'getAllMembers' : IDL.Func([], [IDL.Vec(MemberSummary)], ['query']),
   'getAllUserProfiles' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
@@ -190,12 +216,19 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getRoutes' : IDL.Func([IDL.Principal], [IDL.Vec(Route)], ['query']),
+  'getUserAccountDetails' : IDL.Func(
+      [IDL.Principal],
+      [UserAccountDetails],
+      ['query'],
+    ),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'isAdmin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'promoteToAdmin' : IDL.Func([IDL.Text], [PromoteToAdminResult], []),
   'reviewVerification' : IDL.Func([IDL.Principal, IDL.Bool], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'searchPlaces' : IDL.Func(
@@ -203,7 +236,6 @@ export const idlService = IDL.Service({
       [IDL.Vec(Place)],
       ['query'],
     ),
-  'setupHardcodedAdmin' : IDL.Func([], [IDL.Text], []),
   'shareMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
   'updateMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
   'uploadVerification' : IDL.Func(
@@ -282,6 +314,18 @@ export const idlFactory = ({ IDL }) => {
     'longitude' : IDL.Float64,
     'timestamp' : Time,
   });
+  const AdminTokenInfo = IDL.Record({
+    'token' : IDL.Text,
+    'createdBy' : IDL.Principal,
+    'expiration' : Time,
+    'isRedeemed' : IDL.Bool,
+  });
+  const MemberSummary = IDL.Record({
+    'userId' : IDL.Principal,
+    'name' : IDL.Text,
+    'isVerified' : IDL.Bool,
+    'registrationTime' : Time,
+  });
   const ExternalBlob = IDL.Vec(IDL.Nat8);
   const UserProfile = IDL.Record({
     'licenseProof' : IDL.Opt(ExternalBlob),
@@ -304,6 +348,21 @@ export const idlFactory = ({ IDL }) => {
     'description' : IDL.Text,
     'category' : PlaceCategory,
     'location' : IDL.Text,
+  });
+  const UserAccountDetails = IDL.Record({
+    'recentRoutes' : IDL.Vec(Route),
+    'emergencyProfile' : IDL.Opt(EmergencyProfile),
+    'accountCreated' : Time,
+    'activityLog' : IDL.Vec(ActivityLogEntry),
+    'placesAdded' : IDL.Vec(Place),
+    'lastLocations' : IDL.Vec(MeetupLocation),
+    'profile' : UserProfile,
+  });
+  const PromoteToAdminResult = IDL.Variant({
+    'accountAlreadyAdmin' : IDL.Null,
+    'success' : IDL.Text,
+    'invalidToken' : IDL.Null,
+    'tokenExpired' : IDL.Null,
   });
   const MeetupLocationInput = IDL.Record({
     'latitude' : IDL.Float64,
@@ -362,10 +421,17 @@ export const idlFactory = ({ IDL }) => {
         [EmergencyLookupResult],
         ['query'],
       ),
+    'generateAdminToken' : IDL.Func([], [IDL.Text], []),
     'getActivityLogs' : IDL.Func([], [IDL.Vec(ActivityLogEntry)], ['query']),
     'getAllActiveMeetupLocations' : IDL.Func(
         [],
         [IDL.Vec(MeetupLocation)],
+        ['query'],
+      ),
+    'getAllActiveTokens' : IDL.Func([], [IDL.Vec(AdminTokenInfo)], ['query']),
+    'getAllAdminTokenInfos' : IDL.Func(
+        [],
+        [IDL.Vec(AdminTokenInfo)],
         ['query'],
       ),
     'getAllAvailableMeetupLocations' : IDL.Func(
@@ -378,11 +444,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(SOSSnapshot)],
         ['query'],
       ),
-    'getAllMembers' : IDL.Func(
-        [],
-        [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
-        ['query'],
-      ),
+    'getAllMembers' : IDL.Func([], [IDL.Vec(MemberSummary)], ['query']),
     'getAllUserProfiles' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
@@ -406,12 +468,19 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getRoutes' : IDL.Func([IDL.Principal], [IDL.Vec(Route)], ['query']),
+    'getUserAccountDetails' : IDL.Func(
+        [IDL.Principal],
+        [UserAccountDetails],
+        ['query'],
+      ),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'isAdmin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'promoteToAdmin' : IDL.Func([IDL.Text], [PromoteToAdminResult], []),
     'reviewVerification' : IDL.Func([IDL.Principal, IDL.Bool], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'searchPlaces' : IDL.Func(
@@ -419,7 +488,6 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(Place)],
         ['query'],
       ),
-    'setupHardcodedAdmin' : IDL.Func([], [IDL.Text], []),
     'shareMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
     'updateMeetupLocation' : IDL.Func([MeetupLocationInput], [], []),
     'uploadVerification' : IDL.Func(

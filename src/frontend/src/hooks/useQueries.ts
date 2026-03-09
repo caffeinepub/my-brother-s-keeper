@@ -89,35 +89,29 @@ export function useIsCallerAdmin() {
   const { actor, isFetching } = useActor();
   const { identity, isInitializing } = useInternetIdentity();
 
-  // Include the identity principal in the query key so the result is
-  // scoped per identity — prevents stale anonymous results being served
-  // to authenticated users and vice versa.
+  // Include both the identity principal AND actor instance in the query key
+  // so the result is always fresh when either changes.
   const principalKey = identity?.getPrincipal().toString() ?? "anonymous";
 
   return useQuery<boolean>({
     queryKey: ["isCallerAdmin", principalKey],
     queryFn: async () => {
       if (!actor) throw new Error("Actor not available");
-      // Use isAdmin(principal) instead of isCallerAdmin() because isAdmin()
-      // correctly checks both the hardcoded bootstrap admin principal AND
-      // the AccessControl state. The mixin's isCallerAdmin() only checks
-      // AccessControl state, causing the bootstrap admin to always be denied.
       const principal = identity?.getPrincipal();
       if (!principal || principal.isAnonymous()) return false;
+      // Pass the principal explicitly — the backend checks it against the
+      // bootstrap admin principal and the AccessControl admin list.
       return actor.isAdmin(principal);
     },
     // Only run when actor is ready and identity is fully initialized
     enabled: !!actor && !isFetching && !isInitializing,
-    // Cache admin status for 5 minutes to prevent cascading re-fetches
-    // triggered by useActor's invalidateQueries effect
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    // Don't retry on error — prevents amplifying loop behavior
-    retry: false,
-    // Don't refetch on window focus to prevent spurious re-checks
-    refetchOnWindowFocus: false,
-    // Don't refetch on reconnect to prevent spurious re-checks
-    refetchOnReconnect: false,
+    // No caching — always fetch fresh so login state is immediately reflected
+    staleTime: 0,
+    gcTime: 0,
+    // Retry once on error to handle transient network issues
+    retry: 1,
+    // Refetch when window regains focus so returning to the tab re-checks
+    refetchOnWindowFocus: true,
   });
 }
 

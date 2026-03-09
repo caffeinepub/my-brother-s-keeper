@@ -37,7 +37,6 @@ import {
 import { useState } from "react";
 import type { UserProfile } from "../backend";
 import GenerateAdminTokenCard from "../components/admin/GenerateAdminTokenCard";
-import AdminRouteGuard from "../components/auth/AdminRouteGuard";
 import {
   useGetActivityLogs,
   useGetAllLatestSOSLocations,
@@ -584,9 +583,5 @@ function AdminDashboardContent() {
 }
 
 export default function AdminDashboardPage() {
-  return (
-    <AdminRouteGuard>
-      <AdminDashboardContent />
-    </AdminRouteGuard>
-  );
+  return <AdminDashboardContent />;
 }

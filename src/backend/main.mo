@@ -18,9 +18,13 @@ actor {
   include MixinStorage();
 
   let accessControlState = AccessControl.initState();
-  include MixinAuthorization(accessControlState);
-
   let bootstrapAdminPrincipalText = "2yscf-yuwfq-4lml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae";
+
+  func isBootstrapAdmin(caller : Principal) : Bool {
+    caller.toText() == bootstrapAdminPrincipalText;
+  };
+
+  include MixinAuthorization(accessControlState, isBootstrapAdmin);
 
   public type PromoteToAdminResult = {
     #success : Text;
@@ -156,10 +160,6 @@ actor {
   let userActivityLogs = Map.empty<Principal, List.List<ActivityLogEntry>>();
   let adminTokens = Map.empty<Text, AdminToken>();
   let redeemedTokens = Map.empty<Text, Bool>();
-
-  func isBootstrapAdmin(caller : Principal) : Bool {
-    caller.toText() == bootstrapAdminPrincipalText;
-  };
 
   func isAdminUser(caller : Principal) : Bool {
     isBootstrapAdmin(caller) or AccessControl.isAdmin(accessControlState, caller);
@@ -650,6 +650,7 @@ actor {
   public query func isAdmin(principal : Principal) : async Bool {
     principal.toText() == bootstrapAdminPrincipalText or AccessControl.isAdmin(accessControlState, principal);
   };
+
 
   module Place {
     public func compare(place1 : Place, place2 : Place) : Order.Order {

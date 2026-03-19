@@ -24,7 +24,7 @@ actor {
     caller.toText() == bootstrapAdminPrincipalText;
   };
 
-  include MixinAuthorization(accessControlState, isBootstrapAdmin);
+  include MixinAuthorization(accessControlState);
 
   public type PromoteToAdminResult = {
     #success : Text;

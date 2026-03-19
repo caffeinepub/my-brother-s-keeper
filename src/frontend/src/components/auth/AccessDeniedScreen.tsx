@@ -7,18 +7,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useNavigate } from "@tanstack/react-router";
-import { ShieldX } from "lucide-react";
+import { Copy, ShieldX } from "lucide-react";
+import { useState } from "react";
+import { useInternetIdentity } from "../../hooks/useInternetIdentity";
 
-/**
- * AccessDeniedScreen
- *
- * Simple screen shown when a user does not have admin privileges.
- * Provides navigation back to safe pages.
- * Bootstrap admin access is handled automatically by the backend — no manual
- * verification UI is needed here.
- */
 export default function AccessDeniedScreen() {
   const navigate = useNavigate();
+  const { identity } = useInternetIdentity();
+  const [copied, setCopied] = useState(false);
+
+  const principalText = identity?.getPrincipal().toString() ?? null;
+  const isLoggedIn = principalText && principalText !== "2vxsx-fae";
+
+  const handleCopy = () => {
+    if (principalText) {
+      navigator.clipboard.writeText(principalText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-[60vh] px-4">
@@ -30,12 +37,29 @@ export default function AccessDeniedScreen() {
             </div>
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>
-              You don't have administrator privileges to access this page. If
-              you believe this is an error, please contact an existing
-              administrator.
+              Your account does not have administrator privileges.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
+            {isLoggedIn && (
+              <div className="rounded-md border border-border bg-muted p-3 text-left">
+                <p className="text-xs font-semibold text-muted-foreground mb-1">
+                  Your current Principal ID:
+                </p>
+                <p className="text-xs font-mono break-all text-foreground">
+                  {principalText}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 w-full text-xs"
+                  onClick={handleCopy}
+                >
+                  <Copy className="h-3 w-3 mr-1" />
+                  {copied ? "Copied!" : "Copy Principal ID"}
+                </Button>
+              </div>
+            )}
             <Button
               onClick={() => navigate({ to: "/" })}
               variant="default"

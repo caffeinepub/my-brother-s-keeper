@@ -99,9 +99,7 @@ export function useIsCallerAdmin() {
       if (!actor) throw new Error("Actor not available");
       const principal = identity?.getPrincipal();
       if (!principal || principal.isAnonymous()) return false;
-      // Pass the principal explicitly — the backend checks it against the
-      // bootstrap admin principal and the AccessControl admin list.
-      return actor.isAdmin(principal);
+      return actor.isCallerAdmin();
     },
     // Only run when actor is ready and identity is fully initialized
     enabled: !!actor && !isFetching && !isInitializing,

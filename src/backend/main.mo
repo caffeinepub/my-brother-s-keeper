@@ -19,6 +19,9 @@ actor {
 
   let accessControlState = AccessControl.initState();
   let bootstrapAdminPrincipalText = "2yscf-yuwfq-4lml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae";
+  // Seed the bootstrap admin into AccessControl so isCallerAdmin() from MixinAuthorization works correctly
+  accessControlState.userRoles.add(Principal.fromText(bootstrapAdminPrincipalText), #admin);
+  accessControlState.adminAssigned := true;
 
   func isBootstrapAdmin(caller : Principal) : Bool {
     caller.toText() == bootstrapAdminPrincipalText;
@@ -650,6 +653,7 @@ actor {
   public query func isAdmin(principal : Principal) : async Bool {
     principal.toText() == bootstrapAdminPrincipalText or AccessControl.isAdmin(accessControlState, principal);
   };
+
 
 
   module Place {

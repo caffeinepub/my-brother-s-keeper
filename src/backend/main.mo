@@ -18,13 +18,19 @@ actor {
   include MixinStorage();
 
   let accessControlState = AccessControl.initState();
+
+  // Both known principal IDs for the owner — covers any Internet Identity device variance
   let bootstrapAdminPrincipalText = "2yscf-yuwfq-4lml4-t6ujy-r3ogj-ajbkj-rmiih-uyk25-o34ky-6jpe6-gae";
-  // Seed the bootstrap admin into AccessControl so isCallerAdmin() from MixinAuthorization works correctly
+  let bootstrapAdminPrincipalText2 = "u4x5t-rizev-5cumn-pnba2-2puqm-mn4tl-zav34-vrxye-tv3qr-vqwyr-bae";
+
+  // Seed both admin principals into AccessControl at startup
   accessControlState.userRoles.add(Principal.fromText(bootstrapAdminPrincipalText), #admin);
+  accessControlState.userRoles.add(Principal.fromText(bootstrapAdminPrincipalText2), #admin);
   accessControlState.adminAssigned := true;
 
   func isBootstrapAdmin(caller : Principal) : Bool {
-    caller.toText() == bootstrapAdminPrincipalText;
+    let t = caller.toText();
+    t == bootstrapAdminPrincipalText or t == bootstrapAdminPrincipalText2;
   };
 
   include MixinAuthorization(accessControlState);
@@ -186,9 +192,6 @@ actor {
   };
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can view profiles");
-    };
     userProfiles.get(caller);
   };
 
@@ -266,9 +269,6 @@ actor {
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
-    };
     userProfiles.add(caller, profile);
     addActivityLog(#userRegistration, "User registered: " # profile.name, caller);
   };
@@ -277,9 +277,6 @@ actor {
     licenseProof : ?Storage.ExternalBlob,
     idProof : ?Storage.ExternalBlob,
   ) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can upload verification");
-    };
     let profile = switch (userProfiles.get(caller)) {
       case (null) {
         { name = "Anonymous"; licenseProof = null; idProof = null; isVerified = false; registrationTime = Time.now() };
@@ -324,9 +321,6 @@ actor {
     description : Text,
     location : Text,
   ) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can add places");
-    };
     if (places.containsKey(name)) { Runtime.trap("Place already exists") };
     let place : Place = {
       name;
@@ -359,9 +353,6 @@ actor {
     dateTime : Time.Time,
     notes : ?Text,
   ) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can create routes");
-    };
     let route : Route = {
       start;
       destination;
@@ -394,9 +385,6 @@ actor {
     healthConditions : Text,
     accessCode : Text,
   ) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can create emergency profiles");
-    };
     let profile : EmergencyProfile = {
       nextOfKin;
       healthConditions;
@@ -410,9 +398,6 @@ actor {
     latitude : Float,
     longitude : Float,
   ) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can create SOS snapshots");
-    };
     let snapshot : SOSSnapshot = {
       timestamp = Time.now();
       latitude;
@@ -447,10 +432,6 @@ actor {
   };
 
   public shared ({ caller }) func shareMeetupLocation(locationInput : MeetupLocationInput) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can share meetup locations");
-    };
-
     let location : MeetupLocation = {
       user = caller;
       name = locationInput.name;
@@ -478,9 +459,6 @@ actor {
   };
 
   public shared ({ caller }) func deactivateMeetupLocation() : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can deactivate meetup locations");
-    };
     let location = switch (meetupLocations.get(caller)) {
       case (null) { Runtime.trap("No active meetup location found") };
       case (?existing) {
@@ -494,9 +472,6 @@ actor {
   };
 
   public shared ({ caller }) func updateMeetupLocation(locationInput : MeetupLocationInput) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can update meetup locations");
-    };
     let location : MeetupLocation = {
       user = caller;
       name = locationInput.name;
@@ -650,11 +625,10 @@ actor {
     .filter(func(token) { token.expiration > now and not token.isRedeemed });
   };
 
-  public query func isAdmin(principal : Principal) : async Bool {
-    principal.toText() == bootstrapAdminPrincipalText or AccessControl.isAdmin(accessControlState, principal);
+  // Check if a given principal is admin (used for display purposes)
+  public query ({ caller }) func isAdmin(principal : Principal) : async Bool {
+    isAdminUser(principal);
   };
-
-
 
   module Place {
     public func compare(place1 : Place, place2 : Place) : Order.Order {
